@@ -17,7 +17,7 @@ Read `AGENTS.md`, `PLAN.md`, `ARCHITECTURE.md`, `docs/decisions/001-local-first-
 
 The study is not production code. Never copy private exports, APKs or provider configuration into the project. Synthetic tests are invented from scratch. Owner-provided branding lives in `public/brand/`; the ZIP is excluded.
 
-User help is `help/README.md`; the header opens it on GitHub in a new tab. Connection settings and account binding live only in local browser source records. Auth defaults to memory, with SDK persistence only after profile opt-in. No Firebase project identifier or key is shipped.
+User help is `help/README.md`; the header opens it on GitHub in a new tab. Caldwell setup is automatic in the configured local installation: reuse browser settings, otherwise read the same-origin loopback helper. Shared technical metadata lives in the local profile; each source retains its connection/account binding. The helper reads ignored `.local/caldwell-connection.json` and emits no static build asset. Users enter only email/password. Auth defaults to memory, with SDK persistence only after profile opt-in. No provider identifier/key is shipped. Read decision 003 before extending setup to public hosting.
 
 ## Working practices
 

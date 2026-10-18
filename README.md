@@ -2,7 +2,7 @@
 
 A private, local workspace for exploring recorded Caldwell VelociRadar measurements. An unofficial community project, built for the browser. End users need no EXE, Python installation or VelociTrack account.
 
-**MVP:** JSON/CSV/text imports, read-only Caldwell account imports, shared catalogs, persistent filters, series comparison, charts, a shot table and an offline application shell. The Caldwell connector passed local browser sign-in, import and repeat-refresh checks. Connection settings must be supplied locally; no provider configuration is bundled. Hosted-origin support remains unverified.
+**MVP:** JSON/CSV/text imports, read-only Caldwell account imports, shared catalogs, persistent filters, series comparison, charts, a shot table and an offline application shell. The Caldwell connector passed local browser sign-in, import and repeat-refresh checks. Configured local installations prepare connection settings automatically, so users enter only their email/password. No provider configuration is bundled. Hosted-origin support remains unverified.
 
 VelociTrack is not affiliated with, endorsed by or supported by Caldwell or American Outdoor Brands (AOB). The original feasibility study, proprietary APK and private exports are not part of this project.
 
@@ -53,6 +53,8 @@ TypeScript 6 is pinned because the selected ESLint TypeScript integration does n
 
 Firebase 12.19 uses the Node 22-compatible SDK line. Overrides keep Firebase App/compat peers on one matching version; otherwise npm can install a second App instance and break Auth component registration. The gRPC override fixes the reported transitive advisories; the browser connector uses Firestore Lite and does not use the Node gRPC transport. Revalidate SDK initialization, peer consistency and the dependency audit when updating these pins.
 
+For a configured local Caldwell preview, the maintainer supplies permitted `projectId` and `apiKey` fields in ignored `.local/caldwell-connection.json`, then starts/restarts Vite. The dev/preview helper serves only these fields to same-origin loopback requests; it accepts no credentials and emits nothing into `dist/`. Users create a Caldwell source and enter only their email/password. Settings are then reused from the browser profile. A fresh public/static installation still requires a separately approved provider-configuration distribution mechanism; a normal build does not include this local helper or its data. See [decision 003](docs/decisions/003-automatic-local-setup.md).
+
 ## Project layout
 
 ```text
@@ -60,6 +62,7 @@ src/components/      Workspace and dialogs
 src/domain/          Identities, filtering and measurement semantics
 src/sources/         File and read-only online source adapters
 src/storage/         IndexedDB schema and atomic operations
+dev/                 Local Vite setup helpers, excluded from the application build
 public/brand/        Owner-supplied logo, favicons and PWA icons
 tests/               Synthetic behavioral tests
 help/                User documentation

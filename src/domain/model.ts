@@ -103,6 +103,8 @@ export interface Profile {
   rememberSignIn: boolean;
   refreshOnStart: boolean;
   filters: Filters;
+  /** Shared technical provider settings, never a password or an account token. */
+  caldwellConnection?: CaldwellConnection;
 }
 
 export const EMPTY_FILTERS: Filters = {

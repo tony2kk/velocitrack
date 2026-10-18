@@ -20,21 +20,14 @@ Refresh updates matching records without adding duplicates. Measurements absent 
 This source signs in directly with Firebase for your Caldwell account and reads your own series and shots. There is no VelociTrack server or credential proxy, and the connector does not change or delete Caldwell cloud data.
 
 1. Add a source of type **Caldwell**.
-2. Select **Add connection settings** and choose a local JSON file containing configuration you are permitted to use with this service. This is a one-time setup for that source and browser.
+2. The application prepares the connection automatically. You do not need a Firebase project number, API key or configuration file.
 3. Enter your **Caldwell email** and **Password**, then select **Sign in and import**.
 4. After a successful import, select series in the workspace. Use **Refresh** or the source's **Refresh now** to fetch current data.
 5. **Sign out** clears this source's SDK session; already imported measurements remain available locally.
 
-Connection settings have this shape. The values below are placeholders, not a working configuration:
+Technical connection settings identify the Caldwell service, not an individual user. They are prepared by the installation and saved in the local browser profile for reuse. Your email/password identify your own account. You do not create a separate Firebase project.
 
-```json
-{
-  "projectId": "your-permitted-project-id",
-  "apiKey": "your-permitted-web-api-key"
-}
-```
-
-Use only configuration for the intended Caldwell service. No provider project, API key, password or token is distributed with VelociTrack. A new browser or source needs its own local setup. A separate Firebase project does not grant access to Caldwell data. The application accepts only the two connection fields above; custom server URLs, passwords and account IDs in this file are ignored. The file must be smaller than 16 KB.
+Automatic first-time setup currently works in the configured local development/preview installation. A source checkout or a future public deployment without installation settings cannot connect a new browser yet; contact the app maintainer if sign-in preparation is unavailable. Existing browser settings are reused. No provider configuration is included in the public repository or build, and no user credentials pass through the local setup helper.
 
 The first signed-in account binds the source to that account. To import a different account, create another source; this prevents measurements from two accounts being mixed accidentally. Source settings are not a credential export or a workspace backup.
 
@@ -44,7 +37,8 @@ Sign-in lasts until the page closes or reloads by default. To keep the SDK sessi
 
 | Status or problem | Action |
 | --- | --- |
-| Setup needed | Add permitted connection settings to this source. |
+| Preparing sign-in | Wait briefly for automatic setup. No file selection is required. |
+| Sign-in unavailable in this installation | Select Try again; if it persists, contact the app maintainer. Your existing measurements remain intact. |
 | Sign-in needed | Enter your own account credentials. |
 | Sign-in failed | Check email/password; no account registration or password reset is performed here. |
 | Browser connection not allowed | Check supported web configuration and service access with the provider. VelociTrack stops on denial. |

@@ -80,7 +80,8 @@ export function ProfileDialog({
             Allow sign-in to be remembered on this device
             <small>
               Keep connected-source sessions between visits. When off, sign-in lasts until this page
-              closes or reloads. Passwords are never saved.
+              closes or reloads. Passwords are never saved. Anyone using this browser profile can
+              access remembered accounts; leave this off on shared devices.
             </small>
           </span>
         </label>

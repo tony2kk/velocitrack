@@ -30,6 +30,6 @@ describe('Firebase SDK session lifecycle', () => {
   it('requires local connection settings before initializing an account', async () => {
     await expect(
       getSession(createSource('Synthetic source', true, 'caldwell'), false),
-    ).rejects.toThrow('connection settings');
+    ).rejects.toThrow('sign-in is not ready');
   });
 });

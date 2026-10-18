@@ -24,7 +24,7 @@ const sessions = new Map<string, Promise<CaldwellSession>>();
 /** Initialize or reuse the source's SDK session, awaiting any explicitly opted-in auth restoration. */
 export async function getSession(source: DataSource, remember: boolean): Promise<CaldwellSession> {
   if (!source.connection || source.kind !== 'caldwell')
-    throw new CaldwellError('Add connection settings before signing in.', 'setup');
+    throw new CaldwellError('Caldwell sign-in is not ready. Please try again.', 'setup');
   let pending = sessions.get(source.id);
   if (!pending) {
     const connection = source.connection;

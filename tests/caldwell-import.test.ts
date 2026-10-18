@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { db } from '../src/storage/database';
-import { createSource, importBundle, loadWorkspace } from '../src/storage/workspace';
+import { createSource, importBundle, loadWorkspace, saveProfile } from '../src/storage/workspace';
 import { parseVelociRadarRecords } from '../src/sources/velociradar';
 import { syntheticExport } from './fixtures/synthetic';
 import { importCaldwell } from '../src/sources/caldwell/import';
@@ -30,6 +30,12 @@ const bundle = () => {
 };
 beforeEach(async () => {
   await db.open();
+  await saveProfile({
+    caldwellConnection: {
+      projectId: 'synthetic-project',
+      apiKey: 'synthetic-key-for-tests-only',
+    },
+  });
   mocks.auth.currentUser = { uid: 'synthetic-owner' };
   mocks.read.mockReset().mockResolvedValue(bundle());
   mocks.signIn.mockReset();

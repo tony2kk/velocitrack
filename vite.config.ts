@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { localCaldwellSetupPlugin } from './dev/caldwell-setup.ts';
 
 const projectRoot = fileURLToPath(new URL('.', import.meta.url));
 const { version } = JSON.parse(
@@ -38,6 +39,9 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    localCaldwellSetupPlugin(
+      fileURLToPath(new URL('./.local/caldwell-connection.json', import.meta.url)),
+    ),
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['brand/*.{svg,png,ico}'],
@@ -75,6 +79,22 @@ export default defineConfig({
       },
     }),
   ],
-  server: { host: '127.0.0.1', strictPort: true },
+  server: {
+    host: '127.0.0.1',
+    strictPort: true,
+    fs: {
+      // Preserve Vite's default denials and keep local setup/study files out of its file server.
+      deny: [
+        '.env',
+        '.env.*',
+        '*.{crt,pem,key,p12,pfx,cer,der}',
+        '.npmrc',
+        '.yarnrc.yml',
+        '**/.git/**',
+        '**/.local/**',
+        '**/.private/**',
+      ],
+    },
+  },
   build: { sourcemap: false, chunkSizeWarningLimit: 700 },
 });

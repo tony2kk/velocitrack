@@ -4,7 +4,7 @@
 
 This confirms the tested requests from that origin, not unrestricted API-key use, server-side rule isolation, App Check policy, GitHub Pages compatibility or distribution permission. The configuration came from the owner's earlier local study; its availability and successful requests are not evidence of public redistribution rights. No CORS proxy, forged Android headers, rule changes or alternate-account path was used. The isolated test is not versioned or included in the production build.
 
-The product connector now uses Firebase Auth plus Firestore Lite, paginated reads and the shared atomic import. Its setup imports permitted connection settings into browser storage; no project/API configuration is shipped with it. Full application verification is recorded separately in `VERIFICATION.md`.
+The product connector now uses Firebase Auth plus Firestore Lite, paginated reads and the shared atomic import. Automatic local setup reuses browser metadata or the configured Vite loopback helper; it no longer asks users to select a connection file. No project/API configuration is shipped with the static application. See decision 003. Full application verification is recorded separately in `VERIFICATION.md`.
 
 ## Prerequisites
 

@@ -1,4 +1,4 @@
-import type { CaldwellConnection } from '../../domain/model';
+import type { CaldwellConnection } from '../../domain/model.ts';
 
 /** Accept only the two local connection fields; never trust imported endpoints or account IDs. */
 export function parseConnectionSettings(text: string): CaldwellConnection {

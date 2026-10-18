@@ -5,6 +5,7 @@ import { importBundle } from '../../storage/workspace';
 import { CaldwellError, connectionError } from './errors';
 import { getSession } from './session';
 import { createCollectionReader, readAccount } from './read';
+import { prepareCaldwellSource } from './setup';
 
 /** Authenticate if requested, download only the bound owner's data, then commit one validated bundle. */
 export async function importCaldwell(
@@ -12,9 +13,7 @@ export async function importCaldwell(
   credentials?: { email: string; password: string },
 ) {
   try {
-    const source = await db.sources.get(sourceId);
-    if (!source || source.kind !== 'caldwell')
-      throw new CaldwellError('This Caldwell source no longer exists.', 'setup');
+    const source = await prepareCaldwellSource(sourceId);
     await db.sources.update(sourceId, {
       error: undefined,
       lastAttemptAt: new Date().toISOString(),

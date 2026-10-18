@@ -44,9 +44,20 @@ Browser screenshots contain synthetic data only and remain outside versioned con
 - Served two versions of the production build on an isolated loopback origin using an ignored local test server. Both tabs displayed the update prompt. Reload in the first tab changed its document from build A to build B; the second tab stayed on A until its own Reload, then successfully loaded B despite the update already being active. The saved synthetic nickname survived the first reload.
 - The isolated browser exercise used no Caldwell account or real measurements. Existing provider configuration remains excluded from repository and build assets.
 
-## Still unverified / intentionally absent
+## Version display and code documentation — 2026-10-18
 
 The footer now includes the package version and build-time source revision. The local production preview displayed `v0.1.0` with the expected dirty-checkout marker, while retaining its 7 series and 46 shots. The existing 52 tests and full verification passed after the code-documentation pass. Domain, storage, adapter, UI and update-flow classes/functions now have English purpose/invariant comments; this pass does not change their behavior.
+
+## Automatic local Caldwell setup — 2026-10-18
+
+- All **68 behavioral tests** passed. New cases cover profile reuse, existing-source preservation, deletion during setup, safe failures, credential-free requests and the loopback/same-origin boundary. Types, lint, formatting, production/PWA build and the public-content guard also passed.
+- On a fresh isolated loopback origin, adding a Caldwell source automatically displayed the email/password form with no connection-file picker. Reloading the page retained the source and prepared sign-in. No credentials were entered and no measurements were imported during this check.
+- The footer displayed version `0.1.1`; the profile explains the consequences of remembered sign-in on a shared browser profile.
+- An additional ignored local check confirmed that the actual provider project ID/key were absent from every candidate source file and production build asset. The helper's input remains ignored and is not a static build asset.
+
+These checks supplement the earlier live-import checks; they do not constitute another account sign-in or a persistence test across browser restarts. Automatic first setup in a fresh publicly hosted browser remains outside this implementation.
+
+## Still unverified / intentionally absent
 
 - Hosted-origin reads, general API restrictions/App Check configuration and server rule isolation. Loopback Auth/own-account reads passed, but do not prove these broader properties.
 - Provider permission and any app-specific terms remain unconfirmed. The owner approved publication after reviewing this uncertainty; see `TERMS_REVIEW.md`. This is a release decision, not a technical test result.

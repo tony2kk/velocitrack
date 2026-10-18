@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { FileUp, LogIn, LogOut, RefreshCw } from 'lucide-react';
+import { LogIn, LogOut, RefreshCw } from 'lucide-react';
 import type { DataSource } from '../domain/model';
 import { db } from '../storage/database';
 import { refreshCaldwell } from '../sources/refresh';
-import { parseConnectionSettings } from '../sources/caldwell/configuration';
 import { connectionError } from '../sources/caldwell/errors';
 import { getSession } from '../sources/caldwell/session';
+import { prepareCaldwellSource } from '../sources/caldwell/setup';
 
 /** Manage one source's local setup, SDK sign-in state and explicit read-only import actions. */
 export default function CaldwellSource({
@@ -25,13 +25,14 @@ export default function CaldwellSource({
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [working, setWorking] = useState(false);
+  const [setupAttempt, setSetupAttempt] = useState(0);
   const disabled = busy || working;
   useEffect(() => {
-    if (!source.connection) return;
     let active = true;
     // SDK initialization can finish after the dialog closes; do not attach a stale subscription.
     let unsubscribe: (() => void) | undefined;
-    void getSession(source, remember)
+    void prepareCaldwellSource(source.id)
+      .then((prepared) => getSession(prepared, remember))
       .then(({ auth }) => {
         if (active) unsubscribe = onAuthStateChanged(auth, (user) => setSignedIn(!!user));
       })
@@ -42,7 +43,7 @@ export default function CaldwellSource({
       active = false;
       unsubscribe?.();
     };
-  }, [source, remember]);
+  }, [source, remember, setupAttempt]);
 
   /** Start or join this source's import and clear credential inputs without persisting them. */
   async function refresh(credentials?: { email: string; password: string }) {
@@ -65,50 +66,22 @@ export default function CaldwellSource({
   return (
     <div className="caldwell-connection">
       {!source.connection ? (
-        <>
-          <p className="muted">
-            Add the permitted connection settings once, then sign in with your Caldwell account.
-            Settings are saved only in this browser.
-          </p>
-          <label className={`file-picker ${disabled ? 'disabled' : ''}`}>
-            <FileUp size={18} />
-            <span>
-              Add connection settings<small>Select your local connection JSON file.</small>
-            </span>
-            <input
-              type="file"
-              accept=".json,application/json"
-              disabled={disabled}
-              aria-label={`Connection settings for ${source.name}`}
-              onChange={async (event) => {
-                const input = event.currentTarget;
-                const file = input.files?.[0];
-                if (!file) return;
-                setWorking(true);
+        <div className="connection-actions">
+          {error ? (
+            <button
+              onClick={() => {
                 setError('');
-                try {
-                  if (file.size > 16_384)
-                    throw new Error('Connection settings must be smaller than 16 KB.');
-                  const connection = parseConnectionSettings(await file.text());
-                  await db.sources.update(source.id, {
-                    connection,
-                    status: 'needs-sign-in',
-                    error: undefined,
-                  });
-                } catch (error) {
-                  setError(
-                    error instanceof Error
-                      ? error.message
-                      : 'Connection settings could not be saved.',
-                  );
-                } finally {
-                  input.value = '';
-                  setWorking(false);
-                }
+                setSetupAttempt((attempt) => attempt + 1);
               }}
-            />
-          </label>
-        </>
+            >
+              Try again
+            </button>
+          ) : (
+            <p role="status" className="muted">
+              Preparing Caldwell sign-in…
+            </p>
+          )}
+        </div>
       ) : signedIn && source.status !== 'needs-sign-in' ? (
         <div className="connection-actions">
           <p className="connection-state">
