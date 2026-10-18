@@ -3,25 +3,23 @@
 ## Scope and current state
 
 This is a new project, not a continuation or copy of the old feasibility code.
-The owner asked for local/remote repositories and basic infrastructure first.
-Architecture still needs discussion. Read `PLAN.md`, `ARCHITECTURE.md` and
-`docs/CODEX_HANDOFF.md` before proposing or implementing features.
-
-React/TypeScript/Vite are only the starting development tools. Do not silently
-commit to a domain model, Dexie, ECharts, Firebase or PWA behavior. Discuss the
-first user flow and record accepted decisions before adding product code.
+The owner approved a local-first MVP after repository preparation. Read
+`PLAN.md`, `ARCHITECTURE.md`, `docs/decisions/001-local-first-mvp.md` and
+`docs/CODEX_HANDOFF.md` before extending it. React/TypeScript/Vite, Dexie,
+ECharts and a static PWA shell are accepted. Firebase is not implemented.
+All UI, documentation and code comments must be English. Keep modules readable
+and record newly accepted product decisions.
 
 ## Commands
 
 - `npm ci` — reproducible dependency installation (Node 22.12+).
-- `npm run verify` — types, test runner, build and public-content guard.
+- `npm run verify` — types, lint, formatting, tests, build and public-content guard.
 - `npm run dev` — loopback development server.
 - `npm run preview` — production preview after build.
 
 On Windows PowerShell use `npm.cmd` when execution policy blocks `npm.ps1`.
-The test runner currently permits an empty suite. Do not report that as
-behavioral test coverage. Add useful tests alongside real behavior; avoid
-tests that merely repeat static placeholder text.
+Add behavior-focused tests, not tests that repeat implementation details or
+static text. Empty suites must fail.
 
 ## Data and access boundaries
 
@@ -29,6 +27,10 @@ Never commit passwords, tokens, real account identifiers, personal data,
 user exports, HAR files, service accounts, proprietary APKs or vendor code.
 Keep any expressly authorized local experiments in ignored `.local/`.
 Create synthetic test fixtures from scratch; do not copy/anonymize real ones.
+Measurements and every user setting are local browser data, never repository
+files, build configuration or hosted assets. No application backend. Keep
+imports atomic, provider IDs source-scoped and annotations separate. Do not
+automatically merge catalogs across sources.
 
 No Firebase integration or provider configuration is included. Read
 `docs/FIREBASE_POC.md` and `docs/TERMS_REVIEW.md` before cloud work. Use only
@@ -44,7 +46,17 @@ Do not add weapon configuration or ammunition optimization features.
 
 Keep changes scoped and easy to review. Preserve user changes. Run checks
 appropriate to changed behavior. Report what was tested and what remains
-unverified. Prefer simple modules until an architecture is agreed.
+unverified. Evolve the accepted architecture deliberately.
+
+Work on `main` unless the owner instructs otherwise. After each completed
+functional batch, run the appropriate checks, review the public content,
+commit the batch with a descriptive English message and push it to
+`origin/main`. The owner authorized this ongoing workflow on 2026-10-18;
+do not ask for repeat approval for ordinary verified feature batches.
+Do not force-push or include unrelated/private files. If a check or privacy
+gate fails, resolve it before publishing or report the concrete blocker.
+This workflow does not authorize a Pages deployment or waive the cloud
+feasibility and distribution-rights requirements below.
 
 `npm run check:public` is a basic pattern guard, not a proof of privacy.
 Review staged files and Git history before publication. GitHub Pages is

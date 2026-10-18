@@ -1,39 +1,43 @@
 # Plan
 
-## Current milestone — repository foundation
+## Foundation
 
-- [x] Establish the VelociTrack name and new source tree.
-- [x] Add minimal React/TypeScript/Vite tooling and a placeholder page.
-- [x] Pin dependencies and commit a lockfile.
-- [x] Add CI, a manual GitHub Pages workflow, ignore rules and a basic public-content check.
-- [x] Add README, Codex guidance, architecture questions, terms notes and test plan.
-- [x] Keep study files, private measurements and cloud integration out of the source tree.
+- [x] New local/public GitHub repositories under the VelociTrack name.
+- [x] Pinned dependencies, CI, manual Pages workflow and privacy guard.
+- [x] Independent source tree; no study code, APK or private exports.
 
-The local/remote repository status and verification results are recorded in the handoff after setup.
+## Approved local-first MVP
 
-## Next milestone — discuss architecture
+- [x] Record architecture decisions and English-only convention.
+- [x] IndexedDB entities, annotations and local profile.
+- [x] JSON/CSV adapter, raw preservation and source-scoped identities.
+- [x] Atomic repeatable import and optional automatic catalog updates.
+- [x] Source/catalog management and all-enabled-source refresh.
+- [x] Persistent multi-select/date filters and profile preferences.
+- [x] Responsive series selection, charts/table and data-quality reporting.
+- [x] Static PWA shell and owner-provided branding.
+- [x] Parser, statistics, filter and transactional storage tests.
 
-1. Agree on the first end-user workflow and boundaries of the first release.
-2. Review the options in `ARCHITECTURE.md`; decide which parts of the original proposal still fit.
-3. Define a synthetic example and measurement semantics without copying private exports.
-4. Decide whether the first release depends on live cloud access or can begin with local imports.
-5. Record decisions and a narrow implementation plan before writing product features.
+See `docs/VERIFICATION.md` for actual verification and remaining caveats. Local MVP work does not authorize a Pages deployment.
 
-## Cloud feasibility gate — unresolved
+## Next iteration
 
-- [ ] Obtain a web configuration permitted for the intended use.
-- [ ] Review applicable Caldwell app/service terms and resolve integration distribution rights.
-- [ ] Prepare a private browser-only PoC after architecture discussion.
-- [ ] Have the owner enter credentials locally; never in chat, source or logs.
-- [ ] Verify permitted Auth and Firestore reads from loopback and, if authorized, the intended hosted origin.
-- [ ] Record sanitized results and limits; do not infer rules or rights from one successful read.
+1. Review the MVP workflow and appearance using local exports.
+2. Validate physical units, distance origin and atmosphere against reliable evidence.
+3. Design workspace backup/restore, quota handling and larger-dataset pagination.
+4. Define typed custom-field definitions, applicable entities and editor UX.
+5. Design explicit mapping/merging across source catalogs.
+6. Add agreed chart/report tools using validated measurement semantics.
 
-No credentials or permitted web configuration were available during repository preparation. No live Firebase test has passed.
+## Cloud gate — unresolved
 
-## Later implementation candidates — not approved yet
+- [ ] Obtain permitted web configuration and applicable service terms.
+- [ ] Run isolated browser-only Auth/Firestore PoC with the owner's account.
+- [ ] Verify origin/API restrictions, App Check and authorized reads.
+- [ ] Record sanitized results and distribution rights before integration publication.
 
-CSV/JSON import; data-quality rules; statistics and graphs; local storage; offline/PWA behavior; backup/restore; explicit read-only cloud sync. Ordering and libraries remain open.
+No browser-only cloud test has passed. No Firebase SDK/configuration is included. Follow `docs/FIREBASE_POC.md` and `docs/TERMS_REVIEW.md`.
 
 ## Publication
 
-Repository creation and its initial infrastructure content are within the current repository request. Website deployment is a separate action and remains manual. Integration publication requires the feasibility/terms work above and the owner's publication instruction.
+Review candidate files, built assets and history before publishing. The owner authorized committing and pushing each completed, verified functional batch to `origin/main` on 2026-10-18. Continue on `main` unless instructed otherwise. Pages deployment remains manual and requires a separate instruction; the cloud feasibility and terms gate still applies.

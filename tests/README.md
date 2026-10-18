@@ -1,15 +1,10 @@
-# Tests
+# Verification
 
-The test runner is ready; there are no behavioral tests yet because the repository contains only a static placeholder.
-`npm test` explicitly allows an empty suite. CI success at this stage means the source typechecks, builds and passes the public-content check; it does not demonstrate application behavior.
+Committed fixtures are invented from scratch. Tests never read personal exports or provider accounts.
 
-Add meaningful tests alongside the first agreed feature. Candidate cases:
+- `import.test.ts`: JSON pairs/combined data, BOM, CSV quoting/nested JSON, booleans, identities, timestamps, padding preservation, unequal arrays and malformed/duplicate/orphan records.
+- `measurements.test.ts`: zero padding versus valid zero distance, invalid/unpaired samples, sample SD, exclusions and incompatible groups.
+- `filters.test.ts`: OR/AND, local boundaries, invalid ranges and relative calendar windows.
+- `storage.test.ts`: Dexie with fake IndexedDB; idempotency, rollback, manual catalog repair, preserved annotations/renames, source isolation, reopening and removal scope.
 
-- Paired `[0, 0]` padding versus a valid zero-distance measurement.
-- Unequal array lengths, non-finite values, unknown units and explicit exclusions.
-- CSV quoting/BOM and malformed JSON; atomic rejection without partial imports.
-- Sample standard deviation, empty sets, one sample and mixed units.
-- Storage migrations and offline reload if browser storage/PWA are selected.
-- User-scoped reads and denial handling if cloud integration is approved.
-
-Use entirely synthetic fixtures. Never copy or anonymize real user exports into tests.
+Run `npm test` or `npm run verify`. Empty suites fail. Browser testing is separate; see `docs/VERIFICATION.md`. Fake IndexedDB tests do not prove browser quota, migration or service-worker behavior.

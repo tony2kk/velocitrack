@@ -1,31 +1,44 @@
 # VelociTrack
 
-An unofficial, open-source project for exploring measurement data from Caldwell VelociRadar.
+A private, local workspace for exploring recorded Caldwell VelociRadar measurements. An unofficial community project, built for the browser. End users need no EXE, Python installation or VelociTrack account.
 
-**Current scope: repository and development infrastructure. Application architecture is still to be discussed.** This is a new project; the earlier feasibility study, exporter, APK and private measurements are not part of this repository.
+**MVP:** JSON/CSV imports, shared catalogs, persistent filters, series comparison, charts, a shot table and an offline application shell. Live Caldwell/Firebase connectivity is not implemented or verified.
 
-VelociTrack is not affiliated with, endorsed by, or supported by Caldwell or American Outdoor Brands (AOB). Product names identify compatibility goals only; this project uses no vendor logos or proprietary assets.
+VelociTrack is not affiliated with, endorsed by or supported by Caldwell or American Outdoor Brands (AOB). The original feasibility study, proprietary APK and private exports are not part of this project.
 
-## What exists today
+## Using VelociTrack
 
-- A minimal React + TypeScript + Vite development scaffold and placeholder page.
-- Strict TypeScript checks, a pinned dependency lockfile and an empty Vitest test harness.
-- GitHub Actions CI for install, typechecking, build and a public-content check.
-- A **manually triggered** GitHub Pages deployment workflow, restricted to `main`.
-- Project guidance for Codex, a discussion document, a plan and cloud feasibility notes.
-- MIT licensing, contributor guidance and exclusions for private data and credentials.
+1. Open **Sources**, name a source, and choose **Add source**. A source represents one independent export collection.
+2. Choose **strings.json and shots.json together**, or the equivalent CSV pair. A single JSON object with `strings[]` and `shots[]` is also supported. Do not select `points.csv`. The combined file limit is 20 MB.
+3. **Automatically update catalogs** creates firearm/projectile names found in the export. With it disabled, an unknown name rejects the entire import. Use **Local catalogs** beside Refresh to add the missing name and retry.
+4. Filter by source, firearm, projectile or date. Values within a filter are alternatives; different filters combine. Empty means all. Dates use local time; relative windows remain relative.
+5. Select one or more series. **Chart** shows recorded velocity over distance or muzzle velocity by shot; **Table** includes excluded shots. Hidden series leave the active selection.
+6. **Refresh** includes every enabled source, regardless of filters. Select its current export files again. Matching records are updated without duplicates; records absent from later exports are retained. One source's failure does not undo another source's success.
+7. Open **Local profile** for nickname and startup preferences. Filters save automatically. On-start refresh marks file sources as awaiting files; the browser cannot silently reread disk paths.
 
-There is no import implementation, database, charting, authentication, synchronization or service worker yet. No cloud connectivity or offline behavior has been verified. No website is deployed by creating or pushing this repository.
+The remember-sign-in checkbox stores a preference for future connected sources. File imports use no credentials; no authentication flow exists. Future authentication defaults to memory until application close/reload, and passwords will never be saved.
 
-## Product direction — to discuss
+Sources can be renamed, disabled or removed. **Remove source and data** requires confirmation and permanently deletes its series, shots and annotations. Catalog names remain. Used catalog entries cannot be deleted. Manual catalog renames survive refresh; cross-source mapping/merging is deferred.
 
-The initial idea is a browser application that can be used primarily on Windows, with no EXE or Python installation for end users. Candidate capabilities include CSV/JSON import, local/offline analysis, charts, and explicit read-only synchronization of the user's own permitted cloud data.
+## Your data stays on your device
 
-React, TypeScript and Vite provide a replaceable starting scaffold. PWA, ECharts, IndexedDB/Dexie and Firebase are proposals from the study, **not an approved application architecture**. We will agree on the first user flow and data contracts before introducing those dependencies. See [ARCHITECTURE.md](ARCHITECTURE.md).
+Measurements, source settings, catalogs, annotations, profile and filters live only in this browser's **IndexedDB**. Nothing is uploaded. Git, the build and GitHub Pages contain application assets only. There is no telemetry, external font service, credential proxy or server database.
 
-## Run locally for development
+Storage belongs to a specific origin and browser profile. Development, preview and GitHub Pages have separate workspaces. Clearing site data, private browsing or browser eviction can remove local content. **Keep original exports.** Full workspace backup/restore is planned. Local storage is not separately encrypted by the application; use an appropriate device/browser profile on shared devices.
 
-Prerequisites: Git, Node.js 22.12+ (Node 22 LTS is used in CI) and npm. These are developer tools; the intended hosted application will run in an end user's browser.
+The production PWA caches static application assets after a successful online visit. Imported data remains in IndexedDB. Offline mode is not a backup. Updates offer a reload prompt. Installation requires browser support and HTTPS (loopback is allowed for previews). Development mode does not install the service worker.
+
+## Measurement interpretation
+
+- Physical units, enum meanings and atmosphere are **unvalidated**. Raw values are not labeled as m/s, fps, metres or feet; no conversions are applied.
+- Paired `[0, 0]` samples are omitted from charts as padding. Zero distance with positive velocity remains valid. **Data quality** reports invalid/unpaired samples. Original arrays remain intact.
+- Source-excluded shots stay visible in the table but do not enter charts/statistics. Positive finite muzzle readings contribute to mean, sample SD (`n − 1`) and extreme spread.
+- Charts/statistics require one source/raw-unit-code group. Equal codes within a source are a provisional comparison grouping, not proof of physical units.
+- Distance charts show up to 100 included shot traces; narrow the selection for others. Tables paginate in groups of 100. These are measured points, not predicted trajectories.
+
+## Develop locally
+
+Use Node.js 22.12+ and npm; CI uses Node 22. These are contributor tools, not end-user requirements.
 
 ```powershell
 git clone https://github.com/tony2kk/velocitrack.git C:\dev\VelociTrack
@@ -34,71 +47,49 @@ npm.cmd ci
 npm.cmd run dev
 ```
 
-Open the Local URL printed by Vite, normally `http://127.0.0.1:5173/velocitrack/`.
-Using `npm.cmd` avoids PowerShell execution-policy problems with `npm.ps1`. On macOS/Linux, use `npm`.
-
-```powershell
-npm.cmd run verify
-npm.cmd run preview
-```
-
-The preview serves the production build at `http://127.0.0.1:4173/velocitrack/`.
-Do not open `index.html` directly through `file://`; this scaffold is served over HTTP. A future installed PWA would require a secure origin (HTTPS, with loopback exceptions for development).
-
-## Commands
+Open the printed URL, normally `http://127.0.0.1:5173/velocitrack/`. On macOS/Linux use `npm`. `npm.cmd` avoids PowerShell script-policy restrictions. Do not open `index.html` through `file://`.
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Start the local development server, bound to loopback |
-| `npm run typecheck` | Strict TypeScript validation |
-| `npm test` | Run tests; an empty suite is explicitly allowed at this stage |
-| `npm run build` | Typecheck and generate `dist/` |
-| `npm run preview` | Preview a completed production build |
-| `npm run check:public` | Scan Git candidate files for prohibited paths/common credential patterns |
-| `npm run verify` | All current checks and a production build |
+| `npm run dev` | Loopback development server |
+| `npm run verify` | Types, lint, formatting, tests, build and public-content guard |
+| `npm test` | Parser, measurement, filter and IndexedDB transaction tests |
+| `npm run format` | Format application, tests and configuration |
+| `npm run build` | Generate static `dist/` and service worker |
+| `npm run preview` | Serve the production build on loopback port 4173 |
+| `npm run check:public` | Basic prohibited-file/credential-pattern scan, not a privacy proof |
 
-An empty test suite is not evidence of application correctness. Add behavioral tests with the first agreed feature; see [tests/README.md](tests/README.md). The content scanner is a basic guard and cannot replace reviewing staged files and history.
+TypeScript 6 is pinned because the selected ESLint TypeScript integration does not support TypeScript 7 yet. Do not bypass peer checks to upgrade it.
 
-## Repository layout
+## Project layout
 
 ```text
-.github/workflows/    CI and manual Pages deployment
-docs/                Feasibility, terms review and handoff guidance
-scripts/             Repository checks
-src/                 Static placeholder only
-tests/               Test plan; no behavioral tests yet
-AGENTS.md            Codex instructions
-ARCHITECTURE.md      Open design questions, not an implementation mandate
-PLAN.md              Scope and next steps
+src/components/      Workspace and dialogs
+src/domain/          Identities, filtering and measurement semantics
+src/sources/         Validated local file adapter
+src/storage/         IndexedDB schema and atomic operations
+public/brand/        Owner-supplied logo, favicons and PWA icons
+tests/               Synthetic behavioral tests
+docs/decisions/      Accepted decisions
+.github/workflows/   CI and manual Pages deployment
 ```
 
-Local experiments belong in `.local/` (ignored). Keep source measurements outside this repository. Do not force-add ignored files. The earlier study remains independent of this project.
+Read [ARCHITECTURE.md](ARCHITECTURE.md), [PLAN.md](PLAN.md), [AGENTS.md](AGENTS.md), [Codex handoff](docs/CODEX_HANDOFF.md) and [brand asset notes](docs/BRANDING.md). Keep private exports outside the repository. Authorized local experiments belong in ignored `.local/`.
 
 ## GitHub Pages
 
-The repository includes `.github/workflows/pages.yml` but **does not auto-deploy**. When the owner explicitly wants to publish a site:
+Deployment is **manual**; pushing code does not deploy the site. After owner authorization and review of the exact public commit:
 
-1. Review the exact commit and confirm it contains only intended public files.
-2. In repository **Settings → Pages**, choose **GitHub Actions** as the source.
-3. In **Actions**, run **Deploy GitHub Pages (manual)** on `main`.
-4. Check the run result; the expected project URL is `https://tony2kk.github.io/velocitrack/`.
+1. In **Settings → Pages**, choose **GitHub Actions**.
+2. Run **Deploy GitHub Pages (manual)** on `main`.
+3. Check the workflow and deployed application.
 
-That URL is a planned destination, not a claim of current deployment. Vite's base path is `/velocitrack/`. If the repository path changes or a custom domain is introduced, update the base before deploying. The workflow uploads only `dist/`; it does not upload source exports or local experiments. No GitHub secrets are needed by this scaffold.
+The configured destination is `https://tony2kk.github.io/velocitrack/`; this does not assert deployment has occurred. Only `dist/` is uploaded. No application secrets are needed. If the base path changes, update Vite base, manifest start/scope and service-worker navigation scope together. See [GitHub Pages documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
 
-See [GitHub's Pages workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages) and [Vite's deployment guide](https://vite.dev/guide/static-deploy.html).
+## Cloud feasibility and contributions
 
-## Cloud integration and data handling
+Browser-only Firebase access, permitted configuration, API/origin restrictions and distribution rights remain unresolved. A working Python exporter proves neither browser compatibility nor permission. Read [FIREBASE_POC.md](docs/FIREBASE_POC.md) and [TERMS_REVIEW.md](docs/TERMS_REVIEW.md) before cloud work. Do not bypass provider controls.
 
-Cloud integration is an unresolved feasibility item. A working Python export does not establish that browser authentication, API restrictions, origins, App Check or Firestore rules allow a web client. The repository contains no Firebase SDK, provider project configuration or integration code.
+Use English throughout. Write small, readable modules and behavior-focused tests. Never publish credentials, real account identifiers, private exports, HAR files, APKs or vendor code. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
-Before implementing or publishing cloud integration, follow [docs/FIREBASE_POC.md](docs/FIREBASE_POC.md) and resolve the questions in [docs/TERMS_REVIEW.md](docs/TERMS_REVIEW.md). A successful login is not permission to distribute an integration. Do not change or bypass provider restrictions.
-
-Never commit passwords, session/refresh tokens, user IDs tied to actual accounts, personal details, user exports, HAR files, service accounts, proprietary APKs or copied vendor code. All future test fixtures must be created synthetically.
-
-## Continue in Codex
-
-Open the repository folder as the local project and begin with `AGENTS.md`, `PLAN.md` and `ARCHITECTURE.md`. The next conversation is an architecture discussion, not automatic implementation of the earlier proposal. See [docs/CODEX_HANDOFF.md](docs/CODEX_HANDOFF.md).
-
-## License and contributions
-
-The original source and documentation in this repository use the [MIT License](LICENSE). This license grants no rights to Caldwell/AOB software, services, data or trademarks. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
+Original project code and documentation use the [MIT License](LICENSE). This grants no rights to Caldwell/AOB services, software, data or trademarks.

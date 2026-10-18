@@ -1,31 +1,26 @@
 # Continue in Codex
 
-Open `C:\dev\VelociTrack` as the local project. The repository remote is intended to be `https://github.com/tony2kk/velocitrack`. Git metadata is the source of truth for whether it is configured and pushed.
+Open `C:\dev\VelociTrack`. Remote: `https://github.com/tony2kk/velocitrack`. Check Git to distinguish local MVP work from published infrastructure.
 
-Read `AGENTS.md`, `PLAN.md`, `ARCHITECTURE.md` and `README.md`. These documents carry the relevant context without importing the original ChatGPT transcript or private attachments. Codex reads project guidance through [AGENTS.md](https://learn.chatgpt.com/docs/agent-configuration/agents-md).
+Read `AGENTS.md`, `PLAN.md`, `ARCHITECTURE.md`, `docs/decisions/001-local-first-mvp.md` and `docs/VERIFICATION.md`.
 
-Suggested first prompt:
+## Accepted scope
 
-> Read the project guidance and discuss VelociTrack's architecture with me. For now, do not implement features or add libraries. Help us agree on the first user workflow, data contracts, storage/offline needs and whether cloud connectivity is a prerequisite. Treat React/TypeScript/Vite as the provisional scaffold, not a final architecture. Record decisions only after we agree.
+- VelociTrack; English UI, documentation and code comments.
+- All measurements, catalogs, source settings, profile and filters remain local. No backend.
+- React/TypeScript/Vite, Dexie, ECharts and a static PWA shell.
+- Local VelociRadar JSON/CSV first. Browser Firebase access and distribution rights remain unresolved.
+- Shared catalogs with per-source auto-updates; missing references reject the whole source import when disabled.
+- Refresh all enabled sources independent of filters. File adapters require reselection; startup marks sources awaiting files.
+- Local annotations are separate. Typed-field editing and cross-source mapping are later work.
+- Units/atmosphere are unvalidated; no weapon configuration or ammunition optimization.
 
-## Preserved context
+The study is not production code. Never copy private exports, APKs or provider configuration into the project. Synthetic tests are invented from scratch. Owner-provided branding lives in `public/brand/`; the ZIP is excluded.
 
-- The project is called **VelociTrack**; repository slug **velocitrack**.
-- The earlier work was an introductory study, not source to migrate.
-- Its read-only Python exporter reportedly worked against the user's own account. It is not included or required by this project.
-- A browser-only Firebase PoC has **not** been performed. The owner has not prepared permitted web configuration or credentials for it.
-- CSV/JSON, PWA, ECharts, Dexie and Firebase were previously considered, but the owner explicitly wants the architecture discussion first.
-- Provider data units and atmosphere have not been validated.
-- The repository contains infrastructure only. The placeholder does not imply application functionality.
+## Working practices
 
-## Local commands
+Use `npm.cmd` in PowerShell when required. `npm run verify` checks types, lint, formatting, tests, build and public-content patterns. TypeScript 6 is pinned for supported lint integration; do not bypass peer compatibility checks.
 
-```powershell
-Set-Location C:\dev\VelociTrack
-git status
-npm.cmd ci
-npm.cmd run verify
-npm.cmd run dev
-```
+`npm run dev` serves development. Build then preview for PWA/offline checks. Storage is origin-specific: a different port/host means a different workspace. Never embed user settings in source/build configuration.
 
-This chat does not need to be copied into the repository. Do not create an extra Codex chat automatically; the owner can open the folder in the project they choose.
+The owner authorized an ongoing workflow on 2026-10-18: continue on `main`, verify and review each completed functional batch, then commit and push it to `origin/main`. Do not request repeat approval for these ordinary batches. Confirm the remote result instead of assuming local work is published. Pages deployment still requires a separate instruction, and cloud integration must pass its feasibility/terms gate before publication.

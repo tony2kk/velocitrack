@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-Agree on architecture scope first. Obtain configuration the owner is permitted to use for a web client and establish the relevant service terms. A customer account does not confer administrative access to the provider's Firebase project. The earlier Python exporter is not evidence that a browser client is supported.
+The accepted MVP uses local files; cloud access remains a separate feasibility task. Obtain configuration the owner is permitted to use for a web client and establish the relevant service terms. A customer account does not confer administrative access to the provider's Firebase project. The earlier Python exporter is not evidence that a browser client is supported.
 
 Firebase client keys identify a project; access control depends on rules and other controls. An Android client key may have incompatible restrictions. Do not extract and publish provider configuration or treat visibility of a key as permission. See [Firebase API keys](https://firebase.google.com/docs/projects/api-keys).
 
@@ -19,7 +19,7 @@ Firebase client keys identify a project; access control depends on rules and oth
 7. Sign out and dispose of the SDK instance on both success and failure. Verify local/session storage, IndexedDB and caches contain no test credentials or records.
 8. Test the intended hosted origin only after publication is authorized. Loopback success is not evidence of GitHub Pages compatibility.
 
-[Firebase persistence](https://firebase.google.com/docs/auth/web/auth-state-persistence) distinguishes memory, session and persistent state. Future application defaults and any “remember me” option still need a design decision. Passwords must not be stored by application code.
+[Firebase persistence](https://firebase.google.com/docs/auth/web/auth-state-persistence) distinguishes memory, session and persistent state. The accepted application policy defaults to memory; a future persistent SDK session requires local opt-in. The profile currently stores this preference only. Passwords must not be stored by application code.
 
 ## What to distinguish
 

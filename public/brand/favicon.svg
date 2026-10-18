@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="VelociTrack icon">
+  <defs>
+    <linearGradient id="vGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#d9dee6"/>
+    </linearGradient>
+    <style>
+      .outline { stroke: #04183a; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+
+  <!-- Crosshair ring -->
+  <path d="M115 160 A175 175 0 0 1 256 85" fill="none" stroke="#04183a" stroke-width="30" stroke-linecap="round"/>
+  <path d="M115 160 A175 175 0 0 1 256 85" fill="none" stroke="#ff6a00" stroke-width="18" stroke-linecap="round"/>
+
+  <path d="M285 85 A175 175 0 0 1 397 140" fill="none" stroke="#04183a" stroke-width="30" stroke-linecap="round"/>
+  <path d="M285 85 A175 175 0 0 1 397 140" fill="none" stroke="#ff6a00" stroke-width="18" stroke-linecap="round"/>
+
+  <path d="M415 190 A175 175 0 0 1 428 256" fill="none" stroke="#04183a" stroke-width="30" stroke-linecap="round"/>
+  <path d="M415 190 A175 175 0 0 1 428 256" fill="none" stroke="#ff6a00" stroke-width="18" stroke-linecap="round"/>
+
+  <path d="M417 280 A175 175 0 0 1 285 428" fill="none" stroke="#04183a" stroke-width="30" stroke-linecap="round"/>
+  <path d="M417 280 A175 175 0 0 1 285 428" fill="none" stroke="#ff6a00" stroke-width="18" stroke-linecap="round"/>
+
+  <path d="M256 428 A175 175 0 0 1 120 317" fill="none" stroke="#04183a" stroke-width="30" stroke-linecap="round"/>
+  <path d="M256 428 A175 175 0 0 1 120 317" fill="none" stroke="#ff6a00" stroke-width="18" stroke-linecap="round"/>
+
+  <path d="M95 256 A175 175 0 0 1 105 205" fill="none" stroke="#04183a" stroke-width="30" stroke-linecap="round"/>
+  <path d="M95 256 A175 175 0 0 1 105 205" fill="none" stroke="#ff6a00" stroke-width="18" stroke-linecap="round"/>
+
+  <!-- Crosshair ticks -->
+  <rect x="235" y="40" width="42" height="65" rx="8" fill="#ff6a00" stroke="#04183a" stroke-width="12"/>
+  <rect x="235" y="407" width="42" height="65" rx="8" fill="#ff6a00" stroke="#04183a" stroke-width="12"/>
+  <rect x="40" y="235" width="65" height="42" rx="8" fill="#ff6a00" stroke="#04183a" stroke-width="12"/>
+  <rect x="407" y="235" width="65" height="42" rx="8" fill="#ff6a00" stroke="#04183a" stroke-width="12"/>
+
+  <!-- V letter -->
+  <path d="M80 130 L160 130 L256 315 L352 130 L432 130 L256 450 Z" fill="url(#vGrad)" stroke="#04183a" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M150 142 L205 142 L256 245 L307 142 L362 142 L256 405 Z" fill="#ffffff" opacity="0.55"/>
+
+  <!-- Orange swoosh -->
+  <path d="M118 334 C120 280 190 230 295 195 C354 175 390 166 424 160" fill="none" stroke="#04183a" stroke-width="36" stroke-linecap="round"/>
+  <path d="M118 334 C120 280 190 230 295 195 C354 175 390 166 424 160" fill="none" stroke="#ff6a00" stroke-width="20" stroke-linecap="round"/>
+
+  <!-- White swoosh -->
+  <path d="M142 280 C188 240 250 205 318 183 C365 168 400 160 436 156" fill="none" stroke="#04183a" stroke-width="24" stroke-linecap="round"/>
+  <path d="M142 280 C188 240 250 205 318 183 C365 168 400 160 436 156" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round"/>
+
+  <!-- Bullet -->
+  <path d="M376 131 C422 124 463 122 495 136 C472 160 442 175 396 182 C391 167 388 146 376 131 Z" fill="#f8f9fb" stroke="#04183a" stroke-width="12" stroke-linejoin="round"/>
+  <line x1="408" y1="134" x2="417" y2="179" stroke="#04183a" stroke-width="10"/>
+  <line x1="423" y1="132" x2="432" y2="176" stroke="#04183a" stroke-width="10"/>
+</svg>

@@ -1,45 +1,57 @@
-# Architecture discussion
+# Architecture
 
-**Status: not decided.** The owner requested repository/infrastructure preparation first. Do not treat this document or the original study as approval to implement an architecture.
+The owner approved a local-first MVP on 2026-10-18; see [decision 001](docs/decisions/001-local-first-mvp.md). The feasibility project is not reused.
 
-## Current implementation
+## Runtime and ownership
 
-A static React page is compiled by TypeScript/Vite. GitHub Actions validates source and can publish `dist/` through a manually invoked Pages workflow. There is no domain model, persistence layer, API adapter, PWA or data flow to preserve yet.
+React/TypeScript compile through Vite to static assets. Dexie manages IndexedDB and ECharts renders recorded measurements. The PWA precaches build assets only. GitHub Pages is a static host, with no backend or user-data storage.
 
-The initial tooling follows the previous discussion and is replaceable. No product dependency on ECharts, Dexie or Firebase has been introduced.
+Every measurement and user setting belongs to the local browser, never the source tree, build or host. Storage is origin/profile-specific. No telemetry, external font requests, runtime CDN or authentication flow exists.
 
-## Constraints brought into the discussion
+```mermaid
+flowchart LR
+  Files[Local files] --> Parser[Validate JSON / CSV]
+  Parser --> Import[Atomic source import]
+  Import --> Catalog[Resolve local catalogs]
+  Catalog --> IDB[(Browser IndexedDB)]
+  Profile[Profile and filters] --> IDB
+  IDB --> View[Filtered series / shots]
+  View --> Chart[Charts and table]
+```
 
-- Public, unofficial open-source project; Windows is the primary user platform.
-- End users should not need an EXE or Python installation.
-- Analyze lawfully obtained user measurements; preserve provenance and uncertainty.
-- Do not expose private exports or authentication data through the repository.
-- Cloud access, if implemented, must respect the provider's permissions and terms.
-- The earlier study is evidence to examine, not production code to reuse.
+## Import and identity
 
-## Decisions to make together
+File reads/parsing finish before an IndexedDB transaction. One transaction resolves catalog references, upserts the source's series/shots and marks success. Any failure rolls it back. Failure status is saved separately while retaining last success. Refresh spans all enabled sources independently of filters; the file adapter asks for current files and never makes network requests.
 
-| Topic | Questions and candidate approaches |
+| Entity | Responsibility |
 | --- | --- |
-| First useful workflow | Import an export, inspect one series, compare series, or synchronize? Which comes first? |
-| Delivery | Hosted browser app only, installable PWA, or another workflow? Is opening a downloaded ZIP a requirement? |
-| Offline scope | Which screens and datasets must work offline? What constitutes a reliable backup? |
-| Import contract | Which JSON/CSV variants are accepted? Whole export vs normalized project format? What stays raw? |
-| Measurement semantics | How are unit enums, distance origin, velocity units, padding, exclusions and atmosphere verified? |
-| Data ownership | Separate imports, merge by source identity, or snapshots? How are corrections and duplicates represented? |
-| Storage | IndexedDB/Dexie is a candidate. Migration, backup/restore, deletion and quota behavior need a design. |
-| Visualization | ECharts is a candidate. Agree on necessary graphs before choosing data structures. |
-| Authentication | Is a browser client permitted and technically supported? Default persistence and shared-device behavior? |
-| Synchronization | Explicit one-shot read, partial retry, limits and user scoping; no writes to provider data. |
-| Branding and audience | Language, intended audience and clear unofficial identity. |
-| Testing | Parser/statistics fixtures first; storage/browser tests when those features exist. |
+| DataSource | Local name, adapter, enabled flag, catalog policy and refresh status |
+| Series | Source-scoped identity, date, name, catalog links, raw record |
+| Shot | Series-scoped identity, measured values, raw unit code, exclusion, raw record |
+| CatalogItem | Shared firearm/projectile name, source links and naming provenance |
+| Annotation | Separate local notes and typed fields, protected from refresh |
+| Profile | Local singleton nickname, preferences and filters |
 
-## Known data hints, not a schema contract
+Composite IDs encode tuples as JSON. Provider IDs are always source-scoped. Reimport updates existing identities and retains records absent from subsequent files: cumulative upserts, not inferred deletions.
 
-The study described `Users/{uid}/Strings/{id}/Shots/{id}` and shot fields `muzzleVelocity`, `ballisticCoefficientG1`, `ballisticCoefficientG7`, `velocities[]`, `distances[]` and an exclusion flag. Some paired zeros appear to be padding. The provider format is undocumented here and may change.
+Catalog resolution uses `(sourceId, remoteId)` first. A unique unlinked manual name can satisfy a new reference. Otherwise the source policy either creates it or fails with the missing name. Different sources are not merged by name. Automatic updates may rename source-managed entries; manual edits remove source-managed naming ownership. Source removal atomically deletes its measurements/annotations and catalog links, clears its saved source filter and retains catalog names.
 
-Do not infer physical units from numeric magnitude or enum values. A zero distance with positive velocity may be a valid point. Preserve raw arrays when a future importer is designed, and define how unequal lengths and invalid values are handled. Atmosphere and unit interpretation require a separate validation exercise.
+Raw records stay local. No units or atmosphere are invented. Views omit paired zero padding and invalid points while reporting counts; arrays keep original order/length. Combined charts/statistics require one source/raw-unit group, a provisional assumption rather than physical-unit validation.
 
-## How decisions will be recorded
+Typed custom values have text, number, boolean, date and choice variants. Annotation storage is ready for future editing without refresh overwrites. Field definitions, applicability, validation/migrations and editing UI remain later work.
 
-After discussion, add a short dated decision describing the chosen approach, alternatives considered, evidence and consequences. Only then create domain modules and dependencies. Until that point, the repository deliberately contains a small infrastructure scaffold.
+## UI and persistence
+
+Dexie live queries expose changes to React. Filters combine OR within a list and AND across lists; manual ranges include entire local dates. Relative dates stay relative. Comparison selection is transient. Native dialogs contain focus and support Escape; charts have a table alternative and canvas-text tooltips rather than imported HTML.
+
+Desktop places series beside analysis; mobile places a horizontal series selector above it. Use system fonts, visible focus, reduced motion and local branding assets.
+
+Schema version 1 includes sources, catalog, series, shots, profiles and annotations. Add explicit migrations when changing schemas; never reset user data for convenience. Backup/restore and quota handling are follow-up work. Clearing browser data or eviction can remove content; retain original exports.
+
+Production service-worker updates ask for a reload. Only compiled assets are cached; no runtime request cache exists. First use needs a successful asset cache online or via a local server. Local content is not separately encrypted by the application.
+
+## Extension boundaries
+
+Add adapters behind the validated import contract. Keep provider/auth calls outside view components. Cloud access must first pass the permitted browser-only PoC and terms gate. Future auth defaults to memory; remembered SDK sessions require local opt-in. Never persist passwords or add a credential proxy.
+
+Introduce mapping, custom fields, tools/charts/reports as small modules when their first workflow is agreed. A generic plugin framework is unnecessary for this MVP.

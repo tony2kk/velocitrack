@@ -1,6 +1,6 @@
 # Contributing
 
-VelociTrack is currently at the repository-foundation stage. Discuss architecture and the first useful workflow before introducing product features or libraries.
+VelociTrack has a local-first measurement MVP. Read the architecture decision before extending it. Discuss workflows or dependencies that change its scope. UI, documentation and comments are English; keep modules readable and automatically formatted.
 
 1. Use Node 22.12+ and run `npm ci`.
 2. Make a focused change on a branch.

@@ -1,6 +1,8 @@
 # Security and privacy
 
-There is no cloud connection, telemetry, credentials flow or measurement storage in the current scaffold.
+Measurements and all user settings live in local browser IndexedDB. No cloud connection, telemetry, credentials flow or backend exists. Imported files are never uploaded. Production caches contain static assets only.
+
+Local storage is not separately encrypted and belongs to the browser profile/origin. Clearing site data or eviction can remove content. Keep original exports. Future remembered provider sessions require local opt-in; never persist passwords.
 
 Do not post vulnerabilities containing credentials or private measurements in public issues. If the repository's private vulnerability-reporting feature is enabled, use it. Otherwise first ask the maintainer for a private reporting channel without disclosing sensitive details. No private reporting feature is assumed to be enabled by this document.
 
