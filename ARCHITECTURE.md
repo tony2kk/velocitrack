@@ -49,7 +49,7 @@ Desktop places series beside analysis; mobile places a horizontal series selecto
 
 Schema version 1 includes sources, catalog, series, shots, profiles and annotations. Add explicit migrations when changing schemas; never reset user data for convenience. Backup/restore and quota handling are follow-up work. Clearing browser data or eviction can remove content; retain original exports.
 
-Production service-worker updates ask for a reload. Only compiled assets are cached; no runtime request cache exists. First use needs a successful asset cache online or via a local server. Local content is not separately encrypted by the application.
+Production service-worker updates ask for a reload. Each tab reloads only after its own explicit request. Reload activates the currently waiting worker and waits for activation or a controller change; a stale prompt reloads normally when another tab has already activated the update. A bounded wait reports failures and allows retry. This flow does not clear IndexedDB or browser storage. Only compiled assets are cached; no runtime request cache exists. First use needs a successful asset cache online or via a local server. Local content is not separately encrypted by the application.
 
 ## Extension boundaries
 

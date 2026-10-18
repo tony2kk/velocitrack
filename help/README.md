@@ -161,6 +161,8 @@ Measurements and settings belong to this browser profile and site address. Chang
 
 After its assets are cached, the application shell and imported measurements work offline. Online refresh and GitHub-hosted help require a connection. Updates offer a reload prompt. Reloading ends in-memory sign-in, so finish an active import before accepting an update.
 
+**Reload** activates the downloaded update and reopens this tab. Other open tabs keep their current view until you choose Reload there. Saved measurements and profile settings stay on the device. The button shows **Reloading…** while the update activates; if it cannot finish, a message lets you retry. If an older version's Reload button appears unresponsive, refresh the browser tab once to pick up the corrected update handling. Do not clear site data.
+
 ## Measurement interpretation
 
 Units, atmospheric metadata and distance origin remain unvalidated. Treat raw unit codes as labels, not proof of m/s, fps, metres or feet. No physical conversions or trajectory predictions are made.
