@@ -3,7 +3,8 @@ import { init, use as registerCharts, type EChartsType } from 'echarts/core';
 import { LineChart } from 'echarts/charts';
 import { AriaComponent, GridComponent, DataZoomComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
-import type { Series, Shot } from '../domain/model';
+import type { Series, Shot, UnitSystem } from '../domain/model';
+import { formatValue, unitLabels } from '../domain/units';
 import {
   buildChartTraces,
   findShotTargets,
@@ -22,12 +23,14 @@ export default function MeasurementChart({
   mode,
   activeShotId,
   onHoverShot,
+  unitSystem = 'imperial',
 }: {
   shots: Shot[];
   series: Series[];
   mode: ChartMode;
   activeShotId: string | null;
   onHoverShot: (id: string | null) => void;
+  unitSystem?: UnitSystem;
 }) {
   const element = useRef<HTMLDivElement>(null);
   const instance = useRef<EChartsType | null>(null);
@@ -37,7 +40,10 @@ export default function MeasurementChart({
     left: number;
     top: number;
   } | null>(null);
-  const traces = useMemo(() => buildChartTraces(shots, series, mode), [shots, series, mode]);
+  const traces = useMemo(
+    () => buildChartTraces(shots, series, mode, unitSystem),
+    [shots, series, mode, unitSystem],
+  );
   useEffect(() => {
     if (!element.current) return;
     const chart = init(element.current);
@@ -47,33 +53,51 @@ export default function MeasurementChart({
       aria: {
         enabled: true,
         label: {
-          description:
-            'Recorded measurements. Physical units are unverified. An accessible shot table is available using the Table button.',
+          description: `Recorded measurements in ${unitLabels[unitSystem].velocity} and ${unitLabels[unitSystem].distance}. An accessible shot table is available using the Table button.`,
         },
       },
       textStyle: { fontFamily: 'system-ui, sans-serif', color: '#63716e' },
-      grid: { left: 64, right: 30, top: 32, bottom: 75 },
+      grid: { left: 64, right: 64, top: 32, bottom: 75 },
       xAxis: {
         type: 'value',
-        name: mode === 'distance' ? 'Distance · raw value' : 'Shot number',
+        name: mode === 'distance' ? `Distance (${unitLabels[unitSystem].distance})` : 'Shot number',
         nameLocation: 'middle',
         nameGap: 32,
         minInterval: mode === 'shot' ? 1 : undefined,
         axisLine: { lineStyle: { color: '#dae3df' } },
         splitLine: { show: false },
+        axisLabel: { formatter: (value: number) => formatValue(value, 2) },
       },
       yAxis: {
         type: 'value',
-        name: 'Velocity · raw value',
+        name: `Velocity (${unitLabels[unitSystem].velocity})`,
         scale: true,
         splitLine: { lineStyle: { color: '#edf1ef' } },
+        axisLabel: { formatter: (value: number) => formatValue(value, 2) },
       },
       dataZoom: [
-        { type: 'inside', filterMode: 'none' },
+        { type: 'inside', xAxisIndex: 0, filterMode: 'none' },
         {
+          id: 'distance-zoom',
           type: 'slider',
+          xAxisIndex: 0,
+          filterMode: 'none',
           height: 14,
           bottom: 6,
+          borderColor: 'transparent',
+          fillerColor: '#0c817622',
+        },
+        {
+          id: 'velocity-zoom',
+          type: 'slider',
+          orient: 'vertical',
+          yAxisIndex: 0,
+          // Zoom clips the viewport without deleting samples or changing linked shot identities.
+          filterMode: 'none',
+          width: 14,
+          right: 8,
+          top: 32,
+          bottom: 75,
           borderColor: 'transparent',
           fillerColor: '#0c817622',
         },
@@ -154,6 +178,7 @@ export default function MeasurementChart({
     chart.on('click', hoverPoint);
     chart.on('mouseout', leavePoint);
     chart.on('globalout', leavePoint);
+    chart.on('datazoom', leavePoint);
     const observer = new ResizeObserver(() => chart.resize());
     observer.observe(element.current);
     return () => {
@@ -161,7 +186,7 @@ export default function MeasurementChart({
       chart.dispose();
       instance.current = null;
     };
-  }, [traces, mode, onHoverShot]);
+  }, [traces, mode, onHoverShot, unitSystem]);
 
   useEffect(() => {
     const chart = instance.current;

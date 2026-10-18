@@ -18,6 +18,8 @@ export function ProfileDialog({
   const [nickname, setNickname] = useState(profile.nickname);
   const [remember, setRemember] = useState(profile.rememberSignIn);
   const [refresh, setRefresh] = useState(profile.refreshOnStart);
+  const [unitSystem, setUnitSystem] = useState(profile.unitSystem ?? 'imperial');
+  const [shotDetail, setShotDetail] = useState(profile.shotDetail ?? 'muzzleVelocity');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   return (
@@ -49,6 +51,8 @@ export function ProfileDialog({
               nickname: nickname.trim(),
               rememberSignIn: remember,
               refreshOnStart: refresh,
+              unitSystem,
+              shotDetail,
             });
             onClose();
           } catch {
@@ -69,6 +73,29 @@ export function ProfileDialog({
             maxLength={60}
             placeholder="How should we call you?"
           />
+        </label>
+        <label className="field">
+          Units
+          <select
+            value={unitSystem}
+            onChange={(event) => setUnitSystem(event.target.value as typeof unitSystem)}
+          >
+            <option value="imperial">Imperial — ft/s, ft, °F</option>
+            <option value="metric">Metric — m/s, m, °C</option>
+          </select>
+          <small>Applies throughout the workspace. Original measurements stay unchanged.</small>
+        </label>
+        <label className="field">
+          Shot detail
+          <select
+            value={shotDetail}
+            onChange={(event) => setShotDetail(event.target.value as typeof shotDetail)}
+          >
+            <option value="muzzleVelocity">Muzzle velocity</option>
+            <option value="g1">G1</option>
+            <option value="g7">G7</option>
+          </select>
+          <small>The value shown beside each shot in the series list.</small>
         </label>
         <label className="check-field">
           <input

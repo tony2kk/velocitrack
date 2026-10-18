@@ -249,6 +249,8 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
             activeShotId={activeShotId}
             catalogNames={catalogNames}
             sourceNames={sourceNames}
+            unitSystem={profile.unitSystem}
+            shotDetail={profile.shotDetail}
             onToggleSeries={(id, checked) =>
               setSelected((current) =>
                 checked ? [...current, id] : current.filter((value) => value !== id),
@@ -284,6 +286,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           view={view}
           activeShotId={activeShotId}
           onHoverShot={setActiveShotId}
+          unitSystem={profile.unitSystem}
         />
       </main>
       <footer className="app-footer">

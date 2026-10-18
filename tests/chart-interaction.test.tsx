@@ -40,6 +40,42 @@ afterEach(() => {
 });
 
 describe('chart hover bridge', () => {
+  it('zooms each axis independently without filtering samples, and clears obsolete point details', () => {
+    render(
+      <MeasurementChart
+        shots={[shot({ distances: [0, 100], velocities: [1000, 900] })]}
+        series={[series()]}
+        mode="distance"
+        activeShotId={null}
+        onHoverShot={vi.fn()}
+        unitSystem="metric"
+      />,
+    );
+    const options = chart.setOption.mock.calls[0]![0];
+    expect(options.xAxis.name).toBe('Distance (m)');
+    expect(options.yAxis.name).toBe('Velocity (m/s)');
+    expect(options.dataZoom).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'slider', xAxisIndex: 0, filterMode: 'none' }),
+        expect.objectContaining({
+          type: 'slider',
+          orient: 'vertical',
+          yAxisIndex: 0,
+          filterMode: 'none',
+        }),
+      ]),
+    );
+    act(() =>
+      chart.on.mock.calls.find(([name]) => name === 'mouseover')![1]({
+        seriesIndex: 0,
+        dataIndex: 1,
+      }),
+    );
+    expect(screen.getByRole('tooltip').textContent).toContain('Distance: 30.48 m');
+    act(() => chart.on.mock.calls.find(([name]) => name === 'datazoom')![1]());
+    expect(screen.queryByRole('tooltip')).toBeNull();
+    expect(chart.init).toHaveBeenCalledTimes(1);
+  });
   it('emphasizes a linked trace without recreating the chart, then clears it', () => {
     const props = {
       shots: [shot({ distances: [0], velocities: [300] })],
@@ -83,7 +119,7 @@ describe('chart hover bridge', () => {
       act(() => enter({ seriesIndex: 1, dataIndex: 0 }));
       expect(onHoverShot).toHaveBeenLastCalledWith('two');
       expect(screen.getByRole('tooltip').textContent).toContain(
-        mode === 'distance' ? 'Velocity: 310 (raw)' : 'Velocity: 10 (raw)',
+        mode === 'distance' ? 'Velocity: 310 ft/s' : 'Velocity: 10 ft/s',
       );
       act(() => chart.on.mock.calls.find(([name]) => name === 'globalout')![1]());
       expect(onHoverShot).toHaveBeenLastCalledWith(null);

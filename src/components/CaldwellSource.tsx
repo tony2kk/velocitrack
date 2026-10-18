@@ -7,6 +7,7 @@ import { refreshCaldwell } from '../sources/refresh';
 import { connectionError } from '../sources/caldwell/errors';
 import { getSession } from '../sources/caldwell/session';
 import { prepareCaldwellSource } from '../sources/caldwell/setup';
+import { importMessage } from '../sources/feedback';
 
 /** Manage one source's local setup, SDK sign-in state and explicit read-only import actions. */
 export default function CaldwellSource({
@@ -55,7 +56,7 @@ export default function CaldwellSource({
     try {
       const counts = await attempt;
       setEmail('');
-      onMessage(`${source.name}: ${counts.series} series and ${counts.shots} shots imported.`);
+      onMessage(importMessage(source.name, counts));
     } catch (error) {
       setError(connectionError(error).message);
     } finally {

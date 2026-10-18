@@ -1,5 +1,6 @@
-import type { Series, Shot } from './model';
+import type { Series, Shot, UnitSystem } from './model';
 import { inspectPoints } from './measurements';
+import { displayValue, formatValue, unitLabels } from './units';
 
 export type ChartMode = 'distance' | 'shot';
 export const chartColors = ['#0c8176', '#5978c7', '#d38a36', '#ac6399', '#758b3c', '#607b91'];
@@ -11,6 +12,7 @@ export interface ChartPoint {
   shotNumber: number;
   seriesName: string;
   rawUnit: string;
+  unitSystem: UnitSystem;
   sampleIndex?: number;
 }
 
@@ -24,17 +26,26 @@ export interface ChartTrace {
 }
 
 /** Build identity-aware plotted values using the existing provider exclusion and padding rules. */
-export function buildChartTraces(shots: Shot[], series: Series[], mode: ChartMode): ChartTrace[] {
+export function buildChartTraces(
+  shots: Shot[],
+  series: Series[],
+  mode: ChartMode,
+  units: UnitSystem = 'imperial',
+): ChartTrace[] {
   const names = new Map(series.map((item) => [item.id, item.name]));
   const included = shots.filter((shot) => !shot.excluded);
   /** Attach UI identity independently of shot numbers, which may repeat across series. */
   function point(shot: Shot, value: [number, number], sampleIndex?: number): ChartPoint {
     return {
-      value,
+      value: [
+        mode === 'distance' ? displayValue(value[0], 'distance', units)! : value[0],
+        displayValue(value[1], 'velocity', units)!,
+      ],
       shotId: shot.id,
       shotNumber: shot.number,
       seriesName: names.get(shot.seriesId) ?? 'Series',
       rawUnit: shot.rawUnit,
+      unitSystem: units,
       sampleIndex,
     };
   }
@@ -71,15 +82,16 @@ export function buildChartTraces(shots: Shot[], series: Series[], mode: ChartMod
   }));
 }
 
-/** Describe one measured sample without inferred units or loss of original numeric precision. */
+/** Describe one measured sample in the chosen display units; its stored raw values remain unchanged. */
 export function formatPointTooltip(point: ChartPoint): string {
   const distance = point.sampleIndex !== undefined;
   return [
     point.seriesName,
     `Shot ${point.shotNumber}${distance ? ` · Sample ${point.sampleIndex! + 1}` : ''}`,
-    ...(distance ? [`Distance: ${point.value[0]} (raw)`] : []),
-    `Velocity: ${point.value[1]} (raw)`,
-    `Unit code: ${point.rawUnit} · unverified`,
+    ...(distance
+      ? [`Distance: ${formatValue(point.value[0])} ${unitLabels[point.unitSystem].distance}`]
+      : []),
+    `Velocity: ${formatValue(point.value[1])} ${unitLabels[point.unitSystem].velocity}`,
   ].join('\n');
 }
 

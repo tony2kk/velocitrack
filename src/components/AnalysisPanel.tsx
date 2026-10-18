@@ -1,29 +1,29 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { ArrowUpRight, ChartNoAxesCombined, Info } from 'lucide-react';
-import type { Series, Shot } from '../domain/model';
+import type { Series, Shot, UnitSystem } from '../domain/model';
 import { chartGroupsCompatible, inspectPoints, summarizeShots } from '../domain/measurements';
 import { chartColors } from '../domain/chart';
 import { ShotTable } from './ShotTable';
+import { displayValue, formatValue, unitLabels } from '../domain/units';
 
 // Keep the chart library out of the initial workspace load until a selection needs it.
 const MeasurementChart = lazy(() => import('./MeasurementChart'));
-/** Round summary cards for readability; the shot table renders original numeric precision. */
-const format = (value: number | null) =>
-  value === null ? '—' : value.toLocaleString('en-GB', { maximumFractionDigits: 2 });
 
-/** Present compatible summary statistics, recorded charts and a paginated raw-value table. */
+/** Present compatible statistics, charts and a paginated table in the profile's display units. */
 export function AnalysisPanel({
   series,
   shots,
   view,
   activeShotId,
   onHoverShot,
+  unitSystem = 'imperial',
 }: {
   series: Series[];
   shots: Shot[];
   view: 'chart' | 'table';
   activeShotId: string | null;
   onHoverShot: (id: string | null) => void;
+  unitSystem?: UnitSystem;
 }) {
   const [mode, setMode] = useState<'distance' | 'shot'>('distance');
   const summary = useMemo(() => summarizeShots(shots), [shots]);
@@ -82,15 +82,17 @@ export function AnalysisPanel({
       <div className="statistics">
         {[
           ['Included shots', summary.count],
-          ['Mean velocity', summary.mean],
-          ['Sample SD', summary.sd],
-          ['Extreme spread', summary.spread],
+          ['Mean velocity', displayValue(summary.mean, 'velocity', unitSystem)],
+          ['Sample SD', displayValue(summary.sd, 'velocity', unitSystem)],
+          ['Extreme spread', displayValue(summary.spread, 'velocity', unitSystem)],
         ].map(([label, value]) => (
           <div className="stat" key={label}>
             <span>{label}</span>
-            <strong>{format(value as number | null)}</strong>
+            <strong>{formatValue(value as number | null, 2)}</strong>
             <small>
-              {label === 'Included shots' ? 'Valid muzzle readings' : 'Raw units · unverified'}
+              {label === 'Included shots'
+                ? 'Valid muzzle readings'
+                : unitLabels[unitSystem].velocity}
             </small>
           </div>
         ))}
@@ -100,7 +102,7 @@ export function AnalysisPanel({
         <span>
           {summary.incompatible
             ? 'Combined statistics are unavailable across different sources or unit codes.'
-            : 'Physical units are not yet verified. Values are shown exactly as recorded; no unit conversion is applied.'}
+            : `Displaying ${unitLabels[unitSystem].velocity} and ${unitLabels[unitSystem].distance}. Original measurements are preserved.`}
         </span>
       </div>
       <div className="chart-panel">
@@ -115,7 +117,7 @@ export function AnalysisPanel({
             </h3>
             <p className="muted">
               {view === 'table'
-                ? 'Original values, including excluded shots'
+                ? 'Selected display units, including excluded shots'
                 : 'Measured points · no modeled trajectory'}
             </p>
           </div>
@@ -144,6 +146,7 @@ export function AnalysisPanel({
                   mode={mode}
                   activeShotId={activeShotId}
                   onHoverShot={onHoverShot}
+                  unitSystem={unitSystem}
                 />
               </Suspense>
               <div className="chart-legend">
@@ -182,6 +185,7 @@ export function AnalysisPanel({
             series={series}
             activeShotId={activeShotId}
             onHoverShot={onHoverShot}
+            unitSystem={unitSystem}
           />
         )}
       </div>
@@ -196,8 +200,8 @@ export function AnalysisPanel({
         </p>
         <p>
           Selected source-excluded shots are visible in the table and omitted from statistics and
-          charts. Standard deviation uses the sample formula (n − 1). Atmosphere and unit meanings
-          still need validation.
+          charts. Standard deviation uses the sample formula (n − 1). Source unit codes are retained
+          as metadata; display units follow your local profile.
         </p>
       </details>
     </section>

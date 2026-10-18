@@ -26,13 +26,15 @@ See `docs/VERIFICATION.md` for actual verification and remaining caveats. Local 
 
 The Caldwell source and full local application import are implemented and verified, including repeat refresh without duplicate records. Dedicated user help lives in `help/README.md`. Next, review the connected workflow with the owner.
 
-The owner is collecting requirements for a later batch. Do not begin these changes until explicitly instructed:
+The owner authorized the next batch on 2026-10-18 (decision 006):
 
-- Report only newly imported records in import notifications; show **No new data detected** when none were added.
-- Add a vertical chart zoom slider analogous to the existing horizontal slider.
+- [x] Report only newly imported records; show **No new data detected** when none were added.
+- [x] Add a vertical chart zoom slider alongside the horizontal slider.
+- [x] Persist Imperial/Metric display units in the local profile, defaulting to Imperial.
+- [x] Persist Muzzle velocity/G1/G7 as the navigation shot detail, defaulting to Muzzle velocity.
 
 1. Review the MVP workflow and appearance using local exports.
-2. Validate physical units, distance origin and atmosphere against reliable evidence.
+2. Validate provider enum meanings, distance origin and remaining atmosphere fields; the owner confirmed ft/s, ft and °F for the supported raw inputs.
 3. Design workspace backup/restore, quota handling and larger-dataset pagination.
 4. Define typed custom-field definitions, applicable entities and editor UX.
 5. Design explicit mapping/merging across source catalogs.

@@ -33,11 +33,11 @@ File reads and cloud downloads finish before an IndexedDB transaction. One trans
 | Annotation | Separate local notes and typed fields, protected from refresh |
 | Profile | Local singleton nickname, preferences and filters |
 
-Composite IDs encode tuples as JSON. Provider IDs are always source-scoped. Reimport updates existing identities and retains records absent from subsequent files: cumulative upserts, not inferred deletions.
+Composite IDs encode tuples as JSON. Provider IDs are always source-scoped. Reimport updates existing identities and retains records absent from subsequent files: cumulative upserts, not inferred deletions. Before upserts, the same write transaction checks incoming identities and counts only previously absent series/shots. Counts are returned after the transaction succeeds. Batch refresh reports the sum across successful sources and flags sources still needing attention; an unchanged last source cannot hide earlier new records.
 
 Catalog resolution uses `(sourceId, remoteId)` first. A unique unlinked manual name can satisfy a new reference. Otherwise the source policy either creates it or fails with the missing name. Different sources are not merged by name. Automatic updates may rename source-managed entries; manual edits remove source-managed naming ownership. Source removal atomically deletes its measurements/annotations and catalog links, clears its saved source filter and retains catalog names.
 
-Raw records stay local. No units or atmosphere are invented. Views omit paired zero padding and invalid points while reporting counts; arrays keep original order/length. Combined charts/statistics require one source/raw-unit group, a provisional assumption rather than physical-unit validation.
+Raw records stay local and unchanged in the supported adapters' ft/s, ft and °F input units, confirmed by the owner in decision 006. `domain/units.ts` converts only presentation values: metric length/speed multiply by exactly 0.3048; temperature uses `(F - 32) × 5/9`. Summary mean, SD and spread use the velocity factor. Charts, point details, table readings, navigation and unit labels use the profile preference. G1/G7 are unchanged coefficients. Source unit enum codes remain metadata; existing source/code comparison grouping stays in place. Views omit paired zero padding and invalid points while reporting counts; arrays keep original order/length. Other atmosphere semantics are not inferred.
 
 Typed custom values have text, number, boolean, date and choice variants. Annotation storage is ready for future editing without refresh overwrites. Field definitions, applicability, validation/migrations and editing UI remain later work.
 
@@ -47,7 +47,7 @@ Dexie live queries expose changes to React. Filters combine OR within a list and
 
 Per-source import jobs publish a stable external-store snapshot for centered progress. Both file and cloud imports clear it on success/failure. A toolbar batch keeps its progress dialog alive between sources and opens action-required source controls only after completion. Dismissing progress does not cancel work. Each notification object owns a ten-second timer, including identical repeated messages; unmount/replacement cancels the previous timer. See decision 004.
 
-Desktop places series beside analysis; mobile places a horizontal series selector above it. Use system fonts, visible focus, reduced motion and local branding assets.
+Desktop places series beside analysis; mobile places a horizontal series selector above it. The local profile chooses Imperial/Metric units and Muzzle velocity/G1/G7 navigation detail. Missing fields in older profiles receive defaults on read without resetting existing preferences or measurements. Display choices persist; transient shot selection is unaffected. Both charts offer horizontal and vertical sliders with explicit axis binding and `filterMode: none`; zoom changes only the visible range, never shot selection or statistical membership. Moving either slider clears stale point details. Use system fonts, visible focus, reduced motion and local branding assets.
 
 Schema version 1 includes sources, catalog, series, shots, profiles and annotations. Add explicit migrations when changing schemas; never reset user data for convenience. Backup/restore and quota handling are follow-up work. Clearing browser data or eviction can remove content; retain original exports.
 

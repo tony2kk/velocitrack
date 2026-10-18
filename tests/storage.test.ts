@@ -14,7 +14,7 @@ import {
 } from '../src/storage/workspace';
 import { parseVelociRadarExport } from '../src/sources/velociradar';
 import { syntheticExport } from './fixtures/synthetic';
-import { EMPTY_FILTERS, entityId } from '../src/domain/model';
+import { defaultProfile, EMPTY_FILTERS, entityId, type Profile } from '../src/domain/model';
 
 let database: WorkspaceDatabase;
 const bundle = () =>
@@ -29,6 +29,63 @@ afterEach(async () => {
 });
 
 describe('local transactions', () => {
+  it('counts only new identities while still updating existing measurements', async () => {
+    const source = createSource('New records', true);
+    await database.sources.add(source);
+    expect(await importBundle(source.id, bundle(), database)).toEqual({ series: 2, shots: 4 });
+    expect(await importBundle(source.id, bundle(), database)).toEqual({ series: 0, shots: 0 });
+    const update = bundle();
+    update.shots[0]!.muzzleVelocity = 999;
+    expect(await importBundle(source.id, update, database)).toEqual({ series: 0, shots: 0 });
+    expect(
+      (await database.shots.get(entityId(source.id, 'series-a', 'shot-a')))?.muzzleVelocity,
+    ).toBe(999);
+    update.shots.push({ ...update.shots[0]!, remoteId: 'new-shot' });
+    expect(await importBundle(source.id, update, database)).toEqual({ series: 0, shots: 1 });
+    expect(await importBundle(source.id, { series: [], shots: [] }, database)).toEqual({
+      series: 0,
+      shots: 0,
+    });
+  });
+
+  it('does not count the same identities twice during concurrent imports', async () => {
+    const source = createSource('Concurrent', true);
+    await database.sources.add(source);
+    const results = await Promise.all([
+      importBundle(source.id, bundle(), database),
+      importBundle(source.id, bundle(), database),
+    ]);
+    expect(results.reduce((sum, result) => sum + result.series, 0)).toBe(2);
+    expect(results.reduce((sum, result) => sum + result.shots, 0)).toBe(4);
+  });
+
+  it('defaults legacy profiles without resetting preferences and persists display choices across reopen', async () => {
+    const legacy: Partial<Profile> = {
+      ...defaultProfile(),
+      nickname: 'Legacy',
+      rememberSignIn: true,
+    };
+    delete legacy.unitSystem;
+    delete legacy.shotDetail;
+    // Model the stored shape created by older releases, before the new preference fields existed.
+    await database.profiles.put(legacy as Profile);
+    expect((await loadWorkspace(database)).profile).toMatchObject({
+      unitSystem: 'imperial',
+      shotDetail: 'muzzleVelocity',
+      nickname: 'Legacy',
+      rememberSignIn: true,
+    });
+    await saveProfile({ unitSystem: 'metric', shotDetail: 'g7' }, database);
+    const name = database.name;
+    database.close();
+    database = new WorkspaceDatabase(name);
+    expect((await loadWorkspace(database)).profile).toMatchObject({
+      unitSystem: 'metric',
+      shotDetail: 'g7',
+      nickname: 'Legacy',
+      rememberSignIn: true,
+    });
+  });
   it('does not mark an online source as awaiting files or import into a different bound account', async () => {
     const source = { ...createSource('Cloud', true, 'caldwell'), accountId: 'synthetic-owner' };
     await database.sources.add(source);

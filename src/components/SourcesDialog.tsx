@@ -12,6 +12,7 @@ import { db } from '../storage/database';
 import { createSource, recordImportFailure, removeSource } from '../storage/workspace';
 import { Modal } from './Modal';
 import { getRefreshingSources, refreshFiles, subscribeToRefresh } from '../sources/refresh';
+import { importMessage } from '../sources/feedback';
 
 const CaldwellSource = lazy(() => import('./CaldwellSource'));
 const sourceStatus = {
@@ -135,9 +136,7 @@ function SourceCard({
               try {
                 // Parse all selected files before the atomic storage transaction begins.
                 const result = await refreshFiles(source.id, files);
-                onMessage(
-                  `${source.name}: ${result.series} series and ${result.shots} shots imported.`,
-                );
+                onMessage(importMessage(source.name, result));
               } catch (error) {
                 const message =
                   error instanceof Error ? error.message : 'The import could not be completed.';

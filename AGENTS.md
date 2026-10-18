@@ -58,8 +58,11 @@ from the same origin, locally and on Pages. Never publish the contents of an ign
 local file wholesale. The public-content guard permits exactly the two shared metadata
 fields in the standard file and rejects extra fields. Do not add a credential proxy.
 
-Units and atmosphere remain unvalidated. Preserve uncertainty. A zero
-distance alone is not padding; paired `[0, 0]` handling needs explicit tests.
+The owner confirmed that the supported Caldwell/VelociRadar raw measurements use
+ft/s, ft and °F (decision 006). Preserve these values in storage and convert only for
+display using the local profile's Imperial/Metric preference. Provider unit enum codes
+remain metadata, not conversion instructions; other atmosphere fields remain unvalidated.
+A zero distance alone is not padding; paired `[0, 0]` handling needs explicit tests.
 Do not add weapon configuration or ammunition optimization features.
 
 ## Workflow and publishing

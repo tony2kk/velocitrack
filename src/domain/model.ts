@@ -3,8 +3,10 @@ export type CatalogKind = 'firearm' | 'projectile';
 export type SourceKind = 'velociradar-export' | 'caldwell';
 export type SourceStatus = 'ready' | 'needs-files' | 'needs-sign-in' | 'needs-setup' | 'error';
 export type RawRecord = Record<string, unknown>;
+export type UnitSystem = 'imperial' | 'metric';
+export type ShotDetail = 'muzzleVelocity' | 'g1' | 'g7';
 
-/** Connection settings belong only to this browser, never to the build. */
+/** Shared public service identifiers; user credentials and account bindings remain separate. */
 export interface CaldwellConnection {
   projectId: string;
   apiKey: string;
@@ -53,7 +55,7 @@ export interface Series {
   raw: RawRecord;
 }
 
-/** One recorded shot; rawUnit is an opaque provider code, not a validated physical unit. */
+/** One recorded shot in the adapter's imperial input units; rawUnit preserves provider metadata. */
 export interface Shot {
   id: string;
   sourceId: string;
@@ -102,6 +104,8 @@ export interface Profile {
   nickname: string;
   rememberSignIn: boolean;
   refreshOnStart: boolean;
+  unitSystem: UnitSystem;
+  shotDetail: ShotDetail;
   filters: Filters;
   /** Shared technical provider settings, never a password or an account token. */
   caldwellConnection?: CaldwellConnection;
@@ -124,6 +128,8 @@ export function defaultProfile(): Profile {
     nickname: '',
     rememberSignIn: false,
     refreshOnStart: false,
+    unitSystem: 'imperial',
+    shotDetail: 'muzzleVelocity',
     filters: structuredClone(EMPTY_FILTERS),
   };
 }

@@ -1,5 +1,17 @@
 import { useMemo } from 'react';
-import type { Series, Shot } from '../domain/model';
+import type { Series, Shot, ShotDetail, UnitSystem } from '../domain/model';
+import { displayValue, formatValue, unitLabels } from '../domain/units';
+
+const detailLabels = { muzzleVelocity: 'Muzzle velocity', g1: 'G1', g7: 'G7' };
+
+/** Select a recorded coefficient or display-unit muzzle reading without changing the shot. */
+function shotReading(shot: Shot, detail: ShotDetail, units: UnitSystem): string {
+  if (detail === 'muzzleVelocity')
+    return `${formatValue(displayValue(shot.muzzleVelocity, 'velocity', units), 2)} ${unitLabels[units].velocity}`;
+  return String(
+    (detail === 'g1' ? shot.ballisticCoefficientG1 : shot.ballisticCoefficientG7) ?? '—',
+  );
+}
 
 /** Expand selected series into independently selectable shots with shared pointer/keyboard emphasis. */
 export function SeriesNavigator({
@@ -13,6 +25,8 @@ export function SeriesNavigator({
   onToggleSeries,
   onToggleShot,
   onHoverShot,
+  unitSystem = 'imperial',
+  shotDetail = 'muzzleVelocity',
 }: {
   series: Series[];
   shots: Shot[];
@@ -24,6 +38,8 @@ export function SeriesNavigator({
   onToggleSeries: (id: string, checked: boolean) => void;
   onToggleShot: (id: string, checked: boolean) => void;
   onHoverShot: (id: string | null) => void;
+  unitSystem?: UnitSystem;
+  shotDetail?: ShotDetail;
 }) {
   const grouped = useMemo(() => {
     const groups = new Map<string, Shot[]>();
@@ -76,7 +92,7 @@ export function SeriesNavigator({
               <div className="shot-list" role="group" aria-label={`Shots in ${item.name}`}>
                 <p className="shot-selection-count">
                   {records.filter((shot) => !hiddenShots.has(shot.id)).length} / {records.length}{' '}
-                  selected
+                  selected · {detailLabels[shotDetail]}
                 </p>
                 {records.map((shot) => (
                   <label
@@ -97,8 +113,8 @@ export function SeriesNavigator({
                       Shot {shot.number}
                       {shot.excluded && <small>Source excluded</small>}
                     </span>
-                    <span className="shot-reading" title="Muzzle velocity · unverified raw units">
-                      {shot.muzzleVelocity ?? '—'}
+                    <span className="shot-reading" title={detailLabels[shotDetail]}>
+                      {shotReading(shot, shotDetail, unitSystem)}
                     </span>
                   </label>
                 ))}

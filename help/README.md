@@ -17,6 +17,8 @@ While data is loading, a centered progress dialog shows **Loading <source name>.
 
 Refresh updates matching records without adding duplicates. Measurements absent from a later import are retained. One source's failed refresh does not undo another source's successful refresh. A failed download, malformed input or missing catalog entry leaves previously imported measurements intact.
 
+Import notifications count **new series and new shots only**. A repeat import with no added records says **No new data detected**. Existing records can still be updated. A toolbar/startup refresh combines successful sources into one result and notes sources that still need attention.
+
 ### Caldwell
 
 This source signs in directly with Firebase for your Caldwell account and reads your own series and shots. There is no VelociTrack server or credential proxy, and the connector does not change or delete Caldwell cloud data.
@@ -66,7 +68,7 @@ For a non-empty pair, content identifies each collection. Empty paired arrays/fi
 
 #### Combined JSON example
 
-This example is invented, not an actual account export. Its numeric values do not assert physical units.
+This example is invented, not an actual account export. The import contract uses ft/s for velocities and ft for distances, independent of the display units chosen in your profile. Do not pre-convert exports to metric.
 
 ```json
 {
@@ -118,7 +120,7 @@ Names and IDs must be non-empty and at most 500 characters. The date filter uses
 | `muzzleVelocity` | Optional finite number or numeric string; blank/null means unavailable. |
 | `ballisticCoefficientG1`, `ballisticCoefficientG7` | Optional finite numbers or numeric strings; blank/null means unavailable. |
 | `distances`, `velocities` | Arrays of finite numbers, paired by index. Missing/blank/null arrays become empty. Empty/null elements inside an array are rejected. |
-| `unit` | Optional raw string/numeric code; missing becomes `unknown`. No conversion is performed. |
+| `unit` | Optional raw provider code; missing becomes `unknown`. Retained as metadata, not used as a display-unit selector. |
 | `exclude` | Optional boolean. Also accepts `1`, `0`, and strings `true`, `false`, `True`, `False`, `1`, `0`. Missing means false. |
 
 Each shot must contain at least `muzzleVelocity` or `velocities`, even if that value is unavailable. Duplicate IDs, orphan shots and invalid numeric fields reject the import. Each distance/velocity array may have up to 5,000 elements. The total point limit is 1,000,000, counting the longer array in each shot. Unequal array lengths are preserved and reported as data-quality issues.
@@ -153,13 +155,19 @@ Shot choices remain in page memory while you collapse/reselect series, change fi
 
 Hover over a shot in the navigation, table or chart to highlight the same shot in the other visible views. Keyboard focus on a shot checkbox/table row also highlights it. A hovered shot on a later table page is brought into view. Unchecked shots do not appear in the analysis, and the existing 100-trace chart limit still applies.
 
-Hover or tap a measured chart point to see its series, shot number, original sample number, distance and velocity. Values retain recorded precision; unit codes remain unverified. The tooltip reports an actual sample, never an interpolated value between points.
+Hover or tap a measured chart point to see its series, shot number, original sample number, distance and velocity in your selected units. Table and tooltip readings show up to six decimal places; stored values remain unchanged. The tooltip reports an actual sample, never an interpolated value between points.
+
+Use the bottom slider to zoom the distance/shot-number axis and the right slider to zoom velocity. Drag the range or either end handle. Both work in either chart mode. Zoom affects the visible range, not selected shots or summary statistics.
 
 ## Profile and offline use
 
 For troubleshooting, include the version shown in the footer, for example `v0.1.0 · abc1234`. It identifies the application currently loaded in the browser, including offline use. A `-dirty` suffix means a local build includes uncommitted changes; `local` means its source commit is unavailable. After accepting an app update, the footer identifies the newly loaded build.
 
 The profile icon opens your local nickname and startup/sign-in preferences. There is no VelociTrack server account. **Refresh all enabled sources after startup** refreshes signed-in online sources and marks file sources as awaiting files. Missing sign-in waits for you to open Sources.
+
+**Units** selects **Imperial — ft/s, ft, °F** (default) or **Metric — m/s, m, °C**. After **Save profile**, the workspace updates its chart axes/points/tooltips, shot table, summary statistics and navigation muzzle readings. The choice survives reopening the app. Original measurements are never converted in storage. Temperature conversion is defined for future atmosphere displays; no atmosphere panel is shown yet.
+
+**Shot detail** selects **Muzzle velocity** (default), **G1** or **G7** beside each shot in the left series list. Muzzle velocity follows your unit preference; coefficients are shown unchanged. Missing readings appear as **—**. This preference also persists and does not change which shots are selected.
 
 Measurements and settings belong to this browser profile and site address. Changing port, hostname or browser creates a separate workspace. Clearing site data or browser eviction can remove it. Keep your original exports; full workspace backup/restore is not yet available.
 
@@ -169,6 +177,6 @@ After its assets are cached, the application shell and imported measurements wor
 
 ## Measurement interpretation
 
-Units, atmospheric metadata and distance origin remain unvalidated. Treat raw unit codes as labels, not proof of m/s, fps, metres or feet. No physical conversions or trajectory predictions are made.
+The supported raw input contract is ft/s, ft and °F, based on the owner's confirmation. Metric display multiplies velocities/distances by exactly 0.3048 and converts temperature using `(F − 32) × 5/9`. Mean, sample SD and extreme spread use the velocity conversion too. G1/G7 coefficients are not converted. Provider enum meanings, remaining atmospheric metadata and distance origin still need validation; no trajectory predictions are made.
 
 Charts/statistics combine only one source/raw-unit group. Source-excluded shots remain in the table but do not enter charts or statistics. Positive finite muzzle readings contribute to the mean, sample standard deviation (`n − 1`) and extreme spread. Inspect **Data quality** for padding, invalid points and unequal arrays.

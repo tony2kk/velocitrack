@@ -6,6 +6,7 @@ import {
   type DataSource,
   type Profile,
   type Series,
+  type Shot,
   type SourceKind,
 } from '../domain/model';
 import type { ImportBundle, ImportedReference } from '../sources/velociradar';
@@ -18,7 +19,8 @@ export async function loadWorkspace(database = db) {
     catalog: await database.catalog.toArray(),
     series: await database.series.toArray(),
     shots: await database.shots.toArray(),
-    profile: (await database.profiles.get('local')) ?? defaultProfile(),
+    // Add defaults for older profiles without resetting their data, filters or consent.
+    profile: { ...defaultProfile(), ...(await database.profiles.get('local')) },
   }));
 }
 
@@ -27,7 +29,7 @@ export type Workspace = Awaited<ReturnType<typeof loadWorkspace>>;
 /** Merge top-level preferences atomically; callers provide complete nested filter objects. */
 export async function saveProfile(patch: Partial<Omit<Profile, 'id'>>, database = db) {
   await database.transaction('rw', database.profiles, async () => {
-    const current = (await database.profiles.get('local')) ?? defaultProfile();
+    const current = { ...defaultProfile(), ...(await database.profiles.get('local')) };
     await database.profiles.put({ ...current, ...patch, id: 'local' });
   });
 }
@@ -101,6 +103,7 @@ async function resolveCatalog(
  * Commit a validated source bundle and its catalog changes atomically.
  * Upserts preserve records absent from this download and never replace local annotations.
  * Connected imports recheck account binding inside the write transaction.
+ * Return counts of newly inserted identities; updates to existing records are not new imports.
  */
 export async function importBundle(
   sourceId: string,
@@ -109,7 +112,7 @@ export async function importBundle(
   expectedAccountId?: string,
 ) {
   const now = new Date().toISOString();
-  await database.transaction(
+  return database.transaction(
     'rw',
     [database.sources, database.catalog, database.series, database.shots],
     async () => {
@@ -140,33 +143,38 @@ export async function importBundle(
           ),
         });
       }
+      const shots: Shot[] = bundle.shots.map((shot) => ({
+        id: entityId(sourceId, shot.seriesRemoteId, shot.remoteId),
+        sourceId,
+        seriesId: entityId(sourceId, shot.seriesRemoteId),
+        remoteId: shot.remoteId,
+        number: shot.number,
+        muzzleVelocity: shot.muzzleVelocity,
+        ballisticCoefficientG1: shot.ballisticCoefficientG1,
+        ballisticCoefficientG7: shot.ballisticCoefficientG7,
+        distances: shot.distances,
+        velocities: shot.velocities,
+        excluded: shot.excluded,
+        rawUnit: shot.rawUnit,
+        raw: shot.raw,
+      }));
+      // Count identities before upserting, in the same transaction so concurrent imports cannot double-count.
+      const existingSeries = await database.series.bulkGet(series.map((item) => item.id));
+      const existingShots = await database.shots.bulkGet(shots.map((item) => item.id));
       await database.series.bulkPut(series);
-      await database.shots.bulkPut(
-        bundle.shots.map((shot) => ({
-          id: entityId(sourceId, shot.seriesRemoteId, shot.remoteId),
-          sourceId,
-          seriesId: entityId(sourceId, shot.seriesRemoteId),
-          remoteId: shot.remoteId,
-          number: shot.number,
-          muzzleVelocity: shot.muzzleVelocity,
-          ballisticCoefficientG1: shot.ballisticCoefficientG1,
-          ballisticCoefficientG7: shot.ballisticCoefficientG7,
-          distances: shot.distances,
-          velocities: shot.velocities,
-          excluded: shot.excluded,
-          rawUnit: shot.rawUnit,
-          raw: shot.raw,
-        })),
-      );
+      await database.shots.bulkPut(shots);
       await database.sources.update(sourceId, {
         status: 'ready',
         error: undefined,
         lastAttemptAt: now,
         lastSuccessAt: now,
       });
+      return {
+        series: existingSeries.filter((item) => item === undefined).length,
+        shots: existingShots.filter((item) => item === undefined).length,
+      };
     },
   );
-  return { series: bundle.series.length, shots: bundle.shots.length };
 }
 
 /** Record an unsuccessful attempt without losing previous data or the last successful timestamp. */

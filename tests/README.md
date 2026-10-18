@@ -11,5 +11,6 @@ Committed fixtures are invented from scratch. Tests never read personal exports 
 - `refresh.test.ts`: enabled-source coordination, in-flight deduplication, progress updates and cleanup after failures.
 - `caldwell-setup.test.ts`: identical standard source setup for local/hosted origins, profile reuse, preserved account bindings, bounded responses and safe failures.
 - `public-content.test.ts`: runs the publication guard in isolated temporary Git repositories, allowing only the standard two-field client metadata and rejecting extra fields or client keys elsewhere. All values are invented.
+- `units.test.ts` and `preferences.test.tsx`: conversion reference points, unchanged raw values, chart/tooltip/table/statistic consistency, navigation detail and local profile persistence. Storage tests cover legacy defaults and counting new identities under repeats/concurrent imports; feedback/refresh tests cover zero additions and multi-source aggregation. Chart bridge tests cover independently bound sliders and tooltip clearing on zoom.
 
 Run `npm test` or `npm run verify`. Empty suites fail. Browser testing is separate; see `docs/VERIFICATION.md`. Fake IndexedDB tests do not prove browser quota, migration or service-worker behavior.

@@ -69,7 +69,7 @@ These checks supplement the earlier live-import checks; they do not constitute a
 
 - General API restrictions/App Check configuration and server rule isolation. Local checks and the owner's successful hosted import do not prove these broader properties.
 - Provider permission and any app-specific terms remain unconfirmed. The owner approved publication after reviewing this uncertainty; see `TERMS_REVIEW.md`. This is a release decision, not a technical test result.
-- Physical unit codes, atmosphere and physical interpretation of provider values.
+- Provider unit-code enums and atmosphere semantics beyond the owner's confirmed ft/s, ft and °F input contract. The display conversion checks below do not establish a vendor specification.
 - Real-device installation across Safari/iOS/Android, browser eviction/quota behavior, and assistive-technology testing beyond the checks above.
 - Large-dataset stress tests, future schema migrations and full workspace backup/restore.
 
@@ -83,3 +83,12 @@ File parsing and IndexedDB tests do not replace these remaining checks. Any futu
 - The obsolete loopback helper and its eight boundary tests were removed. No backend or deployment secret is needed. The standard source file is copied by the ordinary build; existing measurements and source/account bindings are not migrated or cleared.
 - Version `0.2.1` (`41bb5bf`) passed both GitHub validation and Pages deployment. The published app's update prompt successfully activated it and the footer showed the expected version/revision. On that origin, adding a Caldwell source automatically reached **Sign-in needed** with the email/password form and no file picker or configuration fields. No credentials were entered during this setup check.
 - After being asked to sign in and import on the published `0.2.1` site, the owner confirmed that the import completed successfully on 2026-10-18. This is owner-reported end-to-end verification on the Pages origin, beyond the independently observed sign-in form. No record counts, account identifiers, credentials, tokens or measurement contents were collected. It does not establish persistent sign-in across browser restarts or unrestricted service access.
+
+## Display preferences, zoom and incremental feedback — 2026-10-18
+
+- Version `0.3.0` passed the full verification command: types, lint, formatting, **100 tests across 17 files**, production/PWA build and public-content guard. New tests cover unit conversion and missing values, chart coordinates/tooltips, profile defaults and persistence, navigation choices, table/statistics consistency, vertical zoom configuration, transactional new-record counts, concurrent imports and aggregate refresh feedback.
+- In an isolated production-preview origin using invented fixtures only, the initial profile displayed Imperial units and muzzle velocity. A 1000 ft/s reading became 304.8 m/s in the table; the mean of 1000 and 1010 ft/s displayed as 306.32 m/s. Both chart axes changed to the matching metric labels. G1 and G7 navigation choices showed the original coefficients, and the Metric/G1 profile survived a page reload.
+- Dragged the actual canvas sliders independently: vertical zoom narrowed the velocity range while retaining the distance range; horizontal zoom then narrowed distance while retaining the selected velocity range. Selected-shot counts and statistics remained unchanged. The canvas check supplements the mocked chart bridge tests.
+- The first file import reported two new series and four new shots. Reimporting the same fixture displayed **No new data detected**. Importing an extended fixture reported **1 new shot imported** and retained two series with five total shots.
+- Stored raw measurements remain unchanged by display preferences; automated tests cover this invariant. Fahrenheit conversion has reference-value tests in the shared utility; the application does not yet display an atmosphere panel.
+- This batch did not sign into a Caldwell account, read private measurements, retest persistent authentication or deploy Pages. The file and connected-source paths share the tested storage counting and notification formatter; live connected refresh remains supported by the earlier checks above.

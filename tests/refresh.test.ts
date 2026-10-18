@@ -21,6 +21,19 @@ afterEach(async () => {
 });
 
 describe('refresh coordination', () => {
+  it('combines new records across the batch instead of showing the last unchanged result', async () => {
+    await db.sources.bulkAdd([
+      { ...createSource('New records', true, 'caldwell'), id: 'a' },
+      { ...createSource('Unchanged', true, 'caldwell'), id: 'b' },
+    ]);
+    importOnline.mockImplementation(async (id: string) => {
+      await db.sources.update(id, { status: 'ready' });
+      return { series: 0, shots: id === 'a' ? 1 : 0 };
+    });
+    const message = vi.fn();
+    expect(await refreshEnabledSources(message)).toBe(false);
+    expect(message).toHaveBeenCalledExactlyOnceWith('Refreshed sources: 1 new shot imported.');
+  });
   it('refreshes all enabled types regardless of filters and continues after one account fails', async () => {
     const file = { ...createSource('File', true), status: 'ready' as const };
     const first = createSource('First account', true, 'caldwell');
@@ -71,7 +84,9 @@ describe('refresh coordination', () => {
     try {
       expect(await refreshEnabledSources(message)).toBe(true);
       expect(progress).toEqual([['a'], [], ['b'], []]);
-      expect(message).toHaveBeenCalledWith('Second: 1 series and 2 shots imported.');
+      expect(message).toHaveBeenCalledWith(
+        'Second: 1 new series and 2 new shots imported. Some sources still need attention.',
+      );
     } finally {
       unsubscribe();
     }

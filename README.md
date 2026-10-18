@@ -22,11 +22,12 @@ The production PWA caches static application assets after a successful online vi
 
 ## Measurement interpretation
 
-- Physical units, enum meanings and atmosphere are **unvalidated**. Raw values are not labeled as m/s, fps, metres or feet; no conversions are applied.
+- The owner confirmed **ft/s, ft and °F** for the supported Caldwell/VelociRadar raw inputs. Choose **Imperial** (default) or **Metric** in the local profile; displayed values convert without rewriting measurements. Provider enum meanings and other atmosphere fields remain unvalidated.
 - Paired `[0, 0]` samples are omitted from charts as padding. Zero distance with positive velocity remains valid. **Data quality** reports invalid/unpaired samples. Original arrays remain intact.
 - Source-excluded shots stay visible in the table but do not enter charts/statistics. Positive finite muzzle readings contribute to mean, sample SD (`n − 1`) and extreme spread.
-- Charts/statistics require one source/raw-unit-code group. Equal codes within a source are a provisional comparison grouping, not proof of physical units.
+- Charts/statistics retain the existing one-source/raw-unit-code comparison grouping. Source codes are metadata, not display-unit selectors.
 - Distance charts show up to 100 included shot traces; narrow the selection for others. Tables paginate in groups of 100. These are measured points, not predicted trajectories.
+- Use the horizontal and vertical sliders to zoom either axis. **Shot detail** in the profile chooses Muzzle velocity, G1 or G7 beside navigation shots. Import messages count only new records; unchanged imports report **No new data detected**.
 
 ## Develop locally
 

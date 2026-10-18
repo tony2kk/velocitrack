@@ -1,18 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Series, Shot } from '../domain/model';
+import type { Series, Shot, UnitSystem } from '../domain/model';
 import { inspectPoints } from '../domain/measurements';
+import { displayValue, formatValue, unitLabels } from '../domain/units';
 
-/** Show selected raw records and reveal a linked hovered shot without changing selection. */
+/** Show selected records in display units and reveal a linked hovered shot without changing selection. */
 export function ShotTable({
   shots,
   series,
   activeShotId,
   onHoverShot,
+  unitSystem = 'imperial',
 }: {
   shots: Shot[];
   series: Series[];
   activeShotId: string | null;
   onHoverShot: (id: string | null) => void;
+  unitSystem?: UnitSystem;
 }) {
   const [page, setPage] = useState(0);
   const scrollArea = useRef<HTMLDivElement>(null);
@@ -44,17 +47,18 @@ export function ShotTable({
       <div className="table-scroll" ref={scrollArea}>
         <table>
           <caption className="sr-only">
-            Selected shots. All values use unverified source units.
+            Selected shots. Muzzle velocity in {unitLabels[unitSystem].velocity}; G1 and G7
+            coefficients are unchanged.
           </caption>
           <thead>
             <tr>
               <th>Series</th>
               <th>Shot</th>
-              <th>Muzzle velocity</th>
+              <th>Muzzle velocity ({unitLabels[unitSystem].velocity})</th>
               <th>G1</th>
               <th>G7</th>
               <th>Points</th>
-              <th>Unit code</th>
+              <th>Source unit code</th>
               <th>Status</th>
             </tr>
           </thead>
@@ -73,7 +77,9 @@ export function ShotTable({
               >
                 <td>{names.get(shot.seriesId)}</td>
                 <td>{shot.number}</td>
-                <td className="numeric">{shot.muzzleVelocity ?? '—'}</td>
+                <td className="numeric">
+                  {formatValue(displayValue(shot.muzzleVelocity, 'velocity', unitSystem))}
+                </td>
                 <td className="numeric">{shot.ballisticCoefficientG1 ?? '—'}</td>
                 <td className="numeric">{shot.ballisticCoefficientG7 ?? '—'}</td>
                 <td>{inspectPoints(shot).points.length}</td>

@@ -1,9 +1,10 @@
 import { db } from '../storage/database';
 import { importBundle, requestRefresh } from '../storage/workspace';
 import { readExportFiles } from './velociradar';
+import { importMessage, type ImportCounts } from './feedback';
 
 // Job deduplication is per tab; database transactions still protect writes across tabs.
-const running = new Map<string, Promise<{ series: number; shots: number }>>();
+const running = new Map<string, Promise<ImportCounts>>();
 const listeners = new Set<() => void>();
 let activeIds: string[] = [];
 
@@ -24,7 +25,7 @@ export function subscribeToRefresh(listener: () => void) {
 }
 
 /** Share one import per source and release its busy state on both success and failure. */
-function runSourceImport(sourceId: string, load: () => Promise<{ series: number; shots: number }>) {
+function runSourceImport(sourceId: string, load: () => Promise<ImportCounts>) {
   const existing = running.get(sourceId);
   if (existing) return existing;
   // Deferring work ensures the progress snapshot exists even if loading fails immediately.
@@ -62,16 +63,33 @@ export function refreshCaldwell(
 export async function refreshEnabledSources(onMessage?: (message: string) => void) {
   await requestRefresh();
   const sources = await db.sources.toArray();
+  const completed: { name: string; counts: ImportCounts }[] = [];
   // Sources are independent; a denied account must not prevent another source refreshing.
   for (const source of sources.filter((item) => item.enabled && item.kind === 'caldwell')) {
     try {
       const counts = await refreshCaldwell(source.id);
-      onMessage?.(`${source.name}: ${counts.series} series and ${counts.shots} shots imported.`);
+      completed.push({ name: source.name, counts });
     } catch {
       /* The source keeps its actionable status. */
     }
   }
   // Read after completion so the caller can request only outstanding sign-in/file/error actions.
   const updated = await db.sources.toArray();
-  return updated.some((source) => source.enabled && source.status !== 'ready');
+  const needsAttention = updated.some((source) => source.enabled && source.status !== 'ready');
+  if (completed.length) {
+    // One batch result prevents a later unchanged source from hiding earlier new imports.
+    const total = completed.reduce(
+      (sum, item) => ({
+        series: sum.series + item.counts.series,
+        shots: sum.shots + item.counts.shots,
+      }),
+      { series: 0, shots: 0 },
+    );
+    const message = importMessage(
+      completed.length === 1 ? completed[0]!.name : 'Refreshed sources',
+      total,
+    );
+    onMessage?.(`${message}${needsAttention ? ' Some sources still need attention.' : ''}`);
+  }
+  return needsAttention;
 }

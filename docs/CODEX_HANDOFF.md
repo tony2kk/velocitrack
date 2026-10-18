@@ -14,7 +14,8 @@ Read `AGENTS.md`, `PLAN.md`, `ARCHITECTURE.md`, `docs/decisions/001-local-first-
 - Refresh all enabled sources independent of filters. File adapters require reselection; signed-in Caldwell sources fetch online. Missing sessions wait for sign-in in Sources.
 - Local annotations are separate. Typed-field editing and cross-source mapping are later work.
 - Expanded series expose shot checkboxes. Deselections and hover are page-memory state; selected shots drive summaries, charts and table. Import feedback expires after ten seconds; progress tracks active sources. See decision 004.
-- Units/atmosphere are unvalidated; no weapon configuration or ammunition optimization.
+- The owner confirmed ft/s, ft and °F raw inputs. Profile units default to Imperial and can be Metric; display conversion never rewrites measurements. Muzzle velocity/G1/G7 selects the navigation detail. Other atmosphere fields and provider enums remain unvalidated; no weapon configuration or ammunition optimization.
+- Import feedback counts new identities only (atomically), aggregates batch results and reports **No new data detected** when none were added. Charts have independent horizontal/vertical zoom sliders. See decision 006.
 
 The study is not production code. Never copy private exports, APKs or account configuration into the project. The owner explicitly requested the shared two-field Caldwell client configuration in `public/sources/caldwell.json`; this is the only allowed public provider metadata (decision 005). Synthetic tests are invented from scratch. Owner-provided branding lives in `public/brand/`; the ZIP is excluded.
 

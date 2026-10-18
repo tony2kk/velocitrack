@@ -12,9 +12,8 @@ describe('chart identities and sample details', () => {
     expect(traces[0]?.data.map((point) => point.sampleIndex)).toEqual([1, 2]);
     const text = formatPointTooltip(traces[0]!.data[1]!);
     expect(text).toContain('Sample 3');
-    expect(text).toContain('Distance: 10.123456 (raw)');
-    expect(text).toContain('Velocity: 295.123456 (raw)');
-    expect(text).toContain('unverified');
+    expect(text).toContain('Distance: 10.123456 ft');
+    expect(text).toContain('Velocity: 295.123456 ft/s');
   });
 
   it('distinguishes duplicate display numbers across series in both chart modes', () => {
