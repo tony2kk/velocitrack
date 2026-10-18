@@ -13,6 +13,7 @@ Read `AGENTS.md`, `PLAN.md`, `ARCHITECTURE.md`, `docs/decisions/001-local-first-
 - Shared catalogs with per-source auto-updates; missing references reject the whole source import when disabled.
 - Refresh all enabled sources independent of filters. File adapters require reselection; signed-in Caldwell sources fetch online. Missing sessions wait for sign-in in Sources.
 - Local annotations are separate. Typed-field editing and cross-source mapping are later work.
+- Expanded series expose shot checkboxes. Deselections and hover are page-memory state; selected shots drive summaries, charts and table. Import feedback expires after ten seconds; progress tracks active sources. See decision 004.
 - Units/atmosphere are unvalidated; no weapon configuration or ammunition optimization.
 
 The study is not production code. Never copy private exports, APKs or provider configuration into the project. Synthetic tests are invented from scratch. Owner-provided branding lives in `public/brand/`; the ZIP is excluded.

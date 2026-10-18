@@ -7,6 +7,7 @@ import {
   getRefreshingSources,
   refreshCaldwell,
   refreshEnabledSources,
+  subscribeToRefresh,
 } from '../src/sources/refresh';
 
 const { importOnline } = vi.hoisted(() => ({ importOnline: vi.fn() }));
@@ -47,9 +48,32 @@ describe('refresh coordination', () => {
     const duplicate = refreshCaldwell('synthetic-source');
     expect(duplicate).toBe(first);
     expect(getRefreshingSources()).toEqual(['synthetic-source']);
+    await vi.waitFor(() => expect(importOnline).toHaveBeenCalledOnce());
     finish({ series: 2, shots: 4 });
     await first;
     expect(importOnline).toHaveBeenCalledTimes(1);
     expect(getRefreshingSources()).toEqual([]);
+  });
+
+  it('clears progress after failure and publishes the next source while the batch continues', async () => {
+    const first = { ...createSource('First', true, 'caldwell'), id: 'a' };
+    const second = { ...createSource('Second', true, 'caldwell'), id: 'b' };
+    await db.sources.bulkAdd([first, second]);
+    const progress: string[][] = [];
+    const unsubscribe = subscribeToRefresh(() => progress.push(getRefreshingSources()));
+    importOnline
+      .mockRejectedValueOnce(new Error('Synthetic failure'))
+      .mockImplementationOnce(async () => {
+        await db.sources.update('b', { status: 'ready' });
+        return { series: 1, shots: 2 };
+      });
+    const message = vi.fn();
+    try {
+      expect(await refreshEnabledSources(message)).toBe(true);
+      expect(progress).toEqual([['a'], [], ['b'], []]);
+      expect(message).toHaveBeenCalledWith('Second: 1 series and 2 shots imported.');
+    } finally {
+      unsubscribe();
+    }
   });
 });

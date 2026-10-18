@@ -57,6 +57,14 @@ The footer now includes the package version and build-time source revision. The 
 
 These checks supplement the earlier live-import checks; they do not constitute another account sign-in or a persistence test across browser restarts. Automatic first setup in a fresh publicly hosted browser remains outside this implementation.
 
+## Shot interactions and import feedback — 2026-10-18
+
+- All **83 behavioral tests** passed with types, lint, formatting, production/PWA build and the public-content guard. React/DOM tests cover repeated ten-second notifications, dismissal cleanup, session shot choices, duplicate shot numbers, linked hover/focus, table pagination and progress dismissal. Refresh tests cover failure cleanup and moving to the next source; chart tests cover point metadata, emphasis without reconstruction and escaped tooltip text.
+- In an isolated production-preview origin with only invented fixtures, selecting a series expanded all its shots as checked. Unchecking one removed its table row and changed the displayed count/mean. Collapsing and reselecting the series preserved that choice; a page reload reset the choices.
+- A real canvas point displayed the expected series, shot/sample number, raw distance and velocity. The matching navigation row highlighted, and the trace became more prominent. A table-row interaction also highlighted the matching navigation row. No user account or private measurements were used.
+- The tooltip is rendered as escaped React text alongside the canvas, keeping sample details available independently of ECharts emphasis. A ten-pixel hit tolerance resolves actual nearby samples rather than interpolating data. Chart bridge unit tests mock ECharts, so the separate browser observation above is material.
+- Newly added DOM test dependencies are pinned; installation reported zero known vulnerabilities. The existing 100-trace limit and unverified physical units remain unchanged.
+
 ## Still unverified / intentionally absent
 
 - Hosted-origin reads, general API restrictions/App Check configuration and server rule isolation. Loopback Auth/own-account reads passed, but do not prove these broader properties.

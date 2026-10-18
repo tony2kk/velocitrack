@@ -22,6 +22,8 @@ See `docs/VERIFICATION.md` for actual verification and remaining caveats. Local 
 
 ## Next iteration
 
+- [x] Timed import feedback, centered refresh progress, session shot selection and linked chart/table/navigation highlighting (decision 004).
+
 The Caldwell source and full local application import are implemented and verified, including repeat refresh without duplicate records. Dedicated user help lives in `help/README.md`. Next, review the connected workflow with the owner.
 
 1. Review the MVP workflow and appearance using local exports.

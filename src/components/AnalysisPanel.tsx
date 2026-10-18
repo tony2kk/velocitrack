@@ -2,6 +2,8 @@ import { lazy, Suspense, useMemo, useState } from 'react';
 import { ArrowUpRight, ChartNoAxesCombined, Info } from 'lucide-react';
 import type { Series, Shot } from '../domain/model';
 import { chartGroupsCompatible, inspectPoints, summarizeShots } from '../domain/measurements';
+import { chartColors } from '../domain/chart';
+import { ShotTable } from './ShotTable';
 
 // Keep the chart library out of the initial workspace load until a selection needs it.
 const MeasurementChart = lazy(() => import('./MeasurementChart'));
@@ -14,13 +16,16 @@ export function AnalysisPanel({
   series,
   shots,
   view,
+  activeShotId,
+  onHoverShot,
 }: {
   series: Series[];
   shots: Shot[];
   view: 'chart' | 'table';
+  activeShotId: string | null;
+  onHoverShot: (id: string | null) => void;
 }) {
   const [mode, setMode] = useState<'distance' | 'shot'>('distance');
-  const [page, setPage] = useState(0);
   const summary = useMemo(() => summarizeShots(shots), [shots]);
   const quality = useMemo(
     () =>
@@ -38,10 +43,7 @@ export function AnalysisPanel({
       ),
     [shots],
   );
-  const names = new Map(series.map((item) => [item.id, item.name]));
   const compatible = chartGroupsCompatible(shots);
-  // Changing selection may shrink the result set while the user is on a later table page.
-  const currentPage = Math.min(page, Math.max(0, Math.ceil(shots.length / 100) - 1));
   if (!series.length)
     return (
       <section className="analysis-empty">
@@ -68,7 +70,8 @@ export function AnalysisPanel({
           <p className="eyebrow">WORKSPACE / {series.length > 1 ? 'COMPARISON' : 'SERIES'}</p>
           <h2>{series.length === 1 ? series[0]!.name : `${series.length} series selected`}</h2>
           <p className="muted">
-            {shots.length} recorded shots · {shots.filter((shot) => shot.excluded).length} excluded
+            {shots.length} selected shots · {shots.filter((shot) => shot.excluded).length} source
+            excluded
           </p>
         </div>
         <span className="outline-badge">
@@ -127,25 +130,28 @@ export function AnalysisPanel({
             </select>
           )}
         </header>
-        {view === 'chart' ? (
+        {!shots.length ? (
+          <p className="empty-note">
+            No shots selected. Select shots in the series list to display measurements.
+          </p>
+        ) : view === 'chart' ? (
           compatible ? (
             <>
               <Suspense fallback={<p className="empty-note">Loading chart…</p>}>
-                <MeasurementChart shots={shots} series={series} mode={mode} />
+                <MeasurementChart
+                  shots={shots}
+                  series={series}
+                  mode={mode}
+                  activeShotId={activeShotId}
+                  onHoverShot={onHoverShot}
+                />
               </Suspense>
               <div className="chart-legend">
                 {series.map((item, index) => (
                   <span key={item.id}>
                     <i
                       style={{
-                        background: [
-                          '#0c8176',
-                          '#5978c7',
-                          '#d38a36',
-                          '#ac6399',
-                          '#758b3c',
-                          '#607b91',
-                        ][index % 6],
+                        background: chartColors[index % chartColors.length],
                       }}
                     />
                     {item.name}
@@ -171,57 +177,12 @@ export function AnalysisPanel({
             </p>
           )
         ) : (
-          <>
-            <div className="table-scroll">
-              <table>
-                <caption className="sr-only">
-                  Shots in selected series. All values use unverified source units.
-                </caption>
-                <thead>
-                  <tr>
-                    <th>Series</th>
-                    <th>Shot</th>
-                    <th>Muzzle velocity</th>
-                    <th>G1</th>
-                    <th>G7</th>
-                    <th>Points</th>
-                    <th>Unit code</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shots.slice(currentPage * 100, (currentPage + 1) * 100).map((shot) => (
-                    <tr key={shot.id} className={shot.excluded ? 'excluded' : ''}>
-                      <td>{names.get(shot.seriesId)}</td>
-                      <td>{shot.number}</td>
-                      <td className="numeric">{shot.muzzleVelocity ?? '—'}</td>
-                      <td className="numeric">{shot.ballisticCoefficientG1 ?? '—'}</td>
-                      <td className="numeric">{shot.ballisticCoefficientG7 ?? '—'}</td>
-                      <td>{inspectPoints(shot).points.length}</td>
-                      <td>{shot.rawUnit}</td>
-                      <td>{shot.excluded ? 'Excluded' : 'Included'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {shots.length > 100 && (
-              <div className="pagination">
-                <button disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>
-                  Previous
-                </button>
-                <span>
-                  Page {currentPage + 1} of {Math.ceil(shots.length / 100)}
-                </span>
-                <button
-                  disabled={(currentPage + 1) * 100 >= shots.length}
-                  onClick={() => setPage(currentPage + 1)}
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </>
+          <ShotTable
+            shots={shots}
+            series={series}
+            activeShotId={activeShotId}
+            onHoverShot={onHoverShot}
+          />
         )}
       </div>
       <details className="quality">
@@ -234,9 +195,9 @@ export function AnalysisPanel({
           velocity is retained. Raw arrays are preserved locally.
         </p>
         <p>
-          Excluded shots are visible in the table and omitted from statistics and charts. Standard
-          deviation uses the sample formula (n − 1). Atmosphere and unit meanings still need
-          validation.
+          Selected source-excluded shots are visible in the table and omitted from statistics and
+          charts. Standard deviation uses the sample formula (n − 1). Atmosphere and unit meanings
+          still need validation.
         </p>
       </details>
     </section>

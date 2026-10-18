@@ -13,6 +13,8 @@ Open **Sources**, choose **Source type**, give the source a name and select **Ad
 
 **Refresh** includes all sources with **Include in Refresh** enabled, regardless of display filters. Caldwell sources refresh online when signed in. JSON / text sources ask you to select their latest files. You can close Sources while a connected source is refreshing; its progress remains visible in the toolbar.
 
+While data is loading, a centered progress dialog shows **Loading <source name>...** with an activity indicator. It follows each active source and closes when loading finishes, including failures. **Continue in background** closes the dialog without cancelling the import. After a toolbar refresh, any sources requiring a file, sign-in or error resolution appear in Refresh sources. Import notifications disappear automatically after **10 seconds**, or immediately with their dismiss button.
+
 Refresh updates matching records without adding duplicates. Measurements absent from a later import are retained. One source's failed refresh does not undo another source's successful refresh. A failed download, malformed input or missing catalog entry leaves previously imported measurements intact.
 
 ### Caldwell
@@ -145,7 +147,13 @@ You can rename a source or exclude it from all-source Refresh. **Remove source a
 
 Select one or more sources, firearms and projectiles. Choices inside a filter combine as alternatives; different filters combine together. An empty filter means all. Date ranges include entire local days; relative week/month windows remain relative. Filters save automatically in the local profile and return on your next visit.
 
-Select one or more series to view charts or the shot table. A series hidden by a filter leaves the active comparison. Selection itself is temporary.
+Select one or more series to view charts or the shot table. Each selected series expands to show its shots. All shots start checked; uncheck individual shots to remove them from the table, charts and summary statistics. A source-excluded shot can be selected for inspection in the table but remains excluded from charts/statistics.
+
+Shot choices remain in page memory while you collapse/reselect series, change filters or refresh data. Newly imported shots start checked. Reloading or closing the page resets these temporary choices. No provider record or persisted exclusion flag changes. A series hidden by a filter leaves the active comparison.
+
+Hover over a shot in the navigation, table or chart to highlight the same shot in the other visible views. Keyboard focus on a shot checkbox/table row also highlights it. A hovered shot on a later table page is brought into view. Unchecked shots do not appear in the analysis, and the existing 100-trace chart limit still applies.
+
+Hover or tap a measured chart point to see its series, shot number, original sample number, distance and velocity. Values retain recorded precision; unit codes remain unverified. The tooltip reports an actual sample, never an interpolated value between points.
 
 ## Profile and offline use
 

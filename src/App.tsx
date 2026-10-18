@@ -33,6 +33,10 @@ import { CatalogDialog } from './components/CatalogDialog';
 import { FilterBar } from './components/FilterBar';
 import { AnalysisPanel } from './components/AnalysisPanel';
 import { UpdateNotice } from './components/UpdateNotice';
+import { SeriesNavigator } from './components/SeriesNavigator';
+import { RefreshProgress } from './components/RefreshProgress';
+import { useNotification } from './hooks/useNotification';
+import { useShotSelection } from './hooks/useShotSelection';
 
 /** Subscribe to one consistent local workspace snapshot and handle storage startup failures. */
 export default function App() {
@@ -70,7 +74,9 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
   const [dialog, setDialog] = useState<'sources' | 'refresh' | 'profile' | 'catalog' | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [view, setView] = useState<'chart' | 'table'>('chart');
-  const [message, setMessage] = useState('');
+  const { message, showMessage, dismissMessage } = useNotification();
+  const [refreshingAll, setRefreshingAll] = useState(false);
+  const [activeShotId, setActiveShotId] = useState<string | null>(null);
   const [filters, setOptimisticFilters] = useOptimistic(profile.filters);
   const startupHandled = useRef(false);
   const refreshing = useSyncExternalStore(subscribeToRefresh, getRefreshingSources);
@@ -79,17 +85,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
     () => filtered.filter((item) => selected.includes(item.id)),
     [filtered, selected],
   );
-  const selectedShots = useMemo(() => {
-    const ids = new Set(selectedSeries.map((item) => item.id));
-    return shots
-      .filter((shot) => ids.has(shot.seriesId))
-      .sort((a, b) => a.seriesId.localeCompare(b.seriesId) || a.number - b.number);
-  }, [shots, selectedSeries]);
-  const counts = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const shot of shots) map.set(shot.seriesId, (map.get(shot.seriesId) ?? 0) + 1);
-    return map;
-  }, [shots]);
+  const { hiddenShots, selectedShots, toggleShot } = useShotSelection(shots, selectedSeries);
   const catalogNames = new Map(catalog.map((item) => [item.id, item.name]));
   const sourceNames = new Map(sources.map((item) => [item.id, item.name]));
   const lastUpdate = sources
@@ -104,10 +100,10 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
     if (startupHandled.current) return;
     startupHandled.current = true;
     if (profile.refreshOnStart)
-      void refreshEnabledSources().catch(() =>
-        setMessage('Refresh could not start. Check local storage.'),
+      void refreshEnabledSources(showMessage).catch(() =>
+        showMessage('Refresh could not start. Check local storage.'),
       );
-  }, [profile.refreshOnStart]);
+  }, [profile.refreshOnStart, showMessage]);
 
   /** Apply filters immediately, drop hidden selections, then persist the local preference. */
   function changeFilters(next: Filters) {
@@ -118,7 +114,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
       try {
         await saveProfile({ filters: next });
       } catch {
-        setMessage('Filters could not be saved. Check local storage.');
+        showMessage('Filters could not be saved. Check local storage.');
       }
     });
   }
@@ -178,18 +174,22 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
               Sources
             </button>
             <button
-              disabled={refreshing.length > 0}
+              disabled={refreshingAll || refreshing.length > 0}
               onClick={async () => {
-                setDialog('refresh');
+                setRefreshingAll(true);
                 try {
-                  await refreshEnabledSources();
+                  const needsAttention = await refreshEnabledSources(showMessage);
+                  if (needsAttention || !sources.some((source) => source.enabled))
+                    setDialog('refresh');
                 } catch {
-                  setMessage('Refresh could not start. Check local storage.');
+                  showMessage('Refresh could not start. Check local storage.');
+                } finally {
+                  setRefreshingAll(false);
                 }
               }}
             >
               <RefreshCw size={16} />
-              {refreshing.length ? 'Refreshing…' : 'Refresh'}
+              {refreshingAll || refreshing.length ? 'Refreshing…' : 'Refresh'}
             </button>
             <button
               className="icon-button"
@@ -241,47 +241,22 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
                 : 'Select all'}
             </button>
           </header>
-          <div className="series-list">
-            {filtered.map((item) => (
-              <label
-                className={`series-card ${selected.includes(item.id) ? 'selected' : ''}`}
-                key={item.id}
-              >
-                <input
-                  type="checkbox"
-                  checked={selected.includes(item.id)}
-                  onChange={(event) =>
-                    setSelected((current) =>
-                      event.target.checked
-                        ? [...current, item.id]
-                        : current.filter((id) => id !== item.id),
-                    )
-                  }
-                />
-                <div className="series-card-content">
-                  <div className="series-meta">
-                    <span>
-                      {item.startedAt
-                        ? new Date(item.startedAt).toLocaleDateString('en-GB', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                          })
-                        : 'Date unavailable'}
-                    </span>
-                    <span>{counts.get(item.id) ?? 0} shots</span>
-                  </div>
-                  <strong>{item.name}</strong>
-                  <span>{catalogNames.get(item.firearmId)}</span>
-                  <span className="projectile-name">{catalogNames.get(item.projectileId)}</span>
-                  <small>
-                    <span className="dot" />
-                    {sourceNames.get(item.sourceId)}
-                  </small>
-                </div>
-              </label>
-            ))}
-          </div>
+          <SeriesNavigator
+            series={filtered}
+            shots={shots}
+            selected={selected}
+            hiddenShots={hiddenShots}
+            activeShotId={activeShotId}
+            catalogNames={catalogNames}
+            sourceNames={sourceNames}
+            onToggleSeries={(id, checked) =>
+              setSelected((current) =>
+                checked ? [...current, id] : current.filter((value) => value !== id),
+              )
+            }
+            onToggleShot={toggleShot}
+            onHoverShot={setActiveShotId}
+          />
           {!filtered.length && (
             <div className="sidebar-empty">
               <BookOpen size={28} strokeWidth={1.3} />
@@ -303,7 +278,13 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
             {selectedSeries.length} selected <ChevronRight size={14} />
           </footer>
         </aside>
-        <AnalysisPanel series={selectedSeries} shots={selectedShots} view={view} />
+        <AnalysisPanel
+          series={selectedSeries}
+          shots={selectedShots}
+          view={view}
+          activeShotId={activeShotId}
+          onHoverShot={setActiveShotId}
+        />
       </main>
       <footer className="app-footer">
         <span>
@@ -331,7 +312,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           <button
             className="icon-button"
             aria-label="Dismiss notification"
-            onClick={() => setMessage('')}
+            onClick={dismissMessage}
           >
             <X size={16} />
           </button>
@@ -352,10 +333,13 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           remember={profile.rememberSignIn}
           mode={dialog === 'sources' ? 'manage' : 'refresh'}
           onClose={() => setDialog(null)}
-          onMessage={setMessage}
+          onMessage={showMessage}
         />
       )}
       {dialog === 'catalog' && <CatalogDialog items={catalog} onClose={() => setDialog(null)} />}
+      {(refreshingAll || refreshing.length > 0) && (
+        <RefreshProgress sourceNames={refreshing.map((id) => sourceNames.get(id) ?? 'source')} />
+      )}
     </div>
   );
 }

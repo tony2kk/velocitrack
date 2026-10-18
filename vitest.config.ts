@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  test: { environment: 'node', include: ['tests/**/*.test.ts'] },
+  define: { __APP_VERSION__: JSON.stringify('test'), __BUILD_REVISION__: JSON.stringify('test') },
+  test: { environment: 'node', include: ['tests/**/*.test.{ts,tsx}'] },
 });

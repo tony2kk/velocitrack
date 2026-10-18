@@ -9,15 +9,9 @@ import {
 import { CheckCircle2, Cloud, FileUp, Folder, Plus, Trash2 } from 'lucide-react';
 import type { DataSource, SourceKind } from '../domain/model';
 import { db } from '../storage/database';
-import {
-  createSource,
-  importBundle,
-  recordImportFailure,
-  removeSource,
-} from '../storage/workspace';
-import { readExportFiles } from '../sources/velociradar';
+import { createSource, recordImportFailure, removeSource } from '../storage/workspace';
 import { Modal } from './Modal';
-import { getRefreshingSources, subscribeToRefresh } from '../sources/refresh';
+import { getRefreshingSources, refreshFiles, subscribeToRefresh } from '../sources/refresh';
 
 const CaldwellSource = lazy(() => import('./CaldwellSource'));
 const sourceStatus = {
@@ -140,8 +134,7 @@ function SourceCard({
               setError('');
               try {
                 // Parse all selected files before the atomic storage transaction begins.
-                const bundle = await readExportFiles(files);
-                const result = await importBundle(source.id, bundle);
+                const result = await refreshFiles(source.id, files);
                 onMessage(
                   `${source.name}: ${result.series} series and ${result.shots} shots imported.`,
                 );

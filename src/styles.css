@@ -339,6 +339,92 @@
   .series-card:hover {
     background: #eef3ed;
   }
+  .series-group {
+    min-width: 0;
+  }
+  .shot-list {
+    padding: 0 6px 12px 20px;
+  }
+  .shot-selection-count {
+    color: var(--muted);
+    font-size: 10px;
+    margin: 4px 0 6px;
+  }
+  .shot-option {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    border: 1px solid transparent;
+  }
+  .shot-option > span:not(.shot-reading) {
+    min-width: 0;
+  }
+  .shot-option small {
+    display: block;
+    color: var(--muted);
+    font-size: 10px;
+  }
+  .shot-reading {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+  .shot-highlighted,
+  .shot-option:hover,
+  .shot-option:focus-within {
+    background: #dcefe8;
+    color: #174c40;
+    box-shadow: inset 3px 0 #08796e;
+  }
+  tr.shot-highlighted {
+    background: #dcefe8;
+    color: #174c40;
+  }
+  .refresh-progress {
+    display: grid;
+    justify-items: center;
+    gap: 18px;
+    padding: 24px 0;
+    text-align: center;
+  }
+  .chart-frame {
+    position: relative;
+  }
+  .point-tooltip {
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+    width: 240px;
+    max-width: calc(100% - 16px);
+    padding: 12px 14px;
+    border: 1px solid #c3d8cf;
+    border-radius: 8px;
+    background: #fffffff5;
+    box-shadow: 0 4px 20px #1a38211a;
+    color: #274e41;
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+  .refresh-progress p {
+    margin: 0;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+  }
+  .loading-spinner {
+    color: var(--accent);
+    animation: loading-turn 1s linear infinite;
+  }
+  @keyframes loading-turn {
+    to {
+      transform: rotate(360deg);
+    }
+  }
   .series-card.selected {
     border-color: #a9c9bd;
     background: #eaf3ee;
@@ -1166,14 +1252,21 @@
     .series-list {
       display: flex;
       gap: 8px;
-      max-height: 220px;
+      max-height: 360px;
       overflow-x: auto;
       padding-bottom: 8px;
     }
-    .series-card {
+    .series-group {
       flex: 0 0 248px;
+    }
+    .series-card {
       margin-bottom: 0;
       border-color: var(--border);
+    }
+    .shot-list {
+      max-height: 170px;
+      overflow-y: auto;
+      padding-left: 4px;
     }
     .sidebar-empty {
       padding: 25px 20px;
