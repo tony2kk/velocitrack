@@ -6,11 +6,12 @@ The owner approved a local-first MVP on 2026-10-18; see [decision 001](docs/deci
 
 React/TypeScript compile through Vite to static assets. Dexie manages IndexedDB and ECharts renders recorded measurements. The PWA precaches build assets only. GitHub Pages is a static host, with no backend or user-data storage.
 
-Every measurement and user setting belongs to the local browser, never the source tree, build or host. Storage is origin/profile-specific. No telemetry, external font requests, runtime CDN or authentication flow exists.
+Every measurement and user setting belongs to the local browser, never the source tree, build or host. Storage is origin/profile-specific. No telemetry, external font requests or runtime CDN exists. Optional Caldwell sources authenticate directly with Firebase; the service receives credentials for its own account, with no VelociTrack intermediary.
 
 ```mermaid
 flowchart LR
   Files[Local files] --> Parser[Validate JSON / CSV]
+  Cloud[Caldwell authenticated owner reads] --> Parser
   Parser --> Import[Atomic source import]
   Import --> Catalog[Resolve local catalogs]
   Catalog --> IDB[(Browser IndexedDB)]
@@ -21,7 +22,7 @@ flowchart LR
 
 ## Import and identity
 
-File reads/parsing finish before an IndexedDB transaction. One transaction resolves catalog references, upserts the source's series/shots and marks success. Any failure rolls it back. Failure status is saved separately while retaining last success. Refresh spans all enabled sources independently of filters; the file adapter asks for current files and never makes network requests.
+File reads and cloud downloads finish before an IndexedDB transaction. One transaction resolves catalog references, upserts the source's series/shots and marks success. Any failure rolls it back. Failure status is saved separately while retaining last success. Refresh spans all enabled sources independently of filters; file sources ask for current files and Caldwell sources use their available sessions. One tab deduplicates concurrent refreshes per source. Downloads are paginated with record/byte limits; failures never commit a truncated result.
 
 | Entity | Responsibility |
 | --- | --- |
@@ -52,6 +53,10 @@ Production service-worker updates ask for a reload. Only compiled assets are cac
 
 ## Extension boundaries
 
-Add adapters behind the validated import contract. Keep provider/auth calls outside view components. Cloud access must first pass the permitted browser-only PoC and terms gate. Future auth defaults to memory; remembered SDK sessions require local opt-in. Never persist passwords or add a credential proxy.
+Add adapters behind the validated import contract. Caldwell uses the modular Firebase Auth SDK and Firestore Lite. The account UID comes only from SDK authentication; source binding and a final pre-commit check prevent mixing accounts. The source owns locally imported connection settings and a local account binding. No provider configuration is bundled. Source types remain fixed after creation; existing file-source rows require no schema reset or index migration.
+
+Authentication defaults to memory. SDK persistence requires explicit profile opt-in; disabling it migrates sessions back to memory, and sign-out/removal clears the session. The application never stores passwords. Firestore uses no persistent cache or subscription; only the validated atomic import writes measurements to Dexie. Errors shown/saved by the connector use safe categories rather than raw provider responses. Catalog validation errors may include the local missing name.
+
+The private browser-only PoC passed on loopback before integration; hosted-origin support and distribution rights remain separate unresolved items. See decision 002, `docs/FIREBASE_POC.md` and `docs/TERMS_REVIEW.md`. Never add a credential proxy or bypass service controls.
 
 Introduce mapping, custom fields, tools/charts/reports as small modules when their first workflow is agreed. A generic plugin framework is unnecessary for this MVP.

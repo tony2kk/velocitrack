@@ -25,6 +25,7 @@
     "dexie": "4.4.6",
     "dexie-react-hooks": "4.4.0",
     "echarts": "6.1.0",
+    "firebase": "12.19.0",
     "lucide-react": "1.59.0",
     "papaparse": "5.7.0",
     "react": "19.3.1",
@@ -46,5 +47,10 @@
     "vite": "8.3.4",
     "vite-plugin-pwa": "2.0.0",
     "vitest": "5.0.5"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "1.14.6",
+    "@firebase/app": "0.16.2",
+    "@firebase/app-compat": "0.5.18"
   }
 }

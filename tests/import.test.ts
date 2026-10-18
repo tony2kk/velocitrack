@@ -7,6 +7,40 @@ const parse = (value: unknown) =>
   parseVelociRadarExport([{ name: 'synthetic.fixture.json', text: JSON.stringify(value) }]);
 
 describe('VelociRadar file adapter', () => {
+  it('accepts JSON and CSV content in text files without accepting arbitrary prose', () => {
+    const fixture = syntheticExport();
+    expect(
+      parseVelociRadarExport([{ name: 'sample.txt', text: '\uFEFF  ' + JSON.stringify(fixture) }])
+        .shots,
+    ).toHaveLength(4);
+    expect(
+      parseVelociRadarExport([
+        {
+          name: 'strings.txt',
+          text: Papa.unparse(
+            fixture.strings.map((row) => ({
+              ...row,
+              firearm: JSON.stringify(row.firearm),
+              projectile: JSON.stringify(row.projectile),
+            })),
+          ),
+        },
+        {
+          name: 'shots.txt',
+          text: Papa.unparse(
+            fixture.shots.map((row) => ({
+              ...row,
+              distances: JSON.stringify(row.distances),
+              velocities: JSON.stringify(row.velocities),
+            })),
+          ),
+        },
+      ]).shots,
+    ).toHaveLength(4);
+    expect(() =>
+      parseVelociRadarExport([{ name: 'sample.txt', text: 'This is not an export.' }]),
+    ).toThrow();
+  });
   it('reads combined JSON with stable identities, Unix seconds and raw records', () => {
     const fixture = syntheticExport();
     const result = parse(fixture);

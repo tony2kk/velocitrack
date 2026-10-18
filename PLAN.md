@@ -22,6 +22,8 @@ See `docs/VERIFICATION.md` for actual verification and remaining caveats. Local 
 
 ## Next iteration
 
+Current priority: complete the Caldwell source and end-to-end local import verification. Dedicated user help lives in `help/README.md`.
+
 1. Review the MVP workflow and appearance using local exports.
 2. Validate physical units, distance origin and atmosphere against reliable evidence.
 3. Design workspace backup/restore, quota handling and larger-dataset pagination.
@@ -32,11 +34,12 @@ See `docs/VERIFICATION.md` for actual verification and remaining caveats. Local 
 ## Cloud gate — unresolved
 
 - [ ] Obtain permitted web configuration and applicable service terms.
-- [ ] Run isolated browser-only Auth/Firestore PoC with the owner's account.
-- [ ] Verify origin/API restrictions, App Check and authorized reads.
+- [x] Run isolated browser-only Auth/Firestore PoC with the owner's account.
+- [x] Verify successful ordinary browser Auth and own-account reads from loopback without bypasses.
+- [ ] Verify intended hosted origin and obtain evidence for restrictions not observable from customer access.
 - [ ] Record sanitized results and distribution rights before integration publication.
 
-No browser-only cloud test has passed. No Firebase SDK/configuration is included. Follow `docs/FIREBASE_POC.md` and `docs/TERMS_REVIEW.md`.
+The private browser-only test passed on 2026-10-18. Firebase SDK integration is prepared locally; provider configuration is excluded. Follow `docs/FIREBASE_POC.md` and `docs/TERMS_REVIEW.md`; loopback success is not distribution clearance.
 
 ## Publication
 

@@ -1,9 +1,19 @@
 import { useState } from 'react';
-import type { Profile } from '../domain/model';
+import type { DataSource, Profile } from '../domain/model';
 import { saveProfile } from '../storage/workspace';
 import { Modal } from './Modal';
 
-export function ProfileDialog({ profile, onClose }: { profile: Profile; onClose: () => void }) {
+export function ProfileDialog({
+  profile,
+  sources,
+  refreshing,
+  onClose,
+}: {
+  profile: Profile;
+  sources: DataSource[];
+  refreshing: boolean;
+  onClose: () => void;
+}) {
   const [nickname, setNickname] = useState(profile.nickname);
   const [remember, setRemember] = useState(profile.rememberSignIn);
   const [refresh, setRefresh] = useState(profile.refreshOnStart);
@@ -19,6 +29,19 @@ export function ProfileDialog({ profile, onClose }: { profile: Profile; onClose:
           event.preventDefault();
           setBusy(true);
           try {
+            if (remember !== profile.rememberSignIn) {
+              const { changeSessionPersistence } = await import('../sources/caldwell/session');
+              if (remember) await saveProfile({ rememberSignIn: true });
+              try {
+                await changeSessionPersistence(sources, profile.rememberSignIn, remember);
+              } catch (error) {
+                if (remember) {
+                  await changeSessionPersistence(sources, true, false);
+                  await saveProfile({ rememberSignIn: false });
+                }
+                throw error;
+              }
+            }
             await saveProfile({
               nickname: nickname.trim(),
               rememberSignIn: remember,
@@ -26,7 +49,9 @@ export function ProfileDialog({ profile, onClose }: { profile: Profile; onClose:
             });
             onClose();
           } catch {
-            setError('The profile could not be saved. Check browser storage permissions.');
+            setError(
+              'The profile or sign-in preference could not be saved. Check browser storage permissions.',
+            );
           } finally {
             setBusy(false);
           }
@@ -51,8 +76,8 @@ export function ProfileDialog({ profile, onClose }: { profile: Profile; onClose:
           <span>
             Allow sign-in to be remembered on this device
             <small>
-              Reserved for future connected sources. File sources use no credentials. Passwords will
-              never be saved.
+              Keep connected-source sessions between visits. When off, sign-in lasts until this page
+              closes or reloads. Passwords are never saved.
             </small>
           </span>
         </label>
@@ -65,8 +90,8 @@ export function ProfileDialog({ profile, onClose }: { profile: Profile; onClose:
           <span>
             Refresh all enabled sources after startup
             <small>
-              File sources will be marked as awaiting files. Choose their latest exports to finish
-              refreshing.
+              Signed-in Caldwell sources refresh online. Other sources wait for sign-in or file
+              selection.
             </small>
           </span>
         </label>
@@ -83,7 +108,7 @@ export function ProfileDialog({ profile, onClose }: { profile: Profile; onClose:
           <button type="button" onClick={onClose}>
             Cancel
           </button>
-          <button className="primary" disabled={busy}>
+          <button className="primary" disabled={busy || refreshing}>
             Save profile
           </button>
         </footer>

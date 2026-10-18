@@ -9,13 +9,15 @@ Read `AGENTS.md`, `PLAN.md`, `ARCHITECTURE.md`, `docs/decisions/001-local-first-
 - VelociTrack; English UI, documentation and code comments.
 - All measurements, catalogs, source settings, profile and filters remain local. No backend.
 - React/TypeScript/Vite, Dexie, ECharts and a static PWA shell.
-- Local VelociRadar JSON/CSV first. Browser Firebase access and distribution rights remain unresolved.
+- Local JSON/CSV/text plus a Caldwell connector prepared after a successful private browser-only test. Hosted-origin behavior and distribution rights remain unresolved. Read decision 002.
 - Shared catalogs with per-source auto-updates; missing references reject the whole source import when disabled.
-- Refresh all enabled sources independent of filters. File adapters require reselection; startup marks sources awaiting files.
+- Refresh all enabled sources independent of filters. File adapters require reselection; signed-in Caldwell sources fetch online. Missing sessions wait for sign-in in Sources.
 - Local annotations are separate. Typed-field editing and cross-source mapping are later work.
 - Units/atmosphere are unvalidated; no weapon configuration or ammunition optimization.
 
 The study is not production code. Never copy private exports, APKs or provider configuration into the project. Synthetic tests are invented from scratch. Owner-provided branding lives in `public/brand/`; the ZIP is excluded.
+
+User help is `help/README.md`; the header opens it on GitHub in a new tab. Connection settings and account binding live only in local browser source records. Auth defaults to memory, with SDK persistence only after profile opt-in. No Firebase project identifier or key is shipped.
 
 ## Working practices
 

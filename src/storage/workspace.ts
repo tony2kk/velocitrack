@@ -6,6 +6,7 @@ import {
   type DataSource,
   type Profile,
   type Series,
+  type SourceKind,
 } from '../domain/model';
 import type { ImportBundle, ImportedReference } from '../sources/velociradar';
 import { db, type WorkspaceDatabase } from './database';
@@ -29,15 +30,19 @@ export async function saveProfile(patch: Partial<Omit<Profile, 'id'>>, database 
   });
 }
 
-export function createSource(name: string, autoUpdateCatalogs: boolean): DataSource {
+export function createSource(
+  name: string,
+  autoUpdateCatalogs: boolean,
+  kind: SourceKind = 'velociradar-export',
+): DataSource {
   return {
     id: crypto.randomUUID(),
     name: name.trim(),
-    kind: 'velociradar-export',
+    kind,
     enabled: true,
     autoUpdateCatalogs,
     createdAt: new Date().toISOString(),
-    status: 'needs-files',
+    status: kind === 'caldwell' ? 'needs-setup' : 'needs-files',
   };
 }
 
@@ -89,7 +94,12 @@ async function resolveCatalog(
 }
 
 /** The complete source import succeeds or rolls back, including catalog changes. */
-export async function importBundle(sourceId: string, bundle: ImportBundle, database = db) {
+export async function importBundle(
+  sourceId: string,
+  bundle: ImportBundle,
+  database = db,
+  expectedAccountId?: string,
+) {
   const now = new Date().toISOString();
   await database.transaction(
     'rw',
@@ -97,6 +107,11 @@ export async function importBundle(sourceId: string, bundle: ImportBundle, datab
     async () => {
       const source = await database.sources.get(sourceId);
       if (!source) throw new Error('This source no longer exists.');
+      if (
+        expectedAccountId &&
+        (source.kind !== 'caldwell' || source.accountId !== expectedAccountId)
+      )
+        throw new Error('The source account changed during refresh. Nothing was imported.');
       const catalog = await database.catalog.toArray();
       const series: Series[] = [];
       for (const imported of bundle.series) {
@@ -157,7 +172,7 @@ export async function recordImportFailure(sourceId: string, message: string, dat
 export async function requestRefresh(database = db) {
   await database.transaction('rw', database.sources, async () => {
     await database.sources
-      .filter((source) => source.enabled)
+      .filter((source) => source.enabled && source.kind === 'velociradar-export')
       .modify({ status: 'needs-files', error: undefined });
   });
 }

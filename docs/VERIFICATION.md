@@ -5,7 +5,7 @@ Verified locally on 2026-10-18, on Windows with Node 22 and the Codex in-app Chr
 ## Automated checks
 
 - TypeScript, ESLint and Prettier checks passed.
-- All **26 behavioral tests** passed across parser, measurements, filters and Dexie transactions.
+- The original MVP's **26 behavioral tests** passed across parser, measurements, filters and Dexie transactions. See the connected-source update below for the current test count.
 - Production build and PWA precache generation passed. The chart module loads separately; static precache is approximately 1.1 MB.
 - Public-content pattern guard and `git diff --check` passed. These are safeguards, not a proof of privacy or a substitute for pre-publication review.
 - Dependency installation reported no known vulnerabilities at install time. TypeScript was intentionally aligned to the supported ESLint peer range.
@@ -26,9 +26,17 @@ An additional ignored local check read the owner's existing JSON/CSV exports dir
 
 Browser screenshots contain synthetic data only and remain outside versioned content. Synthetic preview records belong only to the temporary local preview origin; they are not shipped application data.
 
+## Connected-source update — 2026-10-18
+
+- All **44 behavioral tests** passed, including pagination/limits, authenticated path construction, account binding, session loss, safe errors, failed-download retention, catalog rollback, all-enabled-source refresh and real SDK initialization/disposal.
+- Types, lint, formatting, production/PWA build and public-content guard passed for the local connector build.
+- The owner's isolated browser test passed: Auth and own-account reads succeeded on loopback, without truncation or bypass. See `FIREBASE_POC.md`.
+- Dependency audit reported zero known vulnerabilities after pinning the shared Firebase App modules to one Node 22-compatible version and overriding the affected transitive gRPC package. The browser uses Firestore Lite, not the Node gRPC transport.
+- Full application import and persistent-session browser verification are being completed separately; the isolated test alone does not establish them.
+
 ## Still unverified / intentionally absent
 
-- Live Firebase Auth, CORS, API restrictions, App Check, hosted-origin reads and integration distribution rights.
+- Hosted-origin reads, general API restrictions/App Check configuration, server rule isolation and integration distribution rights. Loopback Auth/own-account reads passed, but do not prove these broader properties.
 - Physical unit codes, atmosphere and physical interpretation of provider values.
 - Real-device installation across Safari/iOS/Android, browser eviction/quota behavior, and assistive-technology testing beyond the checks above.
 - Large-dataset stress tests, future schema migrations and full workspace backup/restore.

@@ -1,4 +1,12 @@
-import { startTransition, useEffect, useMemo, useOptimistic, useRef, useState } from 'react';
+import {
+  startTransition,
+  useEffect,
+  useMemo,
+  useOptimistic,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
   Activity,
@@ -17,7 +25,8 @@ import {
 } from 'lucide-react';
 import type { Filters } from './domain/model';
 import { filterDateError, filterSeries, hasFilters } from './domain/filters';
-import { loadWorkspace, requestRefresh, saveProfile, type Workspace } from './storage/workspace';
+import { loadWorkspace, saveProfile, type Workspace } from './storage/workspace';
+import { getRefreshingSources, refreshEnabledSources, subscribeToRefresh } from './sources/refresh';
 import { SourcesDialog } from './components/SourcesDialog';
 import { ProfileDialog } from './components/ProfileDialog';
 import { CatalogDialog } from './components/CatalogDialog';
@@ -62,6 +71,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
   const [message, setMessage] = useState('');
   const [filters, setOptimisticFilters] = useOptimistic(profile.filters);
   const startupHandled = useRef(false);
+  const refreshing = useSyncExternalStore(subscribeToRefresh, getRefreshingSources);
   const filtered = useMemo(() => filterSeries(series, filters), [series, filters]);
   const selectedSeries = useMemo(
     () => filtered.filter((item) => selected.includes(item.id)),
@@ -85,16 +95,14 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
     .filter((value): value is string => !!value)
     .sort()
     .at(-1);
-  const awaiting = sources.filter(
-    (source) => source.enabled && source.status === 'needs-files',
-  ).length;
+  const awaiting = sources.filter((source) => source.enabled && source.status !== 'ready').length;
 
   useEffect(() => {
     if (startupHandled.current) return;
     startupHandled.current = true;
     if (profile.refreshOnStart)
-      void requestRefresh().catch(() =>
-        setMessage('Sources could not be marked for refresh. Check local storage.'),
+      void refreshEnabledSources().catch(() =>
+        setMessage('Refresh could not start. Check local storage.'),
       );
   }, [profile.refreshOnStart]);
 
@@ -139,7 +147,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           </button>
           <a
             className="icon-button"
-            href="https://github.com/tony2kk/velocitrack#using-velocitrack"
+            href="https://github.com/tony2kk/velocitrack/blob/main/help/README.md"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Help on GitHub (opens in a new tab)"
@@ -166,17 +174,18 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
               Sources
             </button>
             <button
+              disabled={refreshing.length > 0}
               onClick={async () => {
+                setDialog('refresh');
                 try {
-                  await requestRefresh();
-                  setDialog('refresh');
+                  await refreshEnabledSources();
                 } catch {
                   setMessage('Refresh could not start. Check local storage.');
                 }
               }}
             >
               <RefreshCw size={16} />
-              Refresh
+              {refreshing.length ? 'Refreshing…' : 'Refresh'}
             </button>
             <button
               className="icon-button"
@@ -276,7 +285,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
               <p>
                 {hasFilters(filters)
                   ? 'Adjust your filters to find more measurements.'
-                  : 'Add your first source and import its export files.'}
+                  : 'Connect your Caldwell account or import local export files.'}
               </p>
               {!hasFilters(filters) && (
                 <button className="primary" onClick={() => setDialog('sources')}>
@@ -298,7 +307,11 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           Saved on this device
         </span>
         <span>
-          {awaiting ? `${awaiting} source${awaiting > 1 ? 's' : ''} awaiting files · ` : ''}
+          {refreshing.length
+            ? 'Refreshing sources · '
+            : awaiting
+              ? `${awaiting} source${awaiting > 1 ? 's need' : ' needs'} attention · `
+              : ''}
           {lastUpdate
             ? `Last import ${new Date(lastUpdate).toLocaleString('en-GB')}`
             : 'No imports yet'}
@@ -318,10 +331,18 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
         </div>
       )}
       <UpdateNotice />
-      {dialog === 'profile' && <ProfileDialog profile={profile} onClose={() => setDialog(null)} />}
+      {dialog === 'profile' && (
+        <ProfileDialog
+          profile={profile}
+          sources={sources}
+          refreshing={refreshing.length > 0}
+          onClose={() => setDialog(null)}
+        />
+      )}
       {(dialog === 'sources' || dialog === 'refresh') && (
         <SourcesDialog
           sources={sources}
+          remember={profile.rememberSignIn}
           mode={dialog === 'sources' ? 'manage' : 'refresh'}
           onClose={() => setDialog(null)}
           onMessage={setMessage}

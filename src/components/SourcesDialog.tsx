@@ -1,6 +1,13 @@
-import { startTransition, useOptimistic, useState } from 'react';
-import { CheckCircle2, FileUp, Folder, Plus, Trash2 } from 'lucide-react';
-import type { DataSource } from '../domain/model';
+import {
+  lazy,
+  startTransition,
+  Suspense,
+  useOptimistic,
+  useState,
+  useSyncExternalStore,
+} from 'react';
+import { CheckCircle2, Cloud, FileUp, Folder, Plus, Trash2 } from 'lucide-react';
+import type { DataSource, SourceKind } from '../domain/model';
 import { db } from '../storage/database';
 import {
   createSource,
@@ -10,16 +17,30 @@ import {
 } from '../storage/workspace';
 import { readExportFiles } from '../sources/velociradar';
 import { Modal } from './Modal';
+import { getRefreshingSources, subscribeToRefresh } from '../sources/refresh';
+
+const CaldwellSource = lazy(() => import('./CaldwellSource'));
+const sourceStatus = {
+  ready: 'Up to date',
+  'needs-files': 'Awaiting files',
+  'needs-setup': 'Setup needed',
+  'needs-sign-in': 'Sign-in needed',
+  error: 'Refresh failed',
+};
 
 function SourceCard({
   source,
+  remember,
   onMessage,
 }: {
   source: DataSource;
+  remember: boolean;
   onMessage: (message: string) => void;
 }) {
   const [name, setName] = useState(source.name);
-  const [busy, setBusy] = useState(false);
+  const [working, setBusy] = useState(false);
+  const refreshing = useSyncExternalStore(subscribeToRefresh, getRefreshingSources);
+  const busy = working || refreshing.includes(source.id);
   const [confirmRemoval, setConfirmRemoval] = useState(false);
   const [error, setError] = useState('');
   const [settings, setOptimisticSettings] = useOptimistic(
@@ -41,18 +62,16 @@ function SourceCard({
     <section className="source-card" aria-label={source.name}>
       <div className="source-heading">
         <span className="source-icon">
-          <Folder size={20} />
+          {source.kind === 'caldwell' ? <Cloud size={20} /> : <Folder size={20} />}
         </span>
         <div className="grow">
           <strong>{source.name}</strong>
-          <small>VelociRadar export · local files</small>
+          <small>
+            {source.kind === 'caldwell' ? 'Caldwell · online account' : 'JSON / text · local files'}
+          </small>
         </div>
         <span className={`status-pill ${source.status === 'ready' ? 'success' : ''}`}>
-          {source.status === 'ready'
-            ? 'Up to date'
-            : source.status === 'error'
-              ? 'Import failed'
-              : 'Awaiting files'}
+          {busy ? 'Working…' : sourceStatus[source.status]}
         </span>
       </div>
       <form
@@ -94,46 +113,52 @@ function SourceCard({
           <small>When off, missing firearm or projectile names stop the entire import.</small>
         </span>
       </label>
-      <label className={`file-picker ${busy ? 'disabled' : ''}`}>
-        <FileUp size={18} />
-        <span>
-          {busy ? 'Importing…' : 'Choose export files'}
-          <small>Select strings and shots together, or one combined JSON file.</small>
-        </span>
-        <input
-          type="file"
-          accept=".json,.csv,application/json,text/csv"
-          multiple
-          disabled={busy}
-          aria-label={`Import files for ${source.name}`}
-          onChange={async (event) => {
-            const input = event.currentTarget;
-            const files = Array.from(input.files ?? []);
-            if (!files.length) return;
-            setBusy(true);
-            setError('');
-            try {
-              const bundle = await readExportFiles(files);
-              const result = await importBundle(source.id, bundle);
-              onMessage(
-                `${source.name}: ${result.series} series and ${result.shots} shots imported.`,
-              );
-            } catch (error) {
-              const message =
-                error instanceof Error ? error.message : 'The import could not be completed.';
-              setError(message);
+      {source.kind === 'caldwell' ? (
+        <Suspense fallback={<p className="muted">Opening connection…</p>}>
+          <CaldwellSource source={source} remember={remember} busy={busy} onMessage={onMessage} />
+        </Suspense>
+      ) : (
+        <label className={`file-picker ${busy ? 'disabled' : ''}`}>
+          <FileUp size={18} />
+          <span>
+            {busy ? 'Importing…' : 'Choose export files'}
+            <small>Select strings and shots together, or one combined JSON file.</small>
+          </span>
+          <input
+            type="file"
+            accept=".json,.csv,.txt,application/json,text/csv,text/plain"
+            multiple
+            disabled={busy}
+            aria-label={`Import files for ${source.name}`}
+            onChange={async (event) => {
+              const input = event.currentTarget;
+              const files = Array.from(input.files ?? []);
+              if (!files.length) return;
+              setBusy(true);
+              setError('');
               try {
-                await recordImportFailure(source.id, message);
-              } catch {
-                /* The visible error remains available if storage is unavailable. */
+                const bundle = await readExportFiles(files);
+                const result = await importBundle(source.id, bundle);
+                onMessage(
+                  `${source.name}: ${result.series} series and ${result.shots} shots imported.`,
+                );
+              } catch (error) {
+                const message =
+                  error instanceof Error ? error.message : 'The import could not be completed.';
+                setError(message);
+                try {
+                  await recordImportFailure(source.id, message);
+                } catch {
+                  /* The visible error remains available if storage is unavailable. */
+                }
+              } finally {
+                setBusy(false);
+                input.value = '';
               }
-            } finally {
-              setBusy(false);
-              input.value = '';
-            }
-          }}
-        />
-      </label>
+            }}
+          />
+        </label>
+      )}
       {(error || source.error) && (
         <p role="alert" className="error">
           {error || source.error}
@@ -167,6 +192,10 @@ function SourceCard({
             onClick={async () => {
               setBusy(true);
               try {
+                if (source.kind === 'caldwell') {
+                  const { forgetSession } = await import('../sources/caldwell/session');
+                  await forgetSession(source, remember);
+                }
                 await removeSource(source.id);
                 onMessage('Source and its measurements removed from this device.');
               } catch {
@@ -185,16 +214,19 @@ function SourceCard({
 
 export function SourcesDialog({
   sources,
+  remember,
   mode,
   onClose,
   onMessage,
 }: {
   sources: DataSource[];
+  remember: boolean;
   mode: 'manage' | 'refresh';
   onClose: () => void;
   onMessage: (message: string) => void;
 }) {
   const [name, setName] = useState('');
+  const [kind, setKind] = useState<SourceKind>('caldwell');
   const [automatic, setAutomatic] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -203,8 +235,8 @@ export function SourcesDialog({
     <Modal title={mode === 'refresh' ? 'Refresh sources' : 'Data sources'} onClose={onClose} wide>
       <p className="muted">
         {mode === 'refresh'
-          ? 'Refresh includes every enabled source, regardless of the current filters. Select the latest files for each source.'
-          : 'Connect a local VelociRadar export. All files are read on this device; nothing is uploaded.'}
+          ? 'Refresh includes every enabled source, regardless of filters. Connected accounts refresh online; file sources need their latest exports.'
+          : 'Import local files or connect your Caldwell account. Measurements and source settings stay in this browser.'}
       </p>
       {mode === 'manage' && (
         <form
@@ -214,7 +246,7 @@ export function SourcesDialog({
             setBusy(true);
             setError('');
             try {
-              await db.sources.add(createSource(name, automatic));
+              await db.sources.add(createSource(name, automatic, kind));
               setName('');
             } catch {
               setError('The source could not be created.');
@@ -224,6 +256,17 @@ export function SourcesDialog({
           }}
         >
           <div className="inline-form">
+            <label className="field source-type">
+              Source type
+              <select
+                value={kind}
+                disabled={busy}
+                onChange={(event) => setKind(event.target.value as SourceKind)}
+              >
+                <option value="caldwell">Caldwell</option>
+                <option value="velociradar-export">JSON / text</option>
+              </select>
+            </label>
             <label className="field grow">
               New source name
               <input
@@ -257,7 +300,7 @@ export function SourcesDialog({
       )}
       <div className="source-list">
         {displayed.map((source) => (
-          <SourceCard key={source.id} source={source} onMessage={onMessage} />
+          <SourceCard key={source.id} source={source} remember={remember} onMessage={onMessage} />
         ))}
       </div>
       {!displayed.length && (
@@ -271,8 +314,15 @@ export function SourcesDialog({
         </div>
       )}
       <p className="fine-print">
-        JSON and CSV · 20 MB per import · Original exports stay on your device. Files absent from a
-        later export do not delete existing measurements.
+        Up to 20 MB per import. A refresh updates matching records and retains measurements missing
+        from a later import.{' '}
+        <a
+          href="https://github.com/tony2kk/velocitrack/blob/main/help/README.md#sources"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Sources help
+        </a>
       </p>
     </Modal>
   );

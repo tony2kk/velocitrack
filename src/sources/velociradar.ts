@@ -40,7 +40,8 @@ export interface ImportBundle {
 }
 
 export const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
-const MAX_SHOTS = 50_000;
+export const MAX_SERIES = 10_000;
+export const MAX_SHOTS = 50_000;
 const MAX_POINTS = 5_000;
 const MAX_TOTAL_POINTS = 1_000_000;
 
@@ -160,14 +161,15 @@ function parseShot(value: unknown, index: number): ImportedShot {
 
 function readRows(file: ExportFile): unknown {
   const content = file.text.replace(/^\uFEFF/, '');
-  if (file.name.toLowerCase().endsWith('.json')) {
+  const extension = file.name.toLowerCase().split('.').at(-1);
+  if (extension === 'json' || (extension === 'txt' && /^\s*[[{]/.test(content))) {
     try {
       return JSON.parse(content);
     } catch {
       throw new Error('A selected file is not valid JSON.');
     }
   }
-  if (file.name.toLowerCase().endsWith('.csv')) {
+  if (extension === 'csv' || extension === 'txt') {
     const result = Papa.parse<RawRecord>(content, {
       header: true,
       skipEmptyLines: 'greedy',
@@ -181,7 +183,7 @@ function readRows(file: ExportFile): unknown {
     }
     return result.data;
   }
-  throw new Error('Choose JSON or CSV export files.');
+  throw new Error('Choose JSON or CSV export files (.json, .csv or .txt).');
 }
 
 export function parseVelociRadarExport(files: ExportFile[]): ImportBundle {
@@ -225,7 +227,12 @@ export function parseVelociRadarExport(files: ExportFile[]): ImportBundle {
     }
   }
   if (!seriesRows || !shotRows) throw new Error('Both strings and shots are required.');
-  if (seriesRows.length > 10_000 || shotRows.length > MAX_SHOTS)
+  return parseVelociRadarRecords(seriesRows, shotRows);
+}
+
+/** File and online sources share the same validation and local import contract. */
+export function parseVelociRadarRecords(seriesRows: unknown[], shotRows: unknown[]): ImportBundle {
+  if (seriesRows.length > MAX_SERIES || shotRows.length > MAX_SHOTS)
     throw new Error('The export contains too many records.');
 
   const series = seriesRows.map(parseSeries);

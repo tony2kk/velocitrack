@@ -1,14 +1,18 @@
-# Browser-only Firebase feasibility — future work
+# Browser-only Firebase feasibility
 
-**Status: not executed.** No login, CORS behavior, web key restriction, hosted origin or Firestore permission has been verified for this project. The repository deliberately includes no Firebase SDK, private test implementation, project ID or API key.
+**Status: private loopback test passed on 2026-10-18.** The owner entered credentials directly into an isolated local form. Ordinary Firebase browser SDK authentication and own-account Firestore Lite reads succeeded from `http://127.0.0.1:4181`. The bounded sample contained 5 series and 42 shots, all with recognized measurement fields, without truncation. The test reported completed sign-out/disposal and did not write credentials or measurements to application storage. Configuration stayed in ignored local experiment files, with values excluded from this report and the build.
+
+This confirms the tested requests from that origin, not unrestricted API-key use, server-side rule isolation, App Check policy, GitHub Pages compatibility or distribution permission. The configuration came from the owner's earlier local study; its availability and successful requests are not evidence of public redistribution rights. No CORS proxy, forged Android headers, rule changes or alternate-account path was used. The isolated test is not versioned or included in the production build.
+
+The product connector now uses Firebase Auth plus Firestore Lite, paginated reads and the shared atomic import. Its setup imports permitted connection settings into browser storage; no project/API configuration is shipped with it. Full application verification is recorded separately in `VERIFICATION.md`.
 
 ## Prerequisites
 
-The accepted MVP uses local files; cloud access remains a separate feasibility task. Obtain configuration the owner is permitted to use for a web client and establish the relevant service terms. A customer account does not confer administrative access to the provider's Firebase project. The earlier Python exporter is not evidence that a browser client is supported.
+The original MVP used local files. For future accounts/origins, establish permitted configuration and relevant service terms before access. A customer account does not confer administrative access to the provider's Firebase project. A Python exporter alone is not evidence that a browser client is supported.
 
 Firebase client keys identify a project; access control depends on rules and other controls. An Android client key may have incompatible restrictions. Do not extract and publish provider configuration or treat visibility of a key as permission. See [Firebase API keys](https://firebase.google.com/docs/projects/api-keys).
 
-## Proposed private test protocol
+## Private test protocol
 
 1. Serve an isolated test on a loopback origin. Do not include it in the production app or public repository.
 2. Let the owner enter approved web configuration and their own email/password directly in the local form. Never ask for a password in chat.
@@ -19,7 +23,7 @@ Firebase client keys identify a project; access control depends on rules and oth
 7. Sign out and dispose of the SDK instance on both success and failure. Verify local/session storage, IndexedDB and caches contain no test credentials or records.
 8. Test the intended hosted origin only after publication is authorized. Loopback success is not evidence of GitHub Pages compatibility.
 
-[Firebase persistence](https://firebase.google.com/docs/auth/web/auth-state-persistence) distinguishes memory, session and persistent state. The accepted application policy defaults to memory; a future persistent SDK session requires local opt-in. The profile currently stores this preference only. Passwords must not be stored by application code.
+[Firebase persistence](https://firebase.google.com/docs/auth/web/auth-state-persistence) distinguishes memory, session and persistent state. The application defaults to memory; a persistent SDK session requires local opt-in. The profile preference now controls connected-source persistence. Passwords must not be stored by application code.
 
 ## What to distinguish
 

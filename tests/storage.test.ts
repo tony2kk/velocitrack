@@ -29,6 +29,18 @@ afterEach(async () => {
 });
 
 describe('local transactions', () => {
+  it('does not mark an online source as awaiting files or import into a different bound account', async () => {
+    const source = { ...createSource('Cloud', true, 'caldwell'), accountId: 'synthetic-owner' };
+    await database.sources.add(source);
+    await requestRefresh(database);
+    expect((await database.sources.get(source.id))?.status).toBe('needs-setup');
+    await expect(
+      importBundle(source.id, bundle(), database, 'different-synthetic-owner'),
+    ).rejects.toThrow('account changed');
+    expect(await database.series.count()).toBe(0);
+    await importBundle(source.id, bundle(), database, 'synthetic-owner');
+    expect(await database.shots.count()).toBe(4);
+  });
   it('refreshes idempotently and keeps local annotations and absent records', async () => {
     const source = createSource('Synthetic source', true);
     await database.sources.add(source);

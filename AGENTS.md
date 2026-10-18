@@ -6,7 +6,9 @@ This is a new project, not a continuation or copy of the old feasibility code.
 The owner approved a local-first MVP after repository preparation. Read
 `PLAN.md`, `ARCHITECTURE.md`, `docs/decisions/001-local-first-mvp.md` and
 `docs/CODEX_HANDOFF.md` before extending it. React/TypeScript/Vite, Dexie,
-ECharts and a static PWA shell are accepted. Firebase is not implemented.
+ECharts and a static PWA shell are accepted. A Caldwell connector now exists
+locally after a successful private browser-only test. Read decision 002 and
+the feasibility/terms records before changing or publishing connected sources.
 All UI, documentation and code comments must be English. Keep modules readable
 and record newly accepted product decisions.
 
@@ -32,7 +34,7 @@ files, build configuration or hosted assets. No application backend. Keep
 imports atomic, provider IDs source-scoped and annotations separate. Do not
 automatically merge catalogs across sources.
 
-No Firebase integration or provider configuration is included. Read
+No provider configuration is included. Read
 `docs/FIREBASE_POC.md` and `docs/TERMS_REVIEW.md` before cloud work. Use only
 permitted access to the authenticated owner's data. Do not bypass CORS,
 API restrictions, App Check or Firestore rules, impersonate an Android app,

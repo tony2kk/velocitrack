@@ -2,27 +2,17 @@
 
 A private, local workspace for exploring recorded Caldwell VelociRadar measurements. An unofficial community project, built for the browser. End users need no EXE, Python installation or VelociTrack account.
 
-**MVP:** JSON/CSV imports, shared catalogs, persistent filters, series comparison, charts, a shot table and an offline application shell. Live Caldwell/Firebase connectivity is not implemented or verified.
+**MVP:** JSON/CSV imports, shared catalogs, persistent filters, series comparison, charts, a shot table and an offline application shell. A Caldwell online connector is prepared locally after a successful browser-only proof of concept; hosted-origin support and distribution permission remain unresolved.
 
 VelociTrack is not affiliated with, endorsed by or supported by Caldwell or American Outdoor Brands (AOB). The original feasibility study, proprietary APK and private exports are not part of this project.
 
 ## Using VelociTrack
 
-1. Open **Sources**, name a source, and choose **Add source**. A source represents one independent export collection.
-2. Choose **strings.json and shots.json together**, or the equivalent CSV pair. A single JSON object with `strings[]` and `shots[]` is also supported. Do not select `points.csv`. The combined file limit is 20 MB.
-3. **Automatically update catalogs** creates firearm/projectile names found in the export. With it disabled, an unknown name rejects the entire import. Use **Local catalogs** beside Refresh to add the missing name and retry.
-4. Filter by source, firearm, projectile or date. Values within a filter are alternatives; different filters combine. Empty means all. Dates use local time; relative windows remain relative.
-5. Select one or more series. **Chart** shows recorded velocity over distance or muzzle velocity by shot; **Table** includes excluded shots. Hidden series leave the active selection.
-6. **Refresh** includes every enabled source, regardless of filters. Select its current export files again. Matching records are updated without duplicates; records absent from later exports are retained. One source's failure does not undo another source's success.
-7. Open **Local profile** for nickname and startup preferences. Filters save automatically. On-start refresh marks file sources as awaiting files; the browser cannot silently reread disk paths.
-
-The remember-sign-in checkbox stores a preference for future connected sources. File imports use no credentials; no authentication flow exists. Future authentication defaults to memory until application close/reload, and passwords will never be saved.
-
-Sources can be renamed, disabled or removed. **Remove source and data** requires confirmation and permanently deletes its series, shots and annotations. Catalog names remain. Used catalog entries cannot be deleted. Manual catalog renames survive refresh; cross-source mapping/merging is deferred.
+See the [user help](help/README.md) for Sources, Caldwell sign-in, JSON/text import formats, filters, profile preferences and offline use.
 
 ## Your data stays on your device
 
-Measurements, source settings, catalogs, annotations, profile and filters live only in this browser's **IndexedDB**. Nothing is uploaded. Git, the build and GitHub Pages contain application assets only. There is no telemetry, external font service, credential proxy or server database.
+Measurements, source settings, catalogs, annotations, profile and filters live only in this browser's **IndexedDB**. File imports stay local. Caldwell sign-in and read requests go directly to the provider; no measurements or settings are uploaded to a VelociTrack server. Git, the build and GitHub Pages contain application assets only. There is no telemetry, external font service, credential proxy or server database.
 
 Storage belongs to a specific origin and browser profile. Development, preview and GitHub Pages have separate workspaces. Clearing site data, private browsing or browser eviction can remove local content. **Keep original exports.** Full workspace backup/restore is planned. Local storage is not separately encrypted by the application; use an appropriate device/browser profile on shared devices.
 
@@ -61,15 +51,18 @@ Open the printed URL, normally `http://127.0.0.1:5173/velocitrack/`. On macOS/Li
 
 TypeScript 6 is pinned because the selected ESLint TypeScript integration does not support TypeScript 7 yet. Do not bypass peer checks to upgrade it.
 
+Firebase 12.19 uses the Node 22-compatible SDK line. Overrides keep Firebase App/compat peers on one matching version; otherwise npm can install a second App instance and break Auth component registration. The gRPC override fixes the reported transitive advisories; the browser connector uses Firestore Lite and does not use the Node gRPC transport. Revalidate SDK initialization, peer consistency and the dependency audit when updating these pins.
+
 ## Project layout
 
 ```text
 src/components/      Workspace and dialogs
 src/domain/          Identities, filtering and measurement semantics
-src/sources/         Validated local file adapter
+src/sources/         File and read-only online source adapters
 src/storage/         IndexedDB schema and atomic operations
 public/brand/        Owner-supplied logo, favicons and PWA icons
 tests/               Synthetic behavioral tests
+help/                User documentation
 docs/decisions/      Accepted decisions
 .github/workflows/   CI and manual Pages deployment
 ```
@@ -88,7 +81,7 @@ The configured destination is `https://tony2kk.github.io/velocitrack/`; this doe
 
 ## Cloud feasibility and contributions
 
-Browser-only Firebase access, permitted configuration, API/origin restrictions and distribution rights remain unresolved. A working Python exporter proves neither browser compatibility nor permission. Read [FIREBASE_POC.md](docs/FIREBASE_POC.md) and [TERMS_REVIEW.md](docs/TERMS_REVIEW.md) before cloud work. Do not bypass provider controls.
+A private loopback Firebase Auth/Firestore test passed. Hosted-origin compatibility, general service restrictions and distribution rights remain unresolved. Neither the Python exporter nor a successful local browser test establishes those rights. Read [FIREBASE_POC.md](docs/FIREBASE_POC.md) and [TERMS_REVIEW.md](docs/TERMS_REVIEW.md) before cloud work. Do not bypass provider controls.
 
 Use English throughout. Write small, readable modules and behavior-focused tests. Never publish credentials, real account identifiers, private exports, HAR files, APKs or vendor code. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 

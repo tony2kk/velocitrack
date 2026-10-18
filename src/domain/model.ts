@@ -1,11 +1,18 @@
 export type CatalogKind = 'firearm' | 'projectile';
-export type SourceStatus = 'ready' | 'needs-files' | 'error';
+export type SourceKind = 'velociradar-export' | 'caldwell';
+export type SourceStatus = 'ready' | 'needs-files' | 'needs-sign-in' | 'needs-setup' | 'error';
 export type RawRecord = Record<string, unknown>;
+
+/** Connection settings belong only to this browser, never to the build. */
+export interface CaldwellConnection {
+  projectId: string;
+  apiKey: string;
+}
 
 export interface DataSource {
   id: string;
   name: string;
-  kind: 'velociradar-export';
+  kind: SourceKind;
   enabled: boolean;
   autoUpdateCatalogs: boolean;
   createdAt: string;
@@ -13,6 +20,8 @@ export interface DataSource {
   lastSuccessAt?: string;
   status: SourceStatus;
   error?: string;
+  connection?: CaldwellConnection;
+  accountId?: string;
 }
 
 export interface CatalogLink {
