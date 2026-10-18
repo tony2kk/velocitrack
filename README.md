@@ -2,7 +2,7 @@
 
 A private, local workspace for exploring recorded Caldwell VelociRadar measurements. An unofficial community project, built for the browser. End users need no EXE, Python installation or VelociTrack account.
 
-**MVP:** JSON/CSV imports, shared catalogs, persistent filters, series comparison, charts, a shot table and an offline application shell. A Caldwell online connector is prepared locally after a successful browser-only proof of concept; hosted-origin support and distribution permission remain unresolved.
+**MVP:** JSON/CSV/text imports, read-only Caldwell account imports, shared catalogs, persistent filters, series comparison, charts, a shot table and an offline application shell. The Caldwell connector passed local browser sign-in, import and repeat-refresh checks. Connection settings must be supplied locally; no provider configuration is bundled. Hosted-origin support remains unverified.
 
 VelociTrack is not affiliated with, endorsed by or supported by Caldwell or American Outdoor Brands (AOB). The original feasibility study, proprietary APK and private exports are not part of this project.
 
@@ -81,7 +81,7 @@ The configured destination is `https://tony2kk.github.io/velocitrack/`; this doe
 
 ## Cloud feasibility and contributions
 
-A private loopback Firebase Auth/Firestore test passed. Hosted-origin compatibility, general service restrictions and distribution rights remain unresolved. Neither the Python exporter nor a successful local browser test establishes those rights. Read [FIREBASE_POC.md](docs/FIREBASE_POC.md) and [TERMS_REVIEW.md](docs/TERMS_REVIEW.md) before cloud work. Do not bypass provider controls.
+The private loopback Firebase Auth/Firestore test and full application import passed. Hosted-origin compatibility, general service restrictions and provider permission remain unconfirmed. The owner approved publication after reviewing the available terms and this uncertainty. Neither the Python exporter nor a successful local browser test establishes provider permission. Read [FIREBASE_POC.md](docs/FIREBASE_POC.md) and [TERMS_REVIEW.md](docs/TERMS_REVIEW.md) before cloud work. Do not bypass provider controls.
 
 Use English throughout. Write small, readable modules and behavior-focused tests. Never publish credentials, real account identifiers, private exports, HAR files, APKs or vendor code. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 

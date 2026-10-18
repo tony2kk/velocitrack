@@ -6,8 +6,8 @@ This is a new project, not a continuation or copy of the old feasibility code.
 The owner approved a local-first MVP after repository preparation. Read
 `PLAN.md`, `ARCHITECTURE.md`, `docs/decisions/001-local-first-mvp.md` and
 `docs/CODEX_HANDOFF.md` before extending it. React/TypeScript/Vite, Dexie,
-ECharts and a static PWA shell are accepted. A Caldwell connector now exists
-locally after a successful private browser-only test. Read decision 002 and
+ECharts and a static PWA shell are accepted. The Caldwell connector passed
+the private browser-only test and full local application import. Read decision 002 and
 the feasibility/terms records before changing or publishing connected sources.
 All UI, documentation and code comments must be English. Keep modules readable
 and record newly accepted product decisions.
@@ -57,8 +57,13 @@ commit the batch with a descriptive English message and push it to
 do not ask for repeat approval for ordinary verified feature batches.
 Do not force-push or include unrelated/private files. If a check or privacy
 gate fails, resolve it before publishing or report the concrete blocker.
-This workflow does not authorize a Pages deployment or waive the cloud
-feasibility and distribution-rights requirements below.
+On 2026-10-18, after reviewing the available terms and their unresolved scope,
+the owner explicitly instructed publication of the independent Caldwell
+connector. That decision is recorded in `docs/TERMS_REVIEW.md`; do not reopen
+the same approval question for this batch or ordinary verified maintenance.
+It is not provider endorsement or legal clearance. The owner plans to contact
+Caldwell when the application is sufficiently functional; do not send a message
+on their behalf. Pages deployment still requires a separate instruction.
 
 `npm run check:public` is a basic pattern guard, not a proof of privacy.
 Review staged files and Git history before publication. GitHub Pages is

@@ -22,7 +22,7 @@ See `docs/VERIFICATION.md` for actual verification and remaining caveats. Local 
 
 ## Next iteration
 
-Current priority: complete the Caldwell source and end-to-end local import verification. Dedicated user help lives in `help/README.md`.
+The Caldwell source and full local application import are implemented and verified, including repeat refresh without duplicate records. Dedicated user help lives in `help/README.md`. Next, review the connected workflow with the owner.
 
 1. Review the MVP workflow and appearance using local exports.
 2. Validate physical units, distance origin and atmosphere against reliable evidence.
@@ -31,16 +31,19 @@ Current priority: complete the Caldwell source and end-to-end local import verif
 5. Design explicit mapping/merging across source catalogs.
 6. Add agreed chart/report tools using validated measurement semantics.
 
-## Cloud gate — unresolved
+## Connected-source verification
 
-- [ ] Obtain permitted web configuration and applicable service terms.
+- [x] Keep connection configuration local and review the available public terms.
 - [x] Run isolated browser-only Auth/Firestore PoC with the owner's account.
 - [x] Verify successful ordinary browser Auth and own-account reads from loopback without bypasses.
+- [x] Verify full application import and repeat refresh with the owner's account.
+- [x] Record sanitized results, terms limitations and the owner's explicit decision to publish the independent connector.
 - [ ] Verify intended hosted origin and obtain evidence for restrictions not observable from customer access.
-- [ ] Record sanitized results and distribution rights before integration publication.
+- [ ] Obtain any applicable app-specific terms or provider clarification; the owner intends to contact Caldwell later.
+- [ ] Verify opt-in persistent authentication across browser restarts.
 
-The private browser-only test passed on 2026-10-18. Firebase SDK integration is prepared locally; provider configuration is excluded. Follow `docs/FIREBASE_POC.md` and `docs/TERMS_REVIEW.md`; loopback success is not distribution clearance.
+Both the private browser-only test and product import passed on 2026-10-18. Provider configuration is excluded. The owner directed publication after the terms review; this does not establish provider support or resolve the remaining service questions. See `docs/FIREBASE_POC.md` and `docs/TERMS_REVIEW.md`.
 
 ## Publication
 
-Review candidate files, built assets and history before publishing. The owner authorized committing and pushing each completed, verified functional batch to `origin/main` on 2026-10-18. Continue on `main` unless instructed otherwise. Pages deployment remains manual and requires a separate instruction; the cloud feasibility and terms gate still applies.
+Review candidate files, built assets and history before publishing. The owner authorized committing and pushing each completed, verified functional batch to `origin/main` on 2026-10-18 and explicitly approved proceeding with the Caldwell connector after the terms review. Continue on `main` unless instructed otherwise. Pages deployment remains manual and requires a separate instruction.

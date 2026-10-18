@@ -57,6 +57,6 @@ Add adapters behind the validated import contract. Caldwell uses the modular Fir
 
 Authentication defaults to memory. SDK persistence requires explicit profile opt-in; disabling it migrates sessions back to memory, and sign-out/removal clears the session. The application never stores passwords. Firestore uses no persistent cache or subscription; only the validated atomic import writes measurements to Dexie. Errors shown/saved by the connector use safe categories rather than raw provider responses. Catalog validation errors may include the local missing name.
 
-The private browser-only PoC passed on loopback before integration; hosted-origin support and distribution rights remain separate unresolved items. See decision 002, `docs/FIREBASE_POC.md` and `docs/TERMS_REVIEW.md`. Never add a credential proxy or bypass service controls.
+The private browser-only PoC passed on loopback before integration. Full application import and repeat refresh also passed locally. The owner approved publication after review of the available terms; hosted-origin support and provider permission remain unconfirmed. See decision 002, `docs/FIREBASE_POC.md` and `docs/TERMS_REVIEW.md`. Never add a credential proxy or bypass service controls.
 
 Introduce mapping, custom fields, tools/charts/reports as small modules when their first workflow is agreed. A generic plugin framework is unnecessary for this MVP.

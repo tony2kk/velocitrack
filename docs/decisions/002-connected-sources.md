@@ -13,3 +13,5 @@ Requested by the owner on 2026-10-18, after decision 001. Caldwell import is the
 - Put user help in `help/README.md`, including a Sources chapter. Header help opens that page on GitHub in a new tab, not the project README.
 
 The private loopback proof succeeded before product integration. This records the implementation scope, not provider endorsement, hosted-origin verification or distribution permission. See `FIREBASE_POC.md` and `TERMS_REVIEW.md` for those boundaries.
+
+Full application import and repeat refresh subsequently passed on loopback. After reviewing the available terms and unresolved provider questions, the owner explicitly instructed publication on 2026-10-18. They plan to contact Caldwell themselves once the application is sufficiently functional. This decision permits the reviewed connector batch to follow the normal commit-and-push workflow; it does not authorize a Pages deployment or claim provider approval.

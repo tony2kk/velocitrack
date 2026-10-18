@@ -22,7 +22,7 @@ An additional ignored local check read the owner's existing JSON/CSV exports dir
 - Reviewed desktop (1366 px) and mobile (390 px) layouts, including the owner's SVG logo. No page-level horizontal overflow at the mobile viewport.
 - Checked modal Escape behavior and return of keyboard focus to the profile button; the mobile profile icon has an accessible name.
 - Inspected browser warning/error logs during the online workflow; none were recorded.
-- Stopped the owned preview server and verified HTTP could no longer connect. Reloading the cached application still restored the local data/profile, and both chart modes worked. The server remains stopped after verification.
+- Stopped the owned preview server and verified HTTP could no longer connect. Reloading the cached application still restored the local data/profile, and both chart modes worked. This describes the original MVP offline test, not the current preview-server state.
 
 Browser screenshots contain synthetic data only and remain outside versioned content. Synthetic preview records belong only to the temporary local preview origin; they are not shipped application data.
 
@@ -32,11 +32,14 @@ Browser screenshots contain synthetic data only and remain outside versioned con
 - Types, lint, formatting, production/PWA build and public-content guard passed for the local connector build.
 - The owner's isolated browser test passed: Auth and own-account reads succeeded on loopback, without truncation or bypass. See `FIREBASE_POC.md`.
 - Dependency audit reported zero known vulnerabilities after pinning the shared Firebase App modules to one Node 22-compatible version and overriding the affected transitive gRPC package. The browser uses Firestore Lite, not the Node gRPC transport.
-- Full application import and persistent-session browser verification are being completed separately; the isolated test alone does not establish them.
+- The owner signed in through the application's Sources dialog at `http://127.0.0.1:4180/velocitrack/`. The UI confirmed **5 series and 42 shots imported**, an up-to-date source and **Current session only** authentication.
+- A subsequent **Refresh now** completed successfully and advanced the source's update time. The workspace contained **7 series and 46 shots**, including the pre-existing synthetic 2-series/4-shot file source, with no duplicate records after refresh. No private record contents are included in this report.
+- Persistent-session browser verification remains outstanding; the default in-memory workflow above does not establish persistence across browser restarts.
 
 ## Still unverified / intentionally absent
 
-- Hosted-origin reads, general API restrictions/App Check configuration, server rule isolation and integration distribution rights. Loopback Auth/own-account reads passed, but do not prove these broader properties.
+- Hosted-origin reads, general API restrictions/App Check configuration and server rule isolation. Loopback Auth/own-account reads passed, but do not prove these broader properties.
+- Provider permission and any app-specific terms remain unconfirmed. The owner approved publication after reviewing this uncertainty; see `TERMS_REVIEW.md`. This is a release decision, not a technical test result.
 - Physical unit codes, atmosphere and physical interpretation of provider values.
 - Real-device installation across Safari/iOS/Android, browser eviction/quota behavior, and assistive-technology testing beyond the checks above.
 - Large-dataset stress tests, future schema migrations and full workspace backup/restore.
