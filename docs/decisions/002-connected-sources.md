@@ -2,7 +2,7 @@
 
 Requested by the owner on 2026-10-18, after decision 001. Caldwell import is the immediate priority.
 
-The manual connection-file setup below is superseded by [decision 003](003-automatic-local-setup.md). The remaining authentication, privacy and import boundaries still apply.
+The historical connection-file/local-only distribution setup below is superseded by [decision 005](005-public-source-configuration.md), following the intermediate local helper in decision 003. The remaining authentication, privacy and import boundaries still apply.
 
 - Keep the local file adapter under the user-facing type **JSON / text**. Accept `.txt` only for the existing JSON/CSV formats, not arbitrary text.
 - Add **Caldwell** as a separate online source. Source types are immutable after creation.

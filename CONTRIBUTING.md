@@ -8,7 +8,7 @@ VelociTrack has a local-first measurement MVP. Read the architecture decision be
 4. Run `npm run verify` and inspect `git diff --cached` before committing.
 5. Explain the concrete change, validation and remaining uncertainty in the pull request.
 
-Do not attach private exports, account identifiers, authentication logs, tokens, API configuration, proprietary APKs or vendor code to issues or pull requests. A public repository's history, logs and artifacts are public too.
+Do not attach private exports, account identifiers, authentication logs, tokens, private API configuration, proprietary APKs or vendor code to issues or pull requests. The standard two-field Caldwell client configuration is intentionally public under decision 005; this exception does not extend to any user credentials or settings. A public repository's history, logs and artifacts are public too.
 
 Dependency versions and Actions revisions are pinned. Update them intentionally with the lockfile, review upstream changes and rerun verification. Project contributions are provided under the MIT License.
 
