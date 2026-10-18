@@ -16,9 +16,9 @@ Read `AGENTS.md`, `PLAN.md`, `ARCHITECTURE.md`, `docs/decisions/001-local-first-
 - Expanded series expose shot checkboxes. Deselections and hover are page-memory state; selected shots drive summaries, charts and table. Import feedback expires after ten seconds; progress tracks active sources. See decision 004.
 - Units/atmosphere are unvalidated; no weapon configuration or ammunition optimization.
 
-The study is not production code. Never copy private exports, APKs or provider configuration into the project. Synthetic tests are invented from scratch. Owner-provided branding lives in `public/brand/`; the ZIP is excluded.
+The study is not production code. Never copy private exports, APKs or account configuration into the project. The owner explicitly requested the shared two-field Caldwell client configuration in `public/sources/caldwell.json`; this is the only allowed public provider metadata (decision 005). Synthetic tests are invented from scratch. Owner-provided branding lives in `public/brand/`; the ZIP is excluded.
 
-User help is `help/README.md`; the header opens it on GitHub in a new tab. Caldwell setup is automatic in the configured local installation: reuse browser settings, otherwise read the same-origin loopback helper. Shared technical metadata lives in the local profile; each source retains its connection/account binding. The helper reads ignored `.local/caldwell-connection.json` and emits no static build asset. Users enter only email/password. Auth defaults to memory, with SDK persistence only after profile opt-in. No provider identifier/key is shipped. Read decision 003 before extending setup to public hosting.
+User help is `help/README.md`; the header opens it on GitHub in a new tab. The published app is https://tony2kk.github.io/velocitrack/. Caldwell setup reuses browser settings, otherwise loads the standard `sources/caldwell.json` on both local and hosted installations. Each source retains its connection/account binding. Only the shared service project ID/client key is public; no user credential, token or setting is shipped. Users enter only email/password. Auth defaults to memory, with SDK persistence only after profile opt-in. Read decision 005 before changing source configuration.
 
 ## Working practices
 

@@ -4,13 +4,13 @@
 
 This confirms the tested requests from that origin, not unrestricted API-key use, server-side rule isolation, App Check policy, GitHub Pages compatibility or distribution permission. The configuration came from the owner's earlier local study; its availability and successful requests are not evidence of public redistribution rights. No CORS proxy, forged Android headers, rule changes or alternate-account path was used. The isolated test is not versioned or included in the production build.
 
-The product connector now uses Firebase Auth plus Firestore Lite, paginated reads and the shared atomic import. Automatic local setup reuses browser metadata or the configured Vite loopback helper; it no longer asks users to select a connection file. No project/API configuration is shipped with the static application. See decision 003. Full application verification is recorded separately in `VERIFICATION.md`.
+The product connector now uses Firebase Auth plus Firestore Lite, paginated reads and the shared atomic import. Under the owner's later explicit instruction (decision 005), local and hosted setup reuse browser metadata or the standard two-field `public/sources/caldwell.json`. This intentionally public service metadata replaces the earlier loopback helper; user credentials and data remain private. Full application verification is recorded separately in `VERIFICATION.md`.
 
 ## Prerequisites
 
 The original MVP used local files. For future accounts/origins, establish permitted configuration and relevant service terms before access. A customer account does not confer administrative access to the provider's Firebase project. A Python exporter alone is not evidence that a browser client is supported.
 
-Firebase client keys identify a project; access control depends on rules and other controls. An Android client key may have incompatible restrictions. Do not extract and publish provider configuration or treat visibility of a key as permission. See [Firebase API keys](https://firebase.google.com/docs/projects/api-keys).
+Firebase client keys identify a project; access control depends on rules and other controls. An Android client key may have incompatible restrictions. Do not publish additional provider configuration beyond the explicitly approved two-field source configuration or treat visibility of a key as permission. See [Firebase API keys](https://firebase.google.com/docs/projects/api-keys).
 
 ## Private test protocol
 

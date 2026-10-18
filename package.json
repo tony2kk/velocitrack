@@ -1,6 +1,6 @@
 {
   "name": "velocitrack",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "A private, local workspace for recorded VelociRadar measurements",
   "license": "MIT",
@@ -17,8 +17,8 @@
     "test:watch": "vitest",
     "check:public": "node scripts/check-public.mjs",
     "lint": "eslint .",
-    "format": "prettier --write src dev tests *.ts *.mjs *.json index.html",
-    "format:check": "prettier --check src dev tests *.ts *.mjs *.json index.html",
+    "format": "prettier --write src tests public/sources/*.json *.ts *.mjs *.json index.html",
+    "format:check": "prettier --check src tests public/sources/*.json *.ts *.mjs *.json index.html",
     "verify": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run build && npm run check:public"
   },
   "dependencies": {

@@ -44,17 +44,19 @@ files, build configuration or hosted assets. No application backend. Keep
 imports atomic, provider IDs source-scoped and annotations separate. Do not
 automatically merge catalogs across sources.
 
-No provider configuration is included. Read
+The owner explicitly requested standard public Caldwell client configuration; see
+decision 005. Only `public/sources/caldwell.json` may contain the shared `projectId`
+and Firebase client `apiKey`. This is service metadata, not a user's profile or credentials. Read
 `docs/FIREBASE_POC.md` and `docs/TERMS_REVIEW.md` before cloud work. Use only
 permitted access to the authenticated owner's data. Do not bypass CORS,
 API restrictions, App Check or Firestore rules, impersonate an Android app,
 introduce a credential proxy or change a third-party Firebase project.
 
 Caldwell sign-in must not ask ordinary users for a project ID or configuration file.
-Automatic local setup uses browser metadata or the loopback Vite helper described in
-decision 003. Its ignored settings must never become static/public build assets.
-Do not describe fresh public-host setup as supported until its distribution design
-is agreed. The local helper must never receive credentials or proxy Firebase calls.
+Automatic setup reuses browser metadata or loads the standard source-type configuration
+from the same origin, locally and on Pages. Never publish the contents of an ignored
+local file wholesale. The public-content guard permits exactly the two shared metadata
+fields in the standard file and rejects extra fields. Do not add a credential proxy.
 
 Units and atmosphere remain unvalidated. Preserve uncertainty. A zero
 distance alone is not padding; paired `[0, 0]` handling needs explicit tests.

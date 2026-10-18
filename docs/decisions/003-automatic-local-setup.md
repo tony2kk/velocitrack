@@ -1,5 +1,7 @@
 # 003 — Automatic local Caldwell setup
 
+Historical decision, superseded for installation setup by [decision 005](005-public-source-configuration.md). The standard public source-type file now replaces the loopback helper; existing browser/source bindings remain protected.
+
 Requested by the owner on 2026-10-18. Selecting a connection JSON file is not an acceptable end-user sign-in flow. The user selects Caldwell and supplies only email/password. Technical configuration identifies the provider project; it is distinct from each user's account and authentication tokens.
 
 ## Implemented scope

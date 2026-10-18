@@ -3,11 +3,11 @@ import { db } from '../../storage/database';
 import { parseConnectionSettings } from './configuration';
 import { CaldwellError } from './errors';
 
-/** Load local preview metadata, without transmitting any account identifier or credential. */
-export async function loadLocalConnection(): Promise<CaldwellConnection> {
+/** Load installation metadata from this origin without sending an account identifier or credential. */
+export async function loadInstallationConnection(): Promise<CaldwellConnection> {
   try {
-    if (!['127.0.0.1', 'localhost', '[::1]'].includes(location.hostname)) throw new Error();
-    const response = await fetch(`${import.meta.env.BASE_URL}local-caldwell-settings`, {
+    // The same standard source-type configuration is served locally and on static hosts.
+    const response = await fetch(`${import.meta.env.BASE_URL}sources/caldwell.json`, {
       cache: 'no-store',
       credentials: 'omit',
       mode: 'same-origin',
@@ -28,12 +28,12 @@ export async function loadLocalConnection(): Promise<CaldwellConnection> {
 
 /**
  * Prepare a source without asking the user for technical configuration.
- * Reuse browser-local settings before contacting the local preview helper; never replace a bound source.
+ * Reuse browser-local settings before loading installation metadata; never replace a bound source.
  */
 export async function prepareCaldwellSource(
   sourceId: string,
   database = db,
-  loadSettings = loadLocalConnection,
+  loadSettings = loadInstallationConnection,
 ): Promise<DataSource> {
   const source = await database.sources.get(sourceId);
   if (!source || source.kind !== 'caldwell')

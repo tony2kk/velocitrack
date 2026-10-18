@@ -4,7 +4,6 @@ import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
-import { localCaldwellSetupPlugin } from './dev/caldwell-setup.ts';
 
 const projectRoot = fileURLToPath(new URL('.', import.meta.url));
 const { version } = JSON.parse(
@@ -39,9 +38,6 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    localCaldwellSetupPlugin(
-      fileURLToPath(new URL('./.local/caldwell-connection.json', import.meta.url)),
-    ),
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['brand/*.{svg,png,ico}'],

@@ -29,7 +29,7 @@ This source signs in directly with Firebase for your Caldwell account and reads 
 
 Technical connection settings identify the Caldwell service, not an individual user. They are prepared by the installation and saved in the local browser profile for reuse. Your email/password identify your own account. You do not create a separate Firebase project.
 
-Automatic first-time setup currently works in the configured local development/preview installation. A source checkout or a future public deployment without installation settings cannot connect a new browser yet; contact the app maintainer if sign-in preparation is unavailable. Existing browser settings are reused. No provider configuration is included in the public repository or build, and no user credentials pass through the local setup helper.
+Local and published installations prepare sign-in from the same standard Caldwell source configuration. It contains only the common service project ID and Firebase client API key, which are public application metadata, not your account credentials. Existing browser settings are reused. You enter only your Caldwell email/password; no configuration file selection is needed. A first-time setup needs an internet connection on the published site.
 
 The first signed-in account binds the source to that account. To import a different account, create another source; this prevents measurements from two accounts being mixed accidentally. Source settings are not a credential export or a workspace backup.
 

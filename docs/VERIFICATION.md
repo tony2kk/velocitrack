@@ -1,6 +1,6 @@
 # MVP verification
 
-Verified locally on 2026-10-18, on Windows with Node 22 and the Codex in-app Chromium browser. Results below describe local work; they do not assert that the current MVP is pushed or deployed.
+Verified on 2026-10-18, on Windows with Node 22 and the Codex in-app Chromium browser. Each section distinguishes automated checks, local browser checks and published-origin observations.
 
 ## Automated checks
 
@@ -72,6 +72,13 @@ These checks supplement the earlier live-import checks; they do not constitute a
 - Physical unit codes, atmosphere and physical interpretation of provider values.
 - Real-device installation across Safari/iOS/Android, browser eviction/quota behavior, and assistive-technology testing beyond the checks above.
 - Large-dataset stress tests, future schema migrations and full workspace backup/restore.
-- A publicly deployed GitHub Pages build; deployment remains manual and requires owner instruction.
 
 File parsing and IndexedDB tests do not replace these remaining checks. Any future change to persistence, import semantics or units must add appropriate tests and update this record.
+
+## Public installation and standard source configuration — 2026-10-18
+
+- The owner authorized Pages deployment. The first published build (`0.2.0`, `eb9ae14`) passed the deployment workflow and loaded at `https://tony2kk.github.io/velocitrack/`, with its version confirmed in the rendered footer.
+- The owner then explicitly requested the standard Caldwell source-type configuration for identical local/hosted setup (decision 005). Version `0.2.1` loads `sources/caldwell.json` on both origins. Only the shared `projectId` and Firebase client `apiKey` are intentionally public; no account information or user data belongs in this file.
+- All **88 behavioral tests** passed, with types, lint, formatting, production/PWA build and publication guard. Setup tests cover a fresh public origin, profile reuse without another request, preservation of configured sources and safe failure on malformed/oversized responses. Publication tests exercise the actual guard in isolated temporary repositories with invented data; extra account fields and client keys outside the standard file are rejected.
+- The obsolete loopback helper and its eight boundary tests were removed. No backend or deployment secret is needed. The standard source file is copied by the ordinary build; existing measurements and source/account bindings are not migrated or cleared.
+- Actual hosted sign-in and authenticated Firestore reads still require the owner to enter credentials directly on the published site. Preparing a sign-in form is not evidence of a successful cloud import. No credentials or tokens are copied from the local origin.

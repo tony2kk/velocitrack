@@ -41,7 +41,7 @@ The Caldwell source and full local application import are implemented and verifi
 - [x] Verify full application import and repeat refresh with the owner's account.
 - [x] Record sanitized results, terms limitations and the owner's explicit decision to publish the independent connector.
 - [x] Replace manual connection-file selection with automatic setup in the configured local installation.
-- [ ] Agree a distributable provider configuration before supporting first use on a public/static installation.
+- [x] Publish the standard two-field Caldwell source-type configuration for identical local/hosted setup, as explicitly requested by the owner (decision 005).
 - [ ] Verify intended hosted origin and obtain evidence for restrictions not observable from customer access.
 - [ ] Obtain any applicable app-specific terms or provider clarification; the owner intends to contact Caldwell later.
 - [ ] Verify opt-in persistent authentication across browser restarts.

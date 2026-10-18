@@ -2,13 +2,15 @@
 
 A private, local workspace for exploring recorded Caldwell VelociRadar measurements. An unofficial community project, built for the browser. End users need no EXE, Python installation or VelociTrack account.
 
-**MVP:** JSON/CSV/text imports, read-only Caldwell account imports, shared catalogs, persistent filters, series comparison, charts, a shot table and an offline application shell. The Caldwell connector passed local browser sign-in, import and repeat-refresh checks. Configured local installations prepare connection settings automatically, so users enter only their email/password. No provider configuration is bundled. Hosted-origin support remains unverified.
+**MVP:** JSON/CSV/text imports, read-only Caldwell account imports, shared catalogs, persistent filters, series comparison, charts, a shot table and an offline application shell. Local and hosted installations use the same standard Caldwell client configuration, so users enter only their email/password. See the [verification record](docs/VERIFICATION.md) for observed sign-in/import results and remaining checks.
 
 VelociTrack is not affiliated with, endorsed by or supported by Caldwell or American Outdoor Brands (AOB). The original feasibility study, proprietary APK and private exports are not part of this project.
 
 ## Using VelociTrack
 
 See the [user help](help/README.md) for Sources, Caldwell sign-in, JSON/text import formats, filters, profile preferences and offline use.
+
+Open the published app at **[tony2kk.github.io/velocitrack](https://tony2kk.github.io/velocitrack/)**.
 
 ## Your data stays on your device
 
@@ -53,7 +55,7 @@ TypeScript 6 is pinned because the selected ESLint TypeScript integration does n
 
 Firebase 12.19 uses the Node 22-compatible SDK line. Overrides keep Firebase App/compat peers on one matching version; otherwise npm can install a second App instance and break Auth component registration. The gRPC override fixes the reported transitive advisories; the browser connector uses Firestore Lite and does not use the Node gRPC transport. Revalidate SDK initialization, peer consistency and the dependency audit when updating these pins.
 
-For a configured local Caldwell preview, the maintainer supplies permitted `projectId` and `apiKey` fields in ignored `.local/caldwell-connection.json`, then starts/restarts Vite. The dev/preview helper serves only these fields to same-origin loopback requests; it accepts no credentials and emits nothing into `dist/`. Users create a Caldwell source and enter only their email/password. Settings are then reused from the browser profile. A fresh public/static installation still requires a separately approved provider-configuration distribution mechanism; a normal build does not include this local helper or its data. See [decision 003](docs/decisions/003-automatic-local-setup.md).
+`public/sources/caldwell.json` is the standard configuration for the Caldwell source type. It contains only the common Firebase `projectId` and client `apiKey`, deliberately served as public application metadata. A normal build copies it into `dist/sources/caldwell.json`; local development and static hosting use the same file. No local helper, deployment secret or end-user configuration file is needed. Existing browser/source bindings are preserved. User credentials, sessions, preferences and measurements remain separate. See [decision 005](docs/decisions/005-public-source-configuration.md).
 
 ## Project layout
 
@@ -62,8 +64,8 @@ src/components/      Workspace and dialogs
 src/domain/          Identities, filtering and measurement semantics
 src/sources/         File and read-only online source adapters
 src/storage/         IndexedDB schema and atomic operations
-dev/                 Local Vite setup helpers, excluded from the application build
 public/brand/        Owner-supplied logo, favicons and PWA icons
+public/sources/      Shared public source-type metadata, never account settings
 tests/               Synthetic behavioral tests
 help/                User documentation
 docs/decisions/      Accepted decisions
@@ -80,7 +82,7 @@ Deployment is **manual**; pushing code does not deploy the site. After owner aut
 2. Run **Deploy GitHub Pages (manual)** on `main`.
 3. Check the workflow and deployed application.
 
-The configured destination is `https://tony2kk.github.io/velocitrack/`; this does not assert deployment has occurred. Only `dist/` is uploaded. No application secrets are needed. If the base path changes, update Vite base, manifest start/scope and service-worker navigation scope together. See [GitHub Pages documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+The published destination is `https://tony2kk.github.io/velocitrack/`. Only `dist/` is uploaded, including the standard public source-type configuration. No application secrets are needed. If the base path changes, update Vite base, manifest start/scope and service-worker navigation scope together. See [GitHub Pages documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
 
 ## Cloud feasibility and contributions
 

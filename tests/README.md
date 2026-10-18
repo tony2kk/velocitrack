@@ -9,5 +9,7 @@ Committed fixtures are invented from scratch. Tests never read personal exports 
 - `interaction.test.tsx`: React/DOM checks for notification deadlines, session selection, linked navigation/table hover, pagination and progress dismissal.
 - `chart.test.ts` and `chart-interaction.test.tsx`: sample identity/precision, trace limits, chart event mapping, emphasis without canvas reconstruction, and safe point-detail rendering. The chart bridge tests mock ECharts; real canvas rendering is verified separately in the browser.
 - `refresh.test.ts`: enabled-source coordination, in-flight deduplication, progress updates and cleanup after failures.
+- `caldwell-setup.test.ts`: identical standard source setup for local/hosted origins, profile reuse, preserved account bindings, bounded responses and safe failures.
+- `public-content.test.ts`: runs the publication guard in isolated temporary Git repositories, allowing only the standard two-field client metadata and rejecting extra fields or client keys elsewhere. All values are invented.
 
 Run `npm test` or `npm run verify`. Empty suites fail. Browser testing is separate; see `docs/VERIFICATION.md`. Fake IndexedDB tests do not prove browser quota, migration or service-worker behavior.
