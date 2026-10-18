@@ -155,6 +155,8 @@ Select one or more series to view charts or the shot table. A series hidden by a
 
 ## Profile and offline use
 
+For troubleshooting, include the version shown in the footer, for example `v0.1.0 · abc1234`. It identifies the application currently loaded in the browser, including offline use. A `-dirty` suffix means a local build includes uncommitted changes; `local` means its source commit is unavailable. After accepting an app update, the footer identifies the newly loaded build.
+
 The profile icon opens your local nickname and startup/sign-in preferences. There is no VelociTrack server account. **Refresh all enabled sources after startup** refreshes signed-in online sources and marks file sources as awaiting files. Missing sign-in waits for you to open Sources.
 
 Measurements and settings belong to this browser profile and site address. Changing port, hostname or browser creates a separate workspace. Clearing site data or browser eviction can remove it. Keep your original exports; full workspace backup/restore is not yet available.

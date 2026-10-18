@@ -11,6 +11,7 @@ import {
 import type { ImportBundle, ImportedReference } from '../sources/velociradar';
 import { db, type WorkspaceDatabase } from './database';
 
+/** Read a consistent snapshot so the UI never mixes tables from different import transactions. */
 export async function loadWorkspace(database = db) {
   return database.transaction('r', database.tables, async () => ({
     sources: await database.sources.toArray(),
@@ -23,6 +24,7 @@ export async function loadWorkspace(database = db) {
 
 export type Workspace = Awaited<ReturnType<typeof loadWorkspace>>;
 
+/** Merge top-level preferences atomically; callers provide complete nested filter objects. */
 export async function saveProfile(patch: Partial<Omit<Profile, 'id'>>, database = db) {
   await database.transaction('rw', database.profiles, async () => {
     const current = (await database.profiles.get('local')) ?? defaultProfile();
@@ -30,6 +32,7 @@ export async function saveProfile(patch: Partial<Omit<Profile, 'id'>>, database 
   });
 }
 
+/** Create an unsaved source with the setup state appropriate to its immutable adapter type. */
 export function createSource(
   name: string,
   autoUpdateCatalogs: boolean,
@@ -46,6 +49,7 @@ export function createSource(
   };
 }
 
+/** Resolve or create a reference inside the caller's import transaction, honoring catalog policy. */
 async function resolveCatalog(
   reference: ImportedReference,
   kind: CatalogKind,
@@ -93,7 +97,11 @@ async function resolveCatalog(
   return item.id;
 }
 
-/** The complete source import succeeds or rolls back, including catalog changes. */
+/**
+ * Commit a validated source bundle and its catalog changes atomically.
+ * Upserts preserve records absent from this download and never replace local annotations.
+ * Connected imports recheck account binding inside the write transaction.
+ */
 export async function importBundle(
   sourceId: string,
   bundle: ImportBundle,
@@ -161,6 +169,7 @@ export async function importBundle(
   return { series: bundle.series.length, shots: bundle.shots.length };
 }
 
+/** Record an unsuccessful attempt without losing previous data or the last successful timestamp. */
 export async function recordImportFailure(sourceId: string, message: string, database = db) {
   await database.sources.update(sourceId, {
     status: 'error',
@@ -169,6 +178,7 @@ export async function recordImportFailure(sourceId: string, message: string, dat
   });
 }
 
+/** Mark enabled file sources awaiting user-selected files; browsers cannot silently reread them. */
 export async function requestRefresh(database = db) {
   await database.transaction('rw', database.sources, async () => {
     await database.sources
@@ -177,6 +187,7 @@ export async function requestRefresh(database = db) {
   });
 }
 
+/** Save a unique manual name and relinquish source-managed naming so refresh cannot overwrite it. */
 export async function saveCatalogItem(kind: CatalogKind, name: string, id?: string, database = db) {
   const trimmed = name.trim();
   if (!trimmed || trimmed.length > 120) throw new Error('Enter a name of 1–120 characters.');
@@ -199,6 +210,7 @@ export async function saveCatalogItem(kind: CatalogKind, name: string, id?: stri
   });
 }
 
+/** Remove an unused catalog entry while checking references in the same transaction. */
 export async function removeCatalogItem(item: CatalogItem, database = db) {
   await database.transaction('rw', [database.catalog, database.series], async () => {
     const field = item.kind === 'firearm' ? 'firearmId' : 'projectileId';
@@ -208,6 +220,7 @@ export async function removeCatalogItem(item: CatalogItem, database = db) {
   });
 }
 
+/** Delete a source's data and annotations atomically; retain catalog names and clear its filter. */
 export async function removeSource(sourceId: string, database = db) {
   await database.transaction('rw', database.tables, async () => {
     const series = await database.series.where('sourceId').equals(sourceId).primaryKeys();

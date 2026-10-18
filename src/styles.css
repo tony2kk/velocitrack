@@ -566,6 +566,11 @@
   .unofficial {
     margin-left: auto;
   }
+  /* Keep the troubleshooting identifier readable when the footer wraps on small screens. */
+  .app-version {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 @layer components {

@@ -1,11 +1,13 @@
 import type { Shot } from './model';
 
+/** Valid plotted pair retaining its original sample index for traceability. */
 export interface MeasurementPoint {
   distance: number;
   velocity: number;
   index: number;
 }
 
+/** Classify paired samples without changing raw arrays; report unmatched tails separately. */
 export function inspectPoints(shot: Pick<Shot, 'distances' | 'velocities'>) {
   const points: MeasurementPoint[] = [];
   let padding = 0;
@@ -16,6 +18,7 @@ export function inspectPoints(shot: Pick<Shot, 'distances' | 'velocities'>) {
     const distance = shot.distances[index]!;
     const velocity = shot.velocities[index]!;
     if (distance === 0 && velocity === 0) {
+      // Only the paired zero sentinel is padding; distance zero with positive velocity is valid.
       padding += 1;
     } else if (
       !Number.isFinite(distance) ||
@@ -37,6 +40,7 @@ export function inspectPoints(shot: Pick<Shot, 'distances' | 'velocities'>) {
   };
 }
 
+/** Summarize valid, non-excluded muzzle readings only when their source/unit grouping agrees. */
 export function summarizeShots(shots: Shot[]) {
   const included = shots.filter(
     (shot) =>
@@ -55,6 +59,7 @@ export function summarizeShots(shots: Shot[]) {
   let squaredDeviations = 0;
   let minimum = Infinity;
   let maximum = -Infinity;
+  // Welford's running variance avoids cancellation for readings with a small spread.
   included.forEach((shot, index) => {
     const value = shot.muzzleVelocity!;
     const delta = value - mean;
@@ -67,12 +72,14 @@ export function summarizeShots(shots: Shot[]) {
   return {
     count: included.length,
     mean: included.length ? mean : null,
+    // Sample deviation needs at least two readings and uses n - 1, not population variance.
     sd: included.length > 1 ? Math.sqrt(squaredDeviations / (included.length - 1)) : null,
     spread: included.length ? maximum - minimum : null,
     incompatible: false,
   };
 }
 
+/** Prevent mixed source/unit charts; equal raw codes are only a provisional compatibility check. */
 export function chartGroupsCompatible(shots: Shot[]): boolean {
   return (
     new Set(

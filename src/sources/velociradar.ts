@@ -1,16 +1,19 @@
 import Papa from 'papaparse';
 import type { RawRecord } from '../domain/model';
 
+/** File contents already chosen by the user; this adapter performs no filesystem or network access. */
 export interface ExportFile {
   name: string;
   text: string;
 }
 
+/** Provider catalog identity before it is resolved to a local catalog item. */
 export interface ImportedReference {
   remoteId: string;
   name: string;
 }
 
+/** Validated session ready for source-scoped storage, retaining the original record. */
 export interface ImportedSeries {
   remoteId: string;
   name: string;
@@ -20,6 +23,7 @@ export interface ImportedSeries {
   raw: RawRecord;
 }
 
+/** Validated numeric fields without unit conversion, padding removal or array reordering. */
 export interface ImportedShot {
   remoteId: string;
   seriesRemoteId: string;
@@ -34,23 +38,27 @@ export interface ImportedShot {
   raw: RawRecord;
 }
 
+/** Complete validated input shared by file and cloud adapters; storage commits it as one unit. */
 export interface ImportBundle {
   series: ImportedSeries[];
   shots: ImportedShot[];
 }
 
+// Bound input before large allocations and reject excess data instead of silently truncating it.
 export const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
 export const MAX_SERIES = 10_000;
 export const MAX_SHOTS = 50_000;
 const MAX_POINTS = 5_000;
 const MAX_TOTAL_POINTS = 1_000_000;
 
+/** Reject arrays and null where the import contract requires an object. */
 function record(value: unknown, description: string): RawRecord {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error(`${description} must be an object.`);
   return value as RawRecord;
 }
 
+/** Normalize bounded text/IDs while reserving fallbacks for genuinely missing values. */
 function text(value: unknown, description: string, fallback?: string): string {
   if ((value === undefined || value === null || value === '') && fallback !== undefined)
     return fallback;
@@ -61,6 +69,7 @@ function text(value: unknown, description: string, fallback?: string): string {
   return result;
 }
 
+/** Accept JSON numbers or CSV numeric text; missing readings remain null rather than becoming zero. */
 function number(value: unknown, description: string): number | null {
   if (
     value === null ||
@@ -76,6 +85,7 @@ function number(value: unknown, description: string): number | null {
   return parsed;
 }
 
+/** Decode supported JSON/CSV flags explicitly, avoiding truthy strings such as "false". */
 function boolean(value: unknown, description: string): boolean {
   if (value === null || value === undefined || value === '') return false;
   if (value === true || value === 1 || value === '1' || value === 'true' || value === 'True')
@@ -85,6 +95,7 @@ function boolean(value: unknown, description: string): boolean {
   throw new Error(`${description} must be true or false.`);
 }
 
+/** Decode objects/arrays embedded as JSON text in CSV cells. */
 function structured(value: unknown, description: string): unknown {
   if (typeof value !== 'string') return value;
   try {
@@ -94,6 +105,7 @@ function structured(value: unknown, description: string): unknown {
   }
 }
 
+/** Validate a bounded numeric array while preserving its original length and sample order. */
 function numbers(value: unknown, description: string): number[] {
   if (value === undefined || value === null || value === '') return [];
   const items = structured(value, description);
@@ -106,12 +118,14 @@ function numbers(value: unknown, description: string): number[] {
   });
 }
 
+/** Read a catalog reference, using a source-local name identity only when the provider ID is absent. */
 function reference(value: unknown, kind: string): ImportedReference {
   const item = record(structured(value, kind), kind);
   const name = text(item.name, `${kind} name`);
   return { remoteId: text(item.id, `${kind} ID`, `name:${name}`), name };
 }
 
+/** Normalize supported Unix/ISO timestamps to UTC; reject ambiguous dates and out-of-range epochs. */
 function timestamp(value: unknown): string | null {
   if (value === undefined || value === null || value === '') return null;
   let milliseconds: number;
@@ -127,6 +141,7 @@ function timestamp(value: unknown): string | null {
   return new Date(milliseconds).toISOString();
 }
 
+/** Normalize one provider session and its catalog references without discarding raw metadata. */
 function parseSeries(value: unknown): ImportedSeries {
   const row = record(value, 'Series');
   const remoteId = text(row._documentId ?? row.id ?? row.stringId, 'Series ID');
@@ -140,6 +155,7 @@ function parseSeries(value: unknown): ImportedSeries {
   };
 }
 
+/** Normalize one shot; input order supplies a display number only when none is recorded. */
 function parseShot(value: unknown, index: number): ImportedShot {
   const row = record(value, 'Shot');
   if (!('muzzleVelocity' in row) && !('velocities' in row))
@@ -159,6 +175,7 @@ function parseShot(value: unknown, index: number): ImportedShot {
   };
 }
 
+/** Decode JSON/CSV containers; .txt accepts those same formats, not arbitrary text. */
 function readRows(file: ExportFile): unknown {
   const content = file.text.replace(/^\uFEFF/, '');
   const extension = file.name.toLowerCase().split('.').at(-1);
@@ -173,6 +190,7 @@ function readRows(file: ExportFile): unknown {
     const result = Papa.parse<RawRecord>(content, {
       header: true,
       skipEmptyLines: 'greedy',
+      // Preserve identifiers and enum strings; individual fields are converted by the validators.
       dynamicTyping: false,
     });
     if (
@@ -186,6 +204,7 @@ function readRows(file: ExportFile): unknown {
   throw new Error('Choose JSON or CSV export files (.json, .csv or .txt).');
 }
 
+/** Accept one combined export or complementary series/shot files, then validate their relationships. */
 export function parseVelociRadarExport(files: ExportFile[]): ImportBundle {
   if (!files.length || files.length > 2)
     throw new Error('Choose the strings and shots exports, or one combined JSON export.');
@@ -212,6 +231,7 @@ export function parseVelociRadarExport(files: ExportFile[]): ImportBundle {
       shotRows = combined.shots;
     } else {
       const first = value[0] === undefined ? null : record(value[0], 'Export row');
+      // Recognize non-empty arrays by their fields; empty exports need the filename hint.
       const isSeries = first
         ? 'firearm' in first && 'projectile' in first
         : /strings/i.test(file.name);
@@ -244,6 +264,7 @@ export function parseVelociRadarRecords(seriesRows: unknown[], shotRows: unknown
   for (const shot of shots) {
     if (!seriesIds.has(shot.seriesRemoteId))
       throw new Error('A shot references a series missing from the strings export.');
+    // Shot IDs may repeat across sessions, but never inside the same session.
     const key = JSON.stringify([shot.seriesRemoteId, shot.remoteId]);
     if (shotIds.has(key)) throw new Error('Duplicate shot IDs in one series.');
     shotIds.add(key);
@@ -254,6 +275,7 @@ export function parseVelociRadarRecords(seriesRows: unknown[], shotRows: unknown
   return { series, shots };
 }
 
+/** Enforce the file-size budget before reading selected contents into memory. */
 export async function readExportFiles(files: FileList | File[]): Promise<ImportBundle> {
   const selected = Array.from(files);
   if (selected.reduce((total, file) => total + file.size, 0) > MAX_IMPORT_BYTES)

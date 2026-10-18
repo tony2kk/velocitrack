@@ -3,10 +3,13 @@ import { ArrowUpRight, ChartNoAxesCombined, Info } from 'lucide-react';
 import type { Series, Shot } from '../domain/model';
 import { chartGroupsCompatible, inspectPoints, summarizeShots } from '../domain/measurements';
 
+// Keep the chart library out of the initial workspace load until a selection needs it.
 const MeasurementChart = lazy(() => import('./MeasurementChart'));
+/** Round summary cards for readability; the shot table renders original numeric precision. */
 const format = (value: number | null) =>
   value === null ? '—' : value.toLocaleString('en-GB', { maximumFractionDigits: 2 });
 
+/** Present compatible summary statistics, recorded charts and a paginated raw-value table. */
 export function AnalysisPanel({
   series,
   shots,
@@ -37,6 +40,7 @@ export function AnalysisPanel({
   );
   const names = new Map(series.map((item) => [item.id, item.name]));
   const compatible = chartGroupsCompatible(shots);
+  // Changing selection may shrink the result set while the user is on a later table page.
   const currentPage = Math.min(page, Math.max(0, Math.ceil(shots.length / 100) - 1));
   if (!series.length)
     return (

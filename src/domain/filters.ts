@@ -1,5 +1,6 @@
 import type { Filters, Series } from './model';
 
+/** Parse a real calendar date in local time, optionally including the entire final day. */
 function dateBoundary(value: string, endOfDay: boolean): number | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
   const [year, month, day] = value.split('-').map(Number) as [number, number, number];
@@ -10,6 +11,7 @@ function dateBoundary(value: string, endOfDay: boolean): number | null {
   return date.getTime();
 }
 
+/** Validate explicit date ranges while allowing either boundary to remain open. */
 export function filterDateError(filters: Filters): string | null {
   if (filters.dateMode !== 'range') return null;
   const from = filters.dateFrom ? dateBoundary(filters.dateFrom, false) : null;
@@ -21,6 +23,7 @@ export function filterDateError(filters: Filters): string | null {
     : null;
 }
 
+/** Apply inclusive criteria without mutating the input, then sort newest sessions first. */
 export function filterSeries(series: Series[], filters: Filters, now = new Date()): Series[] {
   if (filterDateError(filters)) return [];
   let from: number | null = null;
@@ -36,6 +39,7 @@ export function filterSeries(series: Series[], filters: Filters, now = new Date(
       start.setDate(start.getDate() - amount * 7);
     } else {
       const day = start.getDate();
+      // Clamp month-end dates instead of letting Date roll into the following month.
       start.setDate(1);
       start.setMonth(start.getMonth() - amount);
       const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
@@ -67,6 +71,7 @@ export function filterSeries(series: Series[], filters: Filters, now = new Date(
     );
 }
 
+/** Tell the UI whether clearing filters would change the current criteria. */
 export function hasFilters(filters: Filters): boolean {
   return Boolean(
     filters.sourceIds.length ||

@@ -1,3 +1,4 @@
+/** Browser-owned domain records; provider fields are preserved separately as raw data. */
 export type CatalogKind = 'firearm' | 'projectile';
 export type SourceKind = 'velociradar-export' | 'caldwell';
 export type SourceStatus = 'ready' | 'needs-files' | 'needs-sign-in' | 'needs-setup' | 'error';
@@ -9,6 +10,7 @@ export interface CaldwellConnection {
   apiKey: string;
 }
 
+/** Import configuration and status for one local source, optionally bound to an SDK account. */
 export interface DataSource {
   id: string;
   name: string;
@@ -24,11 +26,13 @@ export interface DataSource {
   accountId?: string;
 }
 
+/** A provider identity is meaningful only within its source. */
 export interface CatalogLink {
   sourceId: string;
   remoteId: string;
 }
 
+/** Shared display name with explicit source links and optional source-controlled naming. */
 export interface CatalogItem {
   id: string;
   kind: CatalogKind;
@@ -37,6 +41,7 @@ export interface CatalogItem {
   managedBySourceId?: string;
 }
 
+/** Imported measurement session with local catalog references and its original provider row. */
 export interface Series {
   id: string;
   sourceId: string;
@@ -48,6 +53,7 @@ export interface Series {
   raw: RawRecord;
 }
 
+/** One recorded shot; rawUnit is an opaque provider code, not a validated physical unit. */
 export interface Shot {
   id: string;
   sourceId: string;
@@ -64,6 +70,7 @@ export interface Shot {
   raw: RawRecord;
 }
 
+/** Storage variants for future annotation editors; field definitions are not yet implemented. */
 export type CustomFieldValue =
   | { type: 'text'; value: string }
   | { type: 'number'; value: number; unit?: string }
@@ -78,6 +85,7 @@ export interface Annotation {
   fields: Record<string, CustomFieldValue>;
 }
 
+/** Persisted criteria: OR within each list, AND between lists; relative dates stay relative. */
 export interface Filters {
   sourceIds: string[];
   firearmIds: string[];
@@ -88,6 +96,7 @@ export interface Filters {
   relativeAmount: number;
 }
 
+/** Singleton local preferences, independent of any connected provider account. */
 export interface Profile {
   id: 'local';
   nickname: string;
@@ -106,6 +115,7 @@ export const EMPTY_FILTERS: Filters = {
   relativeAmount: 4,
 };
 
+/** Return fresh defaults so changing one profile cannot mutate the shared filter template. */
 export function defaultProfile(): Profile {
   return {
     id: 'local',
@@ -116,6 +126,7 @@ export function defaultProfile(): Profile {
   };
 }
 
+/** Encode identity tuples without delimiter collisions, even when provider IDs contain punctuation. */
 export function entityId(...parts: string[]): string {
   return JSON.stringify(parts);
 }

@@ -1,9 +1,41 @@
+import { execFileSync, type ExecFileSyncOptionsWithStringEncoding } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const projectRoot = fileURLToPath(new URL('.', import.meta.url));
+const { version } = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf8'),
+) as {
+  version: string;
+};
+
+/** Identify the source checkout without exposing paths, remotes or local configuration. */
+function buildRevision(): string {
+  try {
+    const options: ExecFileSyncOptionsWithStringEncoding = {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    };
+    const revision = execFileSync('git', ['rev-parse', '--short=7', 'HEAD'], options).trim();
+    const dirty = execFileSync('git', ['status', '--porcelain'], options).trim().length > 0;
+    return `${revision}${dirty ? '-dirty' : ''}`;
+  } catch {
+    // Source archives can be built without Git; do not imply a known commit in that case.
+    return 'local';
+  }
+}
+
 export default defineConfig({
   base: '/velocitrack/',
+  // Inject only public build identity. Never expose process.env or provider settings.
+  define: {
+    __APP_VERSION__: JSON.stringify(version),
+    __BUILD_REVISION__: JSON.stringify(buildRevision()),
+  },
   plugins: [
     react(),
     VitePWA({
@@ -34,6 +66,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Precache the app shell only; account requests and user data are never runtime-cached.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         runtimeCaching: [],
         cleanupOutdatedCaches: true,

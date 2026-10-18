@@ -3,6 +3,7 @@ import type { CatalogItem, DataSource, Filters } from '../domain/model';
 import { EMPTY_FILTERS } from '../domain/model';
 import { filterDateError, hasFilters } from '../domain/filters';
 
+/** Offer a controlled multi-selection; an empty list means all available values. */
 function MultiFilter({
   label,
   options,
@@ -51,6 +52,7 @@ function MultiFilter({
   );
 }
 
+/** Edit local criteria and report whole filter objects to the workspace's persistence handler. */
 export function FilterBar({
   filters,
   sources,

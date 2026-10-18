@@ -34,6 +34,7 @@ import { FilterBar } from './components/FilterBar';
 import { AnalysisPanel } from './components/AnalysisPanel';
 import { UpdateNotice } from './components/UpdateNotice';
 
+/** Subscribe to one consistent local workspace snapshot and handle storage startup failures. */
 export default function App() {
   const result = useLiveQuery(async () => {
     try {
@@ -63,6 +64,7 @@ export default function App() {
   return <WorkspaceApp workspace={result.workspace} />;
 }
 
+/** Coordinate persisted filters, transient comparison selection and workspace dialogs. */
 function WorkspaceApp({ workspace }: { workspace: Workspace }) {
   const { sources, catalog, profile, series, shots } = workspace;
   const [dialog, setDialog] = useState<'sources' | 'refresh' | 'profile' | 'catalog' | null>(null);
@@ -98,6 +100,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
   const awaiting = sources.filter((source) => source.enabled && source.status !== 'ready').length;
 
   useEffect(() => {
+    // Live-query updates must not start another automatic refresh after the initial load.
     if (startupHandled.current) return;
     startupHandled.current = true;
     if (profile.refreshOnStart)
@@ -106,6 +109,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
       );
   }, [profile.refreshOnStart]);
 
+  /** Apply filters immediately, drop hidden selections, then persist the local preference. */
   function changeFilters(next: Filters) {
     const visible = new Set(filterSeries(series, next).map((item) => item.id));
     setSelected((current) => current.filter((id) => visible.has(id)));
@@ -315,6 +319,9 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           {lastUpdate
             ? `Last import ${new Date(lastUpdate).toLocaleString('en-GB')}`
             : 'No imports yet'}
+        </span>
+        <span className="app-version" title="Application version and source revision">
+          v{__APP_VERSION__} · {__BUILD_REVISION__}
         </span>
         <span className="unofficial">Unofficial community project</span>
       </footer>

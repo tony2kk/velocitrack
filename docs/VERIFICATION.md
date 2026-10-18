@@ -46,6 +46,8 @@ Browser screenshots contain synthetic data only and remain outside versioned con
 
 ## Still unverified / intentionally absent
 
+The footer now includes the package version and build-time source revision. The local production preview displayed `v0.1.0` with the expected dirty-checkout marker, while retaining its 7 series and 46 shots. The existing 52 tests and full verification passed after the code-documentation pass. Domain, storage, adapter, UI and update-flow classes/functions now have English purpose/invariant comments; this pass does not change their behavior.
+
 - Hosted-origin reads, general API restrictions/App Check configuration and server rule isolation. Loopback Auth/own-account reads passed, but do not prove these broader properties.
 - Provider permission and any app-specific terms remain unconfirmed. The owner approved publication after reviewing this uncertainty; see `TERMS_REVIEW.md`. This is a release decision, not a technical test result.
 - Physical unit codes, atmosphere and physical interpretation of provider values.

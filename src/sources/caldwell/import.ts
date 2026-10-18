@@ -6,6 +6,7 @@ import { CaldwellError, connectionError } from './errors';
 import { getSession } from './session';
 import { createCollectionReader, readAccount } from './read';
 
+/** Authenticate if requested, download only the bound owner's data, then commit one validated bundle. */
 export async function importCaldwell(
   sourceId: string,
   credentials?: { email: string; password: string },
@@ -26,6 +27,7 @@ export async function importCaldwell(
     if (!user) throw new CaldwellError('Sign in to refresh this Caldwell source.', 'sign-in');
     try {
       await db.transaction('rw', db.sources, async () => {
+        // Bind before network reads so a different account cannot replace this source's identity.
         const current = await db.sources.get(sourceId);
         if (
           !current ||
@@ -48,6 +50,7 @@ export async function importCaldwell(
       throw error;
     }
     const bundle = await readAccount(user.uid, createCollectionReader(database));
+    // Signing out or changing users during the download invalidates the pending import.
     if (auth.currentUser?.uid !== user.uid)
       throw new CaldwellError('Your session changed during refresh. Sign in again.', 'sign-in');
     try {

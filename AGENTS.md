@@ -12,6 +12,16 @@ the feasibility/terms records before changing or publishing connected sources.
 All UI, documentation and code comments must be English. Keep modules readable
 and record newly accepted product decisions.
 
+Document classes, named functions/methods and domain contracts with concise English
+JSDoc. Explain invariants, side effects and non-obvious decisions near the relevant
+code. Keep comments accurate when behavior changes; avoid comments that only repeat
+syntax. Inline React callbacks need explanations where the behavior is non-obvious,
+not boilerplate on every handler.
+
+The footer displays the package version and build-time Git revision. Update the
+package version and lockfile together for a release. Build after committing when
+handing off a clean preview; uncommitted work is intentionally marked `-dirty`.
+
 ## Commands
 
 - `npm ci` — reproducible dependency installation (Node 22.12+).

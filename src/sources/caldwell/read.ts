@@ -17,6 +17,7 @@ import type { RawRecord } from '../../domain/model';
 import { MAX_IMPORT_BYTES, MAX_SERIES, MAX_SHOTS, parseVelociRadarRecords } from '../velociradar';
 import { CaldwellError } from './errors';
 
+/** Provider document identity plus a plain, locally storable representation of its fields. */
 export interface CloudDocument {
   id: string;
   data: RawRecord;
@@ -24,12 +25,14 @@ export interface CloudDocument {
 export type ReadCollection = (path: string[], maximum: number) => Promise<CloudDocument[]>;
 type ReadPage = (after: string | undefined, size: number) => Promise<CloudDocument[]>;
 
+/** Read document-ID-ordered pages, rejecting limit overruns and repeated IDs rather than truncating. */
 export async function readPages(readPage: ReadPage, maximum: number) {
   const documents: CloudDocument[] = [];
   const seen = new Set<string>();
   let cursor: string | undefined;
   let bytes = 0;
   for (;;) {
+    // The extra record distinguishes an exactly-full collection from one exceeding the budget.
     const size = Math.min(200, maximum - documents.length + 1);
     const page = await readPage(cursor, size);
     for (const item of page) {
@@ -52,6 +55,7 @@ export async function readPages(readPage: ReadPage, maximum: number) {
   }
 }
 
+/** Convert Firestore-specific values to plain data; document references are preserved, never followed. */
 function plainValue(value: unknown): unknown {
   if (value instanceof Timestamp) return value.toDate().toISOString();
   if (value instanceof GeoPoint) return { latitude: value.latitude, longitude: value.longitude };
@@ -63,6 +67,7 @@ function plainValue(value: unknown): unknown {
   return value;
 }
 
+/** Adapt read-only Firestore Lite queries to the bounded pagination contract. */
 export function createCollectionReader(database: Firestore): ReadCollection {
   return async (path, maximum) => {
     const [root, ...segments] = path;
@@ -77,7 +82,10 @@ export function createCollectionReader(database: Firestore): ReadCollection {
   };
 }
 
-/** Only an authenticated SDK user's UID may be supplied by the caller. */
+/**
+ * Read and validate the signed-in owner's complete supported session/shot hierarchy.
+ * Only an authenticated SDK user's UID may be supplied by the caller.
+ */
 export async function readAccount(uid: string, readCollection: ReadCollection) {
   if (!uid || uid.includes('/'))
     throw new CaldwellError('A valid signed-in account is required.', 'sign-in');
@@ -86,6 +94,7 @@ export async function readAccount(uid: string, readCollection: ReadCollection) {
   const seriesRows: RawRecord[] = [];
   const shotRows: RawRecord[] = [];
   let bytes = 0;
+  /** Enforce a shared budget across sessions and all of their separate shot collections. */
   const countBytes = (row: RawRecord) => {
     bytes += new TextEncoder().encode(JSON.stringify(row)).length;
     if (bytes > MAX_IMPORT_BYTES)
@@ -97,6 +106,7 @@ export async function readAccount(uid: string, readCollection: ReadCollection) {
   for (const series of strings) {
     if (!series.id || series.id.includes('/'))
       throw new CaldwellError('An invalid series identifier was returned.', 'import');
+    // Path-derived IDs override payload fields so a document cannot redirect the import relationship.
     const row = { ...series.data, _documentId: series.id };
     countBytes(row);
     seriesRows.push(row);

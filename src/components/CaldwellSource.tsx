@@ -8,6 +8,7 @@ import { parseConnectionSettings } from '../sources/caldwell/configuration';
 import { connectionError } from '../sources/caldwell/errors';
 import { getSession } from '../sources/caldwell/session';
 
+/** Manage one source's local setup, SDK sign-in state and explicit read-only import actions. */
 export default function CaldwellSource({
   source,
   remember,
@@ -28,6 +29,7 @@ export default function CaldwellSource({
   useEffect(() => {
     if (!source.connection) return;
     let active = true;
+    // SDK initialization can finish after the dialog closes; do not attach a stale subscription.
     let unsubscribe: (() => void) | undefined;
     void getSession(source, remember)
       .then(({ auth }) => {
@@ -42,10 +44,12 @@ export default function CaldwellSource({
     };
   }, [source, remember]);
 
+  /** Start or join this source's import and clear credential inputs without persisting them. */
   async function refresh(credentials?: { email: string; password: string }) {
     setWorking(true);
     setError('');
     const attempt = refreshCaldwell(source.id, credentials);
+    // Do not retain the password in component state while the download is running.
     setPassword('');
     try {
       const counts = await attempt;

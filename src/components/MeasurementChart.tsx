@@ -11,6 +11,7 @@ import { CanvasRenderer } from 'echarts/renderers';
 import { inspectPoints } from '../domain/measurements';
 import type { Series, Shot } from '../domain/model';
 
+// Register only the renderers/components this app uses to keep the lazy chart bundle bounded.
 registerCharts([
   LineChart,
   AriaComponent,
@@ -21,6 +22,7 @@ registerCharts([
 ]);
 const colors = ['#0c8176', '#5978c7', '#d38a36', '#ac6399', '#758b3c', '#607b91'];
 
+/** Render recorded values without interpolation models or unit conversion; the table is the fallback. */
 export default function MeasurementChart({
   shots,
   series,
@@ -36,6 +38,7 @@ export default function MeasurementChart({
     const chart = init(element.current);
     const names = new Map(series.map((item) => [item.id, item.name]));
     const included = shots.filter((shot) => !shot.excluded);
+    // Bound distance traces for responsiveness; the parent explains the limit and retains all rows.
     const lines =
       mode === 'distance'
         ? included.slice(0, 100).map((shot) => ({
@@ -77,6 +80,7 @@ export default function MeasurementChart({
       },
       textStyle: { fontFamily: 'system-ui, sans-serif', color: '#63716e' },
       grid: { left: 64, right: 30, top: 32, bottom: 75 },
+      // Canvas text prevents imported session names from becoming tooltip HTML.
       tooltip: { trigger: 'item', renderMode: 'richText', confine: true },
       xAxis: {
         type: 'value',
@@ -108,6 +112,7 @@ export default function MeasurementChart({
     const observer = new ResizeObserver(() => chart.resize());
     observer.observe(element.current);
     return () => {
+      // Effects rerun for a new selection; dispose both resources to avoid orphaned canvases/listeners.
       observer.disconnect();
       chart.dispose();
     };

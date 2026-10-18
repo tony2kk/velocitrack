@@ -1,6 +1,7 @@
 import { useLayoutEffect, useId, useRef, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 
+/** Wrap a native modal dialog with focus containment, Escape handling and return-to-opener cleanup. */
 export function Modal({
   title,
   children,
@@ -19,6 +20,7 @@ export function Modal({
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     dialog?.showModal();
     return () => {
+      // Restore keyboard context only after releasing the browser's modal focus trap.
       dialog?.close();
       opener?.focus();
     };

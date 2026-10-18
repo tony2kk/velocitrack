@@ -4,12 +4,14 @@ import type { CatalogItem, CatalogKind } from '../domain/model';
 import { removeCatalogItem, saveCatalogItem } from '../storage/workspace';
 import { Modal } from './Modal';
 
+/** Edit shared local names; storage enforces uniqueness and protects referenced entries from removal. */
 export function CatalogDialog({ items, onClose }: { items: CatalogItem[]; onClose: () => void }) {
   const [kind, setKind] = useState<CatalogKind>('firearm');
   const [editing, setEditing] = useState<string>();
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  /** Keep asynchronous catalog edits busy until completion and present actionable local errors. */
   async function run(action: () => Promise<void>) {
     setBusy(true);
     setError('');

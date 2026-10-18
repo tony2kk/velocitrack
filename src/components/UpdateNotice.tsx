@@ -5,6 +5,7 @@ import { reloadApplication } from '../pwa/reload';
 // This tab reloads only after its own Reload button is clicked.
 const onNeedReload = () => {};
 
+/** Ask this tab to opt into an available app update, reporting progress and retryable failures. */
 export function UpdateNotice() {
   const {
     needRefresh: [needRefresh, setNeedRefresh],

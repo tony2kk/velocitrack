@@ -11,14 +11,17 @@ import { getFirestore, terminate, type Firestore } from 'firebase/firestore/lite
 import type { DataSource } from '../../domain/model';
 import { CaldwellError } from './errors';
 
+/** SDK handles isolated to one source; Firestore Lite keeps no persistent measurement cache. */
 export interface CaldwellSession {
   app: FirebaseApp;
   auth: Auth;
   database: Firestore;
 }
 
+// Cache initialization promises as well as ready sessions to prevent duplicate named Firebase apps.
 const sessions = new Map<string, Promise<CaldwellSession>>();
 
+/** Initialize or reuse the source's SDK session, awaiting any explicitly opted-in auth restoration. */
 export async function getSession(source: DataSource, remember: boolean): Promise<CaldwellSession> {
   if (!source.connection || source.kind !== 'caldwell')
     throw new CaldwellError('Add connection settings before signing in.', 'setup');
@@ -44,6 +47,7 @@ export async function getSession(source: DataSource, remember: boolean): Promise
   return pending;
 }
 
+/** Migrate configured SDK sessions after a profile consent change; password storage is never involved. */
 export async function changeSessionPersistence(
   sources: DataSource[],
   wasRemembered: boolean,
@@ -55,6 +59,7 @@ export async function changeSessionPersistence(
   }
 }
 
+/** Sign out and dispose all handles before source removal, including any persisted SDK session. */
 export async function forgetSession(source: DataSource, remember: boolean) {
   if (source.kind !== 'caldwell' || !source.connection) return;
   const session = await getSession(source, remember);

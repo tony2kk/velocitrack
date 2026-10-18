@@ -3,6 +3,7 @@ import type { DataSource, Profile } from '../domain/model';
 import { saveProfile } from '../storage/workspace';
 import { Modal } from './Modal';
 
+/** Edit the browser profile and apply explicit consent changes to existing SDK sessions. */
 export function ProfileDialog({
   profile,
   sources,
@@ -31,11 +32,13 @@ export function ProfileDialog({
           try {
             if (remember !== profile.rememberSignIn) {
               const { changeSessionPersistence } = await import('../sources/caldwell/session');
+              // Record opt-in before persisting sessions; on opt-out, migrate sessions before saving false.
               if (remember) await saveProfile({ rememberSignIn: true });
               try {
                 await changeSessionPersistence(sources, profile.rememberSignIn, remember);
               } catch (error) {
                 if (remember) {
+                  // A partial migration must not leave remembered sessions after a failed opt-in.
                   await changeSessionPersistence(sources, true, false);
                   await saveProfile({ rememberSignIn: false });
                 }

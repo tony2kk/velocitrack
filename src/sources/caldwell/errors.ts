@@ -1,4 +1,6 @@
+/** User-safe connection/import failure whose category drives the source's recovery state. */
 export class CaldwellError extends Error {
+  /** Store an already sanitized message; callers must not pass raw provider responses here. */
   constructor(
     message: string,
     readonly category: 'setup' | 'sign-in' | 'access' | 'network' | 'import',

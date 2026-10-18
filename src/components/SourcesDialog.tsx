@@ -28,6 +28,7 @@ const sourceStatus = {
   error: 'Refresh failed',
 };
 
+/** Edit one source's local policy and render its adapter-specific setup/import controls. */
 function SourceCard({
   source,
   remember,
@@ -47,6 +48,7 @@ function SourceCard({
     source,
     (current, patch: Partial<DataSource>) => ({ ...current, ...patch }),
   );
+  /** Optimistically reflect policy edits while committing them to the local source record. */
   function update(patch: Partial<DataSource>) {
     startTransition(async () => {
       setOptimisticSettings(patch);
@@ -137,6 +139,7 @@ function SourceCard({
               setBusy(true);
               setError('');
               try {
+                // Parse all selected files before the atomic storage transaction begins.
                 const bundle = await readExportFiles(files);
                 const result = await importBundle(source.id, bundle);
                 onMessage(
@@ -153,6 +156,7 @@ function SourceCard({
                 }
               } finally {
                 setBusy(false);
+                // Reset the picker so selecting the same file again still raises a change event.
                 input.value = '';
               }
             }}
@@ -193,6 +197,7 @@ function SourceCard({
               setBusy(true);
               try {
                 if (source.kind === 'caldwell') {
+                  // Dispose authentication before deleting the local record that identifies its SDK app.
                   const { forgetSession } = await import('../sources/caldwell/session');
                   await forgetSession(source, remember);
                 }
@@ -212,6 +217,7 @@ function SourceCard({
   );
 }
 
+/** Manage immutable source types or show every enabled source participating in a refresh. */
 export function SourcesDialog({
   sources,
   remember,
