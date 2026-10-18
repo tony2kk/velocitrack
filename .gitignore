@@ -1,0 +1,47 @@
+# Build and development outputs
+node_modules/
+dist/
+coverage/
+test-results/
+playwright-report/
+*.tsbuildinfo
+*.log
+
+# Private local experiments and user data
+.local/
+.private/
+work/
+data/
+exports/
+imports/
+*.local
+.env
+.env.*
+!.env.example
+strings.json
+shots.json
+strings.csv
+shots.csv
+points.csv
+*.har
+*.zip
+
+# Proprietary packages and credentials
+*.apk
+*.aab
+*.arsc
+*.jks
+*.keystore
+*.pem
+*.p12
+*service-account*.json
+*serviceAccount*.json
+google-services.json
+GoogleService-Info.plist
+
+# Editor/OS state
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
