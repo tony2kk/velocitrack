@@ -51,7 +51,7 @@ Sign-in lasts until the page closes or reloads by default. To keep the SDK sessi
 
 The connector reads `Users/{authenticated uid}/Strings/{series id}/Shots`. It uses pagination and the same validation/atomic storage rules as file imports. Limits are 10,000 series, 50,000 shots, 20 MB of normalized records and the point limits described below. This is a cumulative refresh, not a live subscription or deletion mirror.
 
-Browser-only authentication and reads were verified on loopback with the owner's account. GitHub Pages origin compatibility, future service restrictions and third-party distribution permission are separate questions. This is not an official Caldwell API or a provider-supported integration. See the [feasibility record](../docs/FIREBASE_POC.md) and [terms review](../docs/TERMS_REVIEW.md). No restrictions, App Check requirements or service rules are bypassed.
+Browser-only authentication and reads were verified on loopback with the owner's account. The owner also confirmed successful import on the published `0.2.1` Pages app on 2026-10-18. This result does not guarantee future service availability or provider support. This is an unofficial integration; see the [verification record](../docs/VERIFICATION.md) and [terms review](../docs/TERMS_REVIEW.md). No restrictions, App Check requirements or service rules are bypassed.
 
 ### JSON / text
 

@@ -26,6 +26,11 @@ See `docs/VERIFICATION.md` for actual verification and remaining caveats. Local 
 
 The Caldwell source and full local application import are implemented and verified, including repeat refresh without duplicate records. Dedicated user help lives in `help/README.md`. Next, review the connected workflow with the owner.
 
+The owner is collecting requirements for a later batch. Do not begin these changes until explicitly instructed:
+
+- Report only newly imported records in import notifications; show **No new data detected** when none were added.
+- Add a vertical chart zoom slider analogous to the existing horizontal slider.
+
 1. Review the MVP workflow and appearance using local exports.
 2. Validate physical units, distance origin and atmosphere against reliable evidence.
 3. Design workspace backup/restore, quota handling and larger-dataset pagination.
@@ -42,11 +47,12 @@ The Caldwell source and full local application import are implemented and verifi
 - [x] Record sanitized results, terms limitations and the owner's explicit decision to publish the independent connector.
 - [x] Replace manual connection-file selection with automatic setup in the configured local installation.
 - [x] Publish the standard two-field Caldwell source-type configuration for identical local/hosted setup, as explicitly requested by the owner (decision 005).
-- [ ] Verify intended hosted origin and obtain evidence for restrictions not observable from customer access.
+- [x] Verify intended hosted origin: the owner confirmed successful sign-in/import on the published `0.2.1` app on 2026-10-18.
+- [ ] Obtain evidence for restrictions not observable from customer access.
 - [ ] Obtain any applicable app-specific terms or provider clarification; the owner intends to contact Caldwell later.
 - [ ] Verify opt-in persistent authentication across browser restarts.
 
-Both the private browser-only test and product import passed on 2026-10-18. Provider configuration is excluded. The owner directed publication after the terms review; this does not establish provider support or resolve the remaining service questions. See `docs/FIREBASE_POC.md` and `docs/TERMS_REVIEW.md`.
+The private browser-only test and local product import passed on 2026-10-18; the owner subsequently confirmed a successful import from GitHub Pages. Only the explicitly approved two-field source-type metadata is public; user configuration and credentials remain excluded. The owner directed publication after the terms review; this does not establish provider support or resolve the remaining service questions. See `docs/FIREBASE_POC.md` and `docs/TERMS_REVIEW.md`.
 
 ## Publication
 

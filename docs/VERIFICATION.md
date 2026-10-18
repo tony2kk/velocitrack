@@ -67,7 +67,7 @@ These checks supplement the earlier live-import checks; they do not constitute a
 
 ## Still unverified / intentionally absent
 
-- Hosted-origin reads, general API restrictions/App Check configuration and server rule isolation. Loopback Auth/own-account reads passed, but do not prove these broader properties.
+- General API restrictions/App Check configuration and server rule isolation. Local checks and the owner's successful hosted import do not prove these broader properties.
 - Provider permission and any app-specific terms remain unconfirmed. The owner approved publication after reviewing this uncertainty; see `TERMS_REVIEW.md`. This is a release decision, not a technical test result.
 - Physical unit codes, atmosphere and physical interpretation of provider values.
 - Real-device installation across Safari/iOS/Android, browser eviction/quota behavior, and assistive-technology testing beyond the checks above.
@@ -82,4 +82,4 @@ File parsing and IndexedDB tests do not replace these remaining checks. Any futu
 - All **88 behavioral tests** passed, with types, lint, formatting, production/PWA build and publication guard. Setup tests cover a fresh public origin, profile reuse without another request, preservation of configured sources and safe failure on malformed/oversized responses. Publication tests exercise the actual guard in isolated temporary repositories with invented data; extra account fields and client keys outside the standard file are rejected.
 - The obsolete loopback helper and its eight boundary tests were removed. No backend or deployment secret is needed. The standard source file is copied by the ordinary build; existing measurements and source/account bindings are not migrated or cleared.
 - Version `0.2.1` (`41bb5bf`) passed both GitHub validation and Pages deployment. The published app's update prompt successfully activated it and the footer showed the expected version/revision. On that origin, adding a Caldwell source automatically reached **Sign-in needed** with the email/password form and no file picker or configuration fields. No credentials were entered during this setup check.
-- Actual hosted sign-in and authenticated Firestore reads still require the owner to enter credentials directly on the published site. Preparing a sign-in form is not evidence of a successful cloud import. No credentials or tokens are copied from the local origin.
+- After being asked to sign in and import on the published `0.2.1` site, the owner confirmed that the import completed successfully on 2026-10-18. This is owner-reported end-to-end verification on the Pages origin, beyond the independently observed sign-in form. No record counts, account identifiers, credentials, tokens or measurement contents were collected. It does not establish persistent sign-in across browser restarts or unrestricted service access.

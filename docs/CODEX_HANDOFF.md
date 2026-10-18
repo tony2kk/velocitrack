@@ -9,7 +9,7 @@ Read `AGENTS.md`, `PLAN.md`, `ARCHITECTURE.md`, `docs/decisions/001-local-first-
 - VelociTrack; English UI, documentation and code comments.
 - All measurements, catalogs, source settings, profile and filters remain local. No backend.
 - React/TypeScript/Vite, Dexie, ECharts and a static PWA shell.
-- Local JSON/CSV/text plus a Caldwell connector verified through a private browser-only test and full local application import/repeat refresh. Hosted-origin behavior and provider permission remain unconfirmed. The owner explicitly approved publication after the terms review. Read decision 002.
+- Local JSON/CSV/text plus a Caldwell connector verified through a private browser-only test and full local application import/repeat refresh. The owner also confirmed a successful import on the published `0.2.1` Pages app on 2026-10-18. Broader service restrictions and provider permission remain unconfirmed. The owner explicitly approved publication after the terms review. Read decisions 002 and 005.
 - Shared catalogs with per-source auto-updates; missing references reject the whole source import when disabled.
 - Refresh all enabled sources independent of filters. File adapters require reselection; signed-in Caldwell sources fetch online. Missing sessions wait for sign-in in Sources.
 - Local annotations are separate. Typed-field editing and cross-source mapping are later work.

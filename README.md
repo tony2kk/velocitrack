@@ -86,7 +86,7 @@ The published destination is `https://tony2kk.github.io/velocitrack/`. Only `dis
 
 ## Cloud feasibility and contributions
 
-The private loopback Firebase Auth/Firestore test and full application import passed. Hosted-origin compatibility, general service restrictions and provider permission remain unconfirmed. The owner approved publication after reviewing the available terms and this uncertainty. Neither the Python exporter nor a successful local browser test establishes provider permission. Read [FIREBASE_POC.md](docs/FIREBASE_POC.md) and [TERMS_REVIEW.md](docs/TERMS_REVIEW.md) before cloud work. Do not bypass provider controls.
+The private loopback Firebase Auth/Firestore test and full application import passed. The owner also confirmed successful import on the published `0.2.1` Pages app on 2026-10-18. General service restrictions and provider permission remain unconfirmed. The owner approved publication after reviewing the available terms and this uncertainty. Neither the Python exporter nor a successful browser import establishes provider permission. Read [FIREBASE_POC.md](docs/FIREBASE_POC.md), [VERIFICATION.md](docs/VERIFICATION.md) and [TERMS_REVIEW.md](docs/TERMS_REVIEW.md) before cloud work. Do not bypass provider controls.
 
 Use English throughout. Write small, readable modules and behavior-focused tests. Never publish credentials, real account identifiers, private exports, HAR files, APKs or vendor code. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
