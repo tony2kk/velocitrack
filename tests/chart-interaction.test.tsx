@@ -3,6 +3,7 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MeasurementChart from '../src/components/MeasurementChart';
 import { series, shot } from './fixtures/synthetic';
+import { defaultAnalysis } from '../src/domain/model';
 
 const chart = vi.hoisted(() => ({
   setOption: vi.fn(),
@@ -40,6 +41,29 @@ afterEach(() => {
 });
 
 describe('chart hover bridge', () => {
+  it('binds dual quantities to separate axes and zooms both without removing missing positions', () => {
+    render(
+      <MeasurementChart
+        shots={[shot({ ballisticCoefficientG1: 0.2 }), shot({ id: 'missing', number: 2 })]}
+        series={[series()]}
+        mode="shot"
+        kind="dual"
+        settings={defaultAnalysis().dual}
+        activeShotId={null}
+        onHoverShot={vi.fn()}
+      />,
+    );
+    const options = chart.setOption.mock.calls[0]![0];
+    expect(options.yAxis.map((axis: { name: string }) => axis.name)).toEqual([
+      'Velocity (ft/s)',
+      'G1 (Caldwell)',
+    ]);
+    expect(options.series.map((trace: { yAxisIndex: number }) => trace.yAxisIndex)).toEqual([0, 1]);
+    expect(options.series[1].data[1].value).toEqual([2, null]);
+    expect(
+      options.dataZoom.find((zoom: { orient: string }) => zoom.orient === 'vertical').yAxisIndex,
+    ).toEqual([0, 1]);
+  });
   it('zooms each axis independently without filtering samples, and clears obsolete point details', () => {
     render(
       <MeasurementChart
@@ -53,14 +77,14 @@ describe('chart hover bridge', () => {
     );
     const options = chart.setOption.mock.calls[0]![0];
     expect(options.xAxis.name).toBe('Distance (m)');
-    expect(options.yAxis.name).toBe('Velocity (m/s)');
+    expect(options.yAxis[0].name).toBe('Velocity (m/s)');
     expect(options.dataZoom).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ type: 'slider', xAxisIndex: 0, filterMode: 'none' }),
         expect.objectContaining({
           type: 'slider',
           orient: 'vertical',
-          yAxisIndex: 0,
+          yAxisIndex: [0],
           filterMode: 'none',
         }),
       ]),

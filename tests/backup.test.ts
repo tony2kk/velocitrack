@@ -6,6 +6,7 @@ import { createBackup, prepareBackup, restoreBackup } from '../src/storage/backu
 import { createSource, importBundle, loadWorkspace, saveProfile } from '../src/storage/workspace';
 import { saveField, saveSeriesDetails, saveTag } from '../src/storage/customization';
 import { syntheticExport } from './fixtures/synthetic';
+import { defaultAnalysis } from '../src/domain/model';
 import { parseVelociRadarExport } from '../src/sources/velociradar';
 
 let database: WorkspaceDatabase;
@@ -29,7 +30,19 @@ async function seed() {
   await saveTag({ id: 'tag', name: 'Example', color: '#123456' }, database);
   await saveSeriesDetails(series.id, { weight: 0 }, ['tag'], database);
   await saveProfile(
-    { unitSystem: 'metric', visibleFieldIds: ['weight'], showTags: true },
+    {
+      unitSystem: 'metric',
+      visibleFieldIds: ['weight'],
+      showTags: true,
+      theme: 'dark',
+      showProjectileWeight: true,
+      tableColumns: ['g1', 'velocity', 'field:weight'],
+      analysis: {
+        ...defaultAnalysis(),
+        mode: 'dual',
+        dual: { axis: 'shot', quantity: 'g1', secondary: 'field:weight' },
+      },
+    },
     database,
   );
   const blob = new Blob([new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3])], {

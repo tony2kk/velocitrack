@@ -37,6 +37,10 @@ import { SeriesNavigator } from './components/SeriesNavigator';
 import { RefreshProgress } from './components/RefreshProgress';
 import { useNotification } from './hooks/useNotification';
 import { useShotSelection } from './hooks/useShotSelection';
+import { useTheme } from './hooks/useTheme';
+import { saveAnalysis } from './storage/analysis';
+import { displayCatalog, projectileName } from './domain/projectiles';
+import type { AnalysisMode } from './domain/model';
 
 /** Subscribe to one consistent local workspace snapshot and handle storage startup failures. */
 export default function App() {
@@ -81,6 +85,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
     tags,
     attachments,
   } = workspace;
+  const dark = useTheme(profile.theme);
   const [detailId, setDetailId] = useState<string | null>(null);
   const detailSeries = series.find((item) => item.id === detailId);
   const [dialog, setDialog] = useState<
@@ -101,11 +106,21 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
     () => filtered.filter((item) => selected.includes(item.id)),
     [filtered, selected],
   );
+  const colorOrder = useMemo(
+    () => series.map((item) => item.id).sort((a, b) => a.localeCompare(b)),
+    [series],
+  );
   const { hiddenShots, seriesShots, selectedShots, toggleShot, resetSelection } = useShotSelection(
     shots,
     selectedSeries,
   );
   const catalogNames = new Map(catalog.map((item) => [item.id, item.name]));
+  const projectileNames = new Map(
+    series.map((item) => [
+      item.id,
+      projectileName(item, catalogNames, profile.showProjectileWeight ?? false),
+    ]),
+  );
   const sourceNames = new Map(sources.map((item) => [item.id, item.name]));
   const lastUpdate = sources
     .map((source) => source.lastSuccessAt)
@@ -226,9 +241,29 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           tags={tags}
           filters={filters}
           sources={sources}
-          catalog={catalog}
+          catalog={displayCatalog(catalog, series, profile.showProjectileWeight ?? false)}
           onChange={changeFilters}
         />
+        <div className="toolbar-group analysis-group">
+          <label className="group-label" htmlFor="analysis-mode">
+            ANALYSIS
+          </label>
+          <select
+            id="analysis-mode"
+            aria-label="Analysis"
+            value={profile.analysis?.mode ?? 'simple'}
+            onChange={(event) =>
+              void saveAnalysis(event.target.value as AnalysisMode).catch(() =>
+                showMessage('Analysis preference could not be saved.'),
+              )
+            }
+          >
+            <option value="simple">Simple chart</option>
+            <option value="dual">Dual chart</option>
+            <option value="compare">String compare</option>
+            <option value="info">String info</option>
+          </select>
+        </div>
         <div className="toolbar-group tools-group">
           <span className="group-label">TOOLS</span>
           <div className="group-controls">
@@ -266,6 +301,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
             shots={shots}
             selected={selected}
             catalogNames={catalogNames}
+            projectileNames={projectileNames}
             sourceNames={sourceNames}
             onToggleSeries={(id, checked) =>
               setSelected((current) =>
@@ -311,6 +347,11 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           activeShotId={activeShotId}
           onHoverShot={setActiveShotId}
           unitSystem={profile.unitSystem}
+          dark={dark}
+          colorOrder={colorOrder}
+          catalog={catalog}
+          attachments={attachments}
+          onDetails={setDetailId}
         />
       </main>
       <footer className="app-footer">

@@ -3,10 +3,12 @@ import { init, use as registerCharts, type EChartsType } from 'echarts/core';
 import { LineChart } from 'echarts/charts';
 import { AriaComponent, GridComponent, DataZoomComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
-import type { Series, Shot, UnitSystem } from '../domain/model';
+import type { AnalysisMode, ChartSettings, Series, Shot, UnitSystem } from '../domain/model';
+import { quantityLabel, type Quantity } from '../domain/analysis';
 import { formatValue, unitLabels } from '../domain/units';
 import {
   buildChartTraces,
+  buildAnalysisTraces,
   findShotTargets,
   formatPointTooltip,
   type ChartMode,
@@ -24,6 +26,11 @@ export default function MeasurementChart({
   activeShotId,
   onHoverShot,
   unitSystem = 'imperial',
+  settings,
+  kind = 'simple',
+  dark = false,
+  quantities,
+  colorOrder,
 }: {
   shots: Shot[];
   series: Series[];
@@ -31,6 +38,11 @@ export default function MeasurementChart({
   activeShotId: string | null;
   onHoverShot: (id: string | null) => void;
   unitSystem?: UnitSystem;
+  settings?: ChartSettings;
+  kind?: AnalysisMode;
+  dark?: boolean;
+  quantities?: Quantity[];
+  colorOrder?: string[];
 }) {
   const element = useRef<HTMLDivElement>(null);
   const instance = useRef<EChartsType | null>(null);
@@ -41,8 +53,20 @@ export default function MeasurementChart({
     top: number;
   } | null>(null);
   const traces = useMemo(
-    () => buildChartTraces(shots, series, mode, unitSystem),
-    [shots, series, mode, unitSystem],
+    () =>
+      settings
+        ? buildAnalysisTraces(
+            shots,
+            series,
+            kind,
+            settings,
+            unitSystem,
+            dark,
+            quantities,
+            colorOrder,
+          )
+        : buildChartTraces(shots, series, mode, unitSystem),
+    [shots, series, mode, unitSystem, settings, kind, dark, quantities, colorOrder],
   );
   useEffect(() => {
     if (!element.current) return;
@@ -53,28 +77,46 @@ export default function MeasurementChart({
       aria: {
         enabled: true,
         label: {
-          description: `Recorded measurements in ${unitLabels[unitSystem].velocity} and ${unitLabels[unitSystem].distance}. An accessible shot table is available below the chart.`,
+          description:
+            'Recorded measurements. An accessible shot table is available below the chart.',
         },
       },
-      textStyle: { fontFamily: 'system-ui, sans-serif', color: '#63716e' },
-      grid: { left: 64, right: 64, top: 32, bottom: 75 },
+      textStyle: { fontFamily: 'system-ui, sans-serif', color: dark ? '#c5d2cf' : '#63716e' },
+      grid: { left: 74, right: kind === 'dual' ? 100 : 64, top: 48, bottom: 75 },
       xAxis: {
         type: 'value',
-        name: mode === 'distance' ? `Distance (${unitLabels[unitSystem].distance})` : 'Shot number',
+        name:
+          mode === 'distance'
+            ? `Distance (${unitLabels[unitSystem].distance})`
+            : settings && kind !== 'compare'
+              ? 'Shot sequence'
+              : 'Shot number',
         nameLocation: 'middle',
         nameGap: 32,
         minInterval: mode === 'shot' ? 1 : undefined,
-        axisLine: { lineStyle: { color: '#dae3df' } },
+        axisLine: { lineStyle: { color: dark ? '#6b8078' : '#dae3df' } },
         splitLine: { show: false },
         axisLabel: { formatter: (value: number) => formatValue(value, 2) },
       },
-      yAxis: {
+      yAxis: (settings &&
+      kind === 'dual' &&
+      mode === 'shot' &&
+      settings.quantity !== settings.secondary
+        ? [settings.quantity, settings.secondary]
+        : [settings?.quantity ?? 'velocity']
+      ).map((quantity, index) => ({
         type: 'value',
-        name: `Velocity (${unitLabels[unitSystem].velocity})`,
+        name:
+          quantities?.find((item) => item.id === quantity)?.label ??
+          quantityLabel(quantity, unitSystem),
+        position: index === 0 ? 'left' : 'right',
+        nameTextStyle: { width: 170, overflow: 'truncate' },
         scale: true,
-        splitLine: { lineStyle: { color: '#edf1ef' } },
-        axisLabel: { formatter: (value: number) => formatValue(value, 2) },
-      },
+        splitLine: { show: index === 0, lineStyle: { color: dark ? '#34443e' : '#edf1ef' } },
+        axisLabel: {
+          formatter: (value: number) => formatValue(value, quantity === 'velocity' ? 2 : 6),
+        },
+      })),
       dataZoom: [
         { type: 'inside', xAxisIndex: 0, filterMode: 'none' },
         {
@@ -91,7 +133,13 @@ export default function MeasurementChart({
           id: 'velocity-zoom',
           type: 'slider',
           orient: 'vertical',
-          yAxisIndex: 0,
+          yAxisIndex:
+            settings &&
+            kind === 'dual' &&
+            mode === 'shot' &&
+            settings.quantity !== settings.secondary
+              ? [0, 1]
+              : [0],
           // Zoom clips the viewport without deleting samples or changing linked shot identities.
           filterMode: 'none',
           width: 14,
@@ -106,11 +154,11 @@ export default function MeasurementChart({
         ...trace,
         type: 'line',
         showSymbol: true,
-        symbol: 'circle',
+        symbol: trace.symbol ?? 'circle',
         symbolSize: mode === 'distance' ? 6 : 8,
         triggerEvent: 'line',
         connectNulls: false,
-        lineStyle: { width: 1.6, opacity: 0.65 },
+        lineStyle: { width: 2, opacity: 0.9, type: trace.dash ?? 'solid' },
         itemStyle: { color: trace.color },
         emphasis: {
           focus: mode === 'distance' ? 'series' : 'self',
@@ -136,6 +184,7 @@ export default function MeasurementChart({
       if (!point && trace && event.event) {
         let closest = 10;
         for (const candidate of trace.data) {
+          if (candidate.value[1] === null) continue;
           const [x, y] = chart.convertToPixel(
             { seriesIndex: event.seriesIndex },
             candidate.value,
@@ -147,7 +196,8 @@ export default function MeasurementChart({
           }
         }
       }
-      onHoverShot(trace?.shotId ?? point?.shotId ?? null);
+      if (point?.value[1] === null) point = undefined;
+      onHoverShot((trace?.shotId ?? point?.shotId) || null);
       const measured = point;
       if (!measured) {
         setDetails(null);
@@ -186,7 +236,7 @@ export default function MeasurementChart({
       chart.dispose();
       instance.current = null;
     };
-  }, [traces, mode, onHoverShot, unitSystem]);
+  }, [traces, mode, onHoverShot, unitSystem, settings, kind, dark, quantities]);
 
   useEffect(() => {
     const chart = instance.current;
@@ -204,7 +254,7 @@ export default function MeasurementChart({
         className="measurement-chart"
         ref={element}
         role="img"
-        aria-label="Recorded velocity chart. Use Table for individual values."
+        aria-label="Recorded measurement chart. Shot records below contain individual values."
       />
       {details?.traces === traces && (
         <div

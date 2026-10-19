@@ -20,25 +20,90 @@ export function ProfileDialog({
   fields?: FieldDefinition[];
   tags?: Tag[];
 }) {
-  const [tab, setTab] = useState<'general' | 'fields' | 'tags'>('general');
+  const [tab, setTab] = useState<'general' | 'display' | 'fields' | 'tags'>('general');
+  const [theme, setTheme] = useState(profile.theme ?? 'auto');
+  const [showProjectileWeight, setShowProjectileWeight] = useState(
+    profile.showProjectileWeight ?? false,
+  );
   const [nickname, setNickname] = useState(profile.nickname);
   const [remember, setRemember] = useState(profile.rememberSignIn);
   const [refresh, setRefresh] = useState(profile.refreshOnStart);
   const [unitSystem, setUnitSystem] = useState(profile.unitSystem ?? 'imperial');
-  const [shotDetail, setShotDetail] = useState(profile.shotDetail ?? 'muzzleVelocity');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   return (
     <Modal title="Your local profile" onClose={onClose} wide>
       <div className="segmented profile-tabs" aria-label="Profile sections">
-        {(['general', 'fields', 'tags'] as const).map((value) => (
+        {(['general', 'display', 'fields', 'tags'] as const).map((value) => (
           <button key={value} aria-pressed={tab === value} onClick={() => setTab(value)}>
-            {value === 'general' ? 'General' : value === 'fields' ? 'Custom fields' : 'Tags'}
+            {value === 'general'
+              ? 'General'
+              : value === 'display'
+                ? 'Display'
+                : value === 'fields'
+                  ? 'Custom fields'
+                  : 'Tags'}
           </button>
         ))}
       </div>
-      {tab !== 'general' && (
+      {(tab === 'fields' || tab === 'tags') && (
         <CustomizationManager key={tab} kind={tab} fields={fields} tags={tags} />
+      )}
+      {tab === 'display' && (
+        <form
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setBusy(true);
+            setError('');
+            try {
+              await saveProfile({ theme, showProjectileWeight });
+              onClose();
+            } catch {
+              setError('Display preferences could not be saved.');
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <label className="check-field">
+            <input
+              type="checkbox"
+              checked={showProjectileWeight}
+              onChange={(event) => setShowProjectileWeight(event.target.checked)}
+            />
+            <span>
+              Projectile weight
+              <small>
+                Append the original Caldwell weight and unit to projectile names, for example 150grs
+                or 2g.
+              </small>
+            </span>
+          </label>
+          <label className="field">
+            Theme
+            <select
+              value={theme}
+              onChange={(event) => setTheme(event.target.value as typeof theme)}
+            >
+              <option value="auto">Auto — follow system</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+          {error && (
+            <p role="alert" className="error">
+              {error}
+            </p>
+          )}
+          <footer className="dialog-actions">
+            <button type="button" onClick={onClose}>
+              Cancel
+            </button>
+            <button className="primary" disabled={busy}>
+              Save display
+            </button>
+          </footer>
+        </form>
       )}
       <div hidden={tab !== 'general'}>
         <p className="muted">
@@ -69,7 +134,6 @@ export function ProfileDialog({
                 rememberSignIn: remember,
                 refreshOnStart: refresh,
                 unitSystem,
-                shotDetail,
               });
               onClose();
             } catch {
@@ -101,18 +165,6 @@ export function ProfileDialog({
               <option value="metric">Metric — m/s, m, °C</option>
             </select>
             <small>Applies throughout the workspace. Original measurements stay unchanged.</small>
-          </label>
-          <label className="field">
-            Shot detail
-            <select
-              value={shotDetail}
-              onChange={(event) => setShotDetail(event.target.value as typeof shotDetail)}
-            >
-              <option value="muzzleVelocity">Muzzle velocity</option>
-              <option value="g1">G1</option>
-              <option value="g7">G7</option>
-            </select>
-            <small>The emphasized reading in the shot table below the chart.</small>
           </label>
           <label className="check-field">
             <input

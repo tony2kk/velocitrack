@@ -26,7 +26,7 @@ afterEach(async () => {
 });
 
 describe('display preferences', () => {
-  it('saves units and shot detail from the profile without changing stored measurements', async () => {
+  it('saves units from the profile without changing stored measurements', async () => {
     const record = shot({ muzzleVelocity: 1000 });
     await db.shots.put(record);
     const close = vi.fn();
@@ -34,16 +34,13 @@ describe('display preferences', () => {
       <ProfileDialog profile={defaultProfile()} sources={[]} refreshing={false} onClose={close} />,
     );
     const units = screen.getByRole('combobox', { name: /^Units/ });
-    const detail = screen.getByRole('combobox', { name: /^Shot detail/ });
     expect((units as HTMLSelectElement).value).toBe('imperial');
-    expect((detail as HTMLSelectElement).value).toBe('muzzleVelocity');
+    expect(screen.queryByRole('combobox', { name: /^Shot detail/ })).toBeNull();
     fireEvent.change(units, { target: { value: 'metric' } });
-    fireEvent.change(detail, { target: { value: 'g7' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save profile' }));
     await waitFor(() => expect(close).toHaveBeenCalledOnce());
     expect((await loadWorkspace()).profile).toMatchObject({
       unitSystem: 'metric',
-      shotDetail: 'g7',
     });
     expect(await db.shots.get(record.id)).toEqual(record);
   });

@@ -4,6 +4,7 @@ VelociTrack is a local workspace for recorded measurements. It is an unofficial 
 
 - [Sources](#sources)
 - [Filters and selection](#filters-and-selection)
+- [Analysis and table columns](#analysis-and-table-columns)
 - [Custom fields, tags and photos](#custom-fields-tags-and-photos)
 - [Backup and restore](#backup-and-restore)
 - [Profile and offline use](#profile-and-offline-use)
@@ -161,6 +162,23 @@ Hover or tap a measured chart point to see its series, shot number, original sam
 
 Use the bottom slider to zoom the distance/shot-number axis and the right slider to zoom velocity. Drag the range or either end handle. Both work in either chart mode. Zoom affects the visible range, not selected shots or summary statistics.
 
+## Analysis and table columns
+
+Choose **Analysis** between Filters and Tools:
+
+- **Simple chart** shows one quantity. **By shot** combines selected strings into one sequence, ordered by string start time and then shot number/identity. **Over distance** retains individual measured shot traces.
+- **Dual chart** uses the same sequence for two chosen quantities, with separate labeled Y axes. Missing readings leave gaps and do not shift the other quantity's X positions. Over distance has only recorded velocity; the second quantity is unavailable there. Choose By shot for two quantities.
+- **String compare** plots a separate curve per string. By shot uses each string's own shot numbers. Over distance shows each string's mean velocity at observed distances, with linear interpolation inside each shot's measured range and no extrapolation. The tooltip reports how many shots contribute at that distance. Disconnected measured ranges remain disconnected. For very large grids, at most 5,000 observed-distance positions are rendered per string; all eligible selected shots contribute to those means.
+- **String info** shows the selected string's dates, firearm/projectile, source notes, recorded conditions, original source statistics, tags and custom values. If several strings are selected, choose one in the String control. Original provider metadata and shot notes/times are expandable. **Edit details / Photos** opens its local context and photos. Zero-shot strings can still show their metadata.
+
+Each chart has an independent saved horizontal-axis and quantity choice. Available scalar choices include velocity, **G1 (Caldwell)**, **G7 (Caldwell)**, known projectile mass, recorded weather/conditions, original Caldwell string statistics and numeric/dimensional custom fields. String-level values are inherited by each shot. Only quantities with usable readings are offered. A temporarily unavailable saved quantity is retained with a no-readings label; selecting another string does not silently overwrite it. Changing to Over distance replaces an incompatible quantity with Velocity and saves that choice. Technical identifiers and unit/type enum codes are metadata, not plotted physical quantities.
+
+Velocity/distance/temperature display units follow the local profile; the stored originals are preserved. G1/G7 stay unchanged. A quantity labeled **source units** has not been assigned an unverified physical-unit conversion. Source statistics are displayed as provided and may differ from the workspace summary, which uses the current selected, non-excluded shots.
+
+Comparison colors alternate strongly separated hue families, starting blue/orange and then purple/magenta. The dark theme uses brighter variants. The full workspace's stable string-ID ordering assigns colors, so changing the active selection does not recolor the remaining strings. Symbols and line dashes provide additional distinctions when colors repeat. Importing new strings can change the ordering; colors themselves are not user preferences.
+
+**Columns** controls every data column in the shot table. Select columns, drag selected rows to reorder, or use their arrow buttons. These edits save immediately, survive restart and round-trip through ZIP backups. The Analyze checkbox is fixed at the start. Existing custom-column/tag preferences are retained until the first edit of the new ordered-column configuration.
+
 ## Custom fields, tags and photos
 
 A series is the imported string. Open **Profile → Custom fields** to define named optional fields shared across the workspace. Add, edit, reorder with the arrow buttons, or remove definitions. These changes save immediately, independently of **Save profile** in General.
@@ -178,7 +196,7 @@ Names must be unique within custom fields (1–100 characters). There is no fixe
 
 Open **Profile → Tags** to create named colored tags. Names must be unique within tags; you may reuse an existing name in custom fields. Use **Details & photos** under a series to assign multiple tags and enter custom values, then **Save details**. These values belong to the series and survive import/refresh. Tag changes in Profile save immediately. Removing a tag requires confirmation, removes its assignments and clears it from saved filters; measurements remain.
 
-Use **Columns** above the shot table to show custom fields and Tags. Choices persist in the profile. Every shot row displays its parent series' values; edit those values in series details. **Tags** filtering matches at least one selected tag, together with all other filter groups.
+Use **Columns** above the shot table to choose standard readings, source metadata, custom fields and Tags. Drag selected rows to reorder columns, or use the Up/Down buttons for keyboard/touch input. Selection and order persist in the profile. The Analyze checkbox stays at the start of each row. Every shot row displays its parent series' values; edit those values in series details. **Tags** filtering matches at least one selected tag, together with all other filter groups.
 
 The **Photos** section in series details accepts multiple JPEG, PNG or WebP files, up to 20 MiB and 60 megapixels each. Original bytes remain on this device. Photo additions and caption saves take effect immediately, even if you close without saving field edits. Click a thumbnail to open full size in a new tab. Removing a photo requires confirmation. Earlier successful additions remain if a later file in a batch fails. Target/group analysis is planned separately and is not included yet.
 
@@ -204,9 +222,11 @@ For troubleshooting, include the version shown in the footer, for example `v0.1.
 
 The profile icon opens your local nickname and startup/sign-in preferences. There is no VelociTrack server account. **Refresh all enabled sources after startup** refreshes signed-in online sources and marks file sources as awaiting files. Missing sign-in waits for you to open Sources.
 
-**Units** selects **Imperial — ft/s, ft, °F** (default) or **Metric — m/s, m, °C**. After **Save profile**, the workspace updates its chart axes/points/tooltips, shot table, summary statistics and dimensional custom fields. The choice survives reopening the app. Original measurements are never converted in storage. Temperature conversion is defined for future atmosphere displays; no atmosphere panel is shown yet.
+**Units** selects **Imperial — ft/s, ft, °F** (default) or **Metric — m/s, m, °C**. After **Save profile**, the workspace updates its chart axes/points/tooltips, shot table, summary statistics and dimensional custom fields. The choice survives reopening the app. Original measurements are never converted in storage. Recorded temperatures are also converted in String info and scalar charts. Other weather dimensions keep explicit source-unit labels until their provider semantics are confirmed.
 
-**Shot detail** selects **Muzzle velocity** (default), **G1** or **G7** as the emphasized reading in the shot table. Muzzle velocity follows your unit preference; coefficients are shown unchanged. Missing readings appear as **—**. This preference also persists and does not change which shots are selected.
+**Profile → Display** contains **Projectile weight** and **Theme**. Enable Projectile weight to append the mass in the original provider unit, such as `Example projectile 150grs` or `Example projectile 2g`. Each string uses its own recorded projectile snapshot, even if a shared catalog name is later edited. The supported recorded weightUnit codes are 0 = grains and 1 = grams; unrecognized codes are shown explicitly rather than guessed. Theme offers **Light**, **Dark** and **Auto — follow system**; Auto reacts to operating-system changes while the app is open. Save with **Save display**. These choices persist locally and are included in backups.
+
+For local work, development and production preview both use `http://127.0.0.1:4180/velocitrack/` and fail rather than silently choosing another port. Use the same browser profile and exact address every time. Enable remembered sign-in once on a trusted device to retain the Caldwell session across reloads and browser restarts. Signing out, clearing site data, or provider session invalidation can require another login.
 
 Measurements and settings belong to this browser profile and site address. Changing port, hostname or browser creates a separate workspace. Clearing site data or browser eviction can remove it. Keep your original exports and download regular workspace ZIP backups, especially after adding notes or photos.
 

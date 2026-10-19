@@ -5,6 +5,31 @@ export type SourceStatus = 'ready' | 'needs-files' | 'needs-sign-in' | 'needs-se
 export type RawRecord = Record<string, unknown>;
 export type UnitSystem = 'imperial' | 'metric';
 export type ShotDetail = 'muzzleVelocity' | 'g1' | 'g7';
+export type AnalysisMode = 'simple' | 'dual' | 'compare' | 'info';
+export type ChartQuantity = string;
+/** Each analysis keeps independent axis/quantity choices across visits. */
+export interface ChartSettings {
+  axis: 'distance' | 'shot';
+  quantity: ChartQuantity;
+  secondary: ChartQuantity;
+}
+/** Persist intent even when a temporary selection has no usable readings. */
+export interface AnalysisSettings {
+  mode: AnalysisMode;
+  simple: ChartSettings;
+  dual: ChartSettings;
+  compare: ChartSettings;
+}
+
+/** Return independent objects so changes to one analysis never alter another. */
+export function defaultAnalysis(): AnalysisSettings {
+  return {
+    mode: 'simple',
+    simple: { axis: 'distance', quantity: 'velocity', secondary: 'g1' },
+    dual: { axis: 'shot', quantity: 'velocity', secondary: 'g1' },
+    compare: { axis: 'shot', quantity: 'velocity', secondary: 'g1' },
+  };
+}
 
 /** Shared public service identifiers; user credentials and account bindings remain separate. */
 export interface CaldwellConnection {
@@ -134,6 +159,11 @@ export interface Filters {
 
 /** Singleton local preferences, independent of any connected provider account. */
 export interface Profile {
+  tableColumns?: string[];
+  infoSeriesId?: string;
+  analysis?: AnalysisSettings;
+  theme?: 'light' | 'dark' | 'auto';
+  showProjectileWeight?: boolean;
   visibleFieldIds?: string[];
   showTags?: boolean;
   id: 'local';
@@ -167,6 +197,9 @@ export function defaultProfile(): Profile {
     refreshOnStart: false,
     unitSystem: 'imperial',
     shotDetail: 'muzzleVelocity',
+    analysis: defaultAnalysis(),
+    theme: 'auto',
+    showProjectileWeight: false,
     filters: structuredClone(EMPTY_FILTERS),
   };
 }

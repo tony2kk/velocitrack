@@ -77,6 +77,7 @@ export default defineConfig({
   ],
   server: {
     host: '127.0.0.1',
+    port: 4180,
     strictPort: true,
     fs: {
       // Preserve Vite's default denials and keep local setup/study files out of its file server.
@@ -92,5 +93,6 @@ export default defineConfig({
       ],
     },
   },
+  preview: { host: '127.0.0.1', port: 4180, strictPort: true },
   build: { sourcemap: false, chunkSizeWarningLimit: 700 },
 });

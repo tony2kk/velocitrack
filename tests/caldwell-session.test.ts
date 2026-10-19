@@ -18,6 +18,8 @@ describe('Firebase SDK session lifecycle', () => {
       expect(first.auth.currentUser).toBeNull();
       expect(first.auth.app).toBe(first.app);
       expect(first.database.app).toBe(first.app);
+      expect((await getSession(source, true)).remembered).toBe(true);
+      expect((await getSession(source, false)).remembered).toBe(false);
       await forgetSession(source, false);
       const fresh = await getSession(source, false);
       expect(fresh).not.toBe(first);

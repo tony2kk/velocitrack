@@ -70,3 +70,17 @@ Review candidate files, built assets and history before publishing. The owner au
 - [ ] Future target/group analysis with calibration and per-photo result provenance.
 
 See decision 007. No Pages deployment is implied.
+
+## Analysis and display — 2026-10-19
+
+- [x] Analysis toolbar: Simple chart, Dual chart, String compare, String info.
+- [x] Persistent independent axes/scalars, valid distance choices and source/custom quantity readers.
+- [x] Configurable table columns with persistent drag/button ordering.
+- [x] Profile Display tab, projectile mass labels and Light/Dark/Auto theme.
+- [x] Contrasting palettes with symbols/dashes and selection-independent string colors.
+- [x] Remove the redundant units banner and obsolete Shot detail control.
+- [x] Fixed 4180 local origin and remembered-session reconciliation.
+- [x] Confirm provider mass codes through owner-controlled reassignment (0 = grains, 1 = grams).
+- [x] Complete release verification and browser checks (135 tests; see VERIFICATION.md).
+
+See decision 008. Pages deployment remains a separate instruction.

@@ -46,6 +46,12 @@ export async function removeField(id: string, database = db) {
       });
       await database.profiles.toCollection().modify((p) => {
         p.visibleFieldIds = p.visibleFieldIds?.filter((value) => value !== id);
+        p.tableColumns = p.tableColumns?.filter((value) => value !== `field:${id}`);
+        if (p.analysis)
+          for (const mode of ['simple', 'dual', 'compare'] as const) {
+            if (p.analysis[mode].quantity === `field:${id}`) p.analysis[mode].quantity = 'velocity';
+            if (p.analysis[mode].secondary === `field:${id}`) p.analysis[mode].secondary = 'g1';
+          }
       });
     },
   );

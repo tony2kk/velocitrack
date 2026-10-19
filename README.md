@@ -26,8 +26,8 @@ The production PWA caches static application assets after a successful online vi
 - Paired `[0, 0]` samples are omitted from charts as padding. Zero distance with positive velocity remains valid. **Data quality** reports invalid/unpaired samples. Original arrays remain intact.
 - Source-excluded shots stay visible in the table but do not enter charts/statistics. Positive finite muzzle readings contribute to mean, sample SD (`n − 1`) and extreme spread.
 - Charts/statistics retain the existing one-source/raw-unit-code comparison grouping. Source codes are metadata, not display-unit selectors.
-- Distance charts show up to 100 included shot traces; narrow the selection for others. Tables paginate in groups of 100. These are measured points, not predicted trajectories.
-- Use the horizontal and vertical sliders to zoom either axis. **Shot detail** in the profile chooses Muzzle velocity, G1 or G7 as the emphasized table reading. Import messages count only new records; unchanged imports report **No new data detected**.
+- Simple/Dual distance charts show up to 100 included shot traces; narrow the selection for others. Tables paginate in groups of 100. These are measured points, not predicted trajectories.
+- Use the horizontal and vertical sliders to zoom either axis. Analysis offers Simple chart, Dual chart, String compare and String info. Chart axes/quantities and table-column selection/order persist. Profile → Display controls projectile weight labels and Light/Dark/Auto theme. Import messages count only new records; unchanged imports report **No new data detected**.
 
 ## Develop locally
 
@@ -40,7 +40,7 @@ npm.cmd ci
 npm.cmd run dev
 ```
 
-Open the printed URL, normally `http://127.0.0.1:5173/velocitrack/`. On macOS/Linux use `npm`. `npm.cmd` avoids PowerShell script-policy restrictions. Do not open `index.html` through `file://`.
+Development and preview share the fixed URL `http://127.0.0.1:4180/velocitrack/`. On macOS/Linux use `npm`. `npm.cmd` avoids PowerShell script-policy restrictions. Do not open `index.html` through `file://`.
 
 | Command | Purpose |
 | --- | --- |
@@ -49,7 +49,7 @@ Open the printed URL, normally `http://127.0.0.1:5173/velocitrack/`. On macOS/Li
 | `npm test` | Parser, measurement, filter and IndexedDB transaction tests |
 | `npm run format` | Format application, tests and configuration |
 | `npm run build` | Generate static `dist/` and service worker |
-| `npm run preview` | Serve the production build on loopback port 4173 |
+| `npm run preview` | Serve the production build on loopback port 4180 |
 | `npm run check:public` | Basic prohibited-file/credential-pattern scan, not a privacy proof |
 
 TypeScript 6 is pinned because the selected ESLint TypeScript integration does not support TypeScript 7 yet. Do not bypass peer checks to upgrade it.

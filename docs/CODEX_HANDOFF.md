@@ -14,7 +14,7 @@ Read `AGENTS.md`, `PLAN.md`, `ARCHITECTURE.md`, `docs/decisions/001-local-first-
 - Refresh all enabled sources independent of filters. File adapters require reselection; signed-in Caldwell sources fetch online. Missing sessions wait for sign-in in Sources.
 - Local annotations are separate. Profile manages typed series fields and colored tags; inherited shot-table columns and tag filters persist. Cross-source mapping remains later work. See decision 007.
 - The left navigator contains series only. Shot checkboxes are in the table below the chart; unchecked rows stay visible. Deselections and hover are page-memory state; selected shots drive summaries/charts. Import feedback expires after ten seconds; progress tracks active sources. See decision 004.
-- The owner confirmed ft/s, ft and °F raw inputs. Profile units default to Imperial and can be Metric; display conversion never rewrites measurements. Muzzle velocity/G1/G7 selects the emphasized table reading. Other atmosphere fields and provider enums remain unvalidated; no weapon configuration or ammunition optimization.
+- The owner confirmed ft/s, ft and °F raw inputs. Profile units default to Imperial and can be Metric; display conversion never rewrites measurements. Analysis selects scalar readings; the old Shot detail control has been removed. Other atmosphere fields and provider enums remain unvalidated; no weapon configuration or ammunition optimization.
 - Import feedback counts new identities only (atomically), aggregates batch results and reports **No new data detected** when none were added. Charts have independent horizontal/vertical zoom sliders. See decision 006.
 
 The study is not production code. Never copy private exports, APKs or account configuration into the project. The owner explicitly requested the shared two-field Caldwell client configuration in `public/sources/caldwell.json`; this is the only allowed public provider metadata (decision 005). Synthetic tests are invented from scratch. Owner-provided branding lives in `public/brand/`; the ZIP is excluded.
@@ -34,3 +34,9 @@ The owner plans to contact Caldwell when the application is sufficiently functio
 ## Series context update
 
 Version 0.4.0 adds additive schema v2, local custom fields/tags, per-series raster photos and full ZIP backup/restore. Read decision 007 for units, field lifecycle, file limits and authentication/restore behavior. Photos and backups are always user browser data, never repository assets. The pinned fflate 0.8.3 fixes the malformed ZIP64 advisory affecting older versions. Target analysis remains future work.
+
+## Analysis/display update
+
+Version 0.5.0 adds four Analysis modes, independent persistent chart settings, recorded/source/custom scalar selection, ordered configurable table columns, String info, projectile mass labels and Light/Dark/Auto theme. Read decision 008 and updated help. Development and preview now both use the exact `http://127.0.0.1:4180/velocitrack/` origin with strict port binding. Never move the owner's daily workflow to another port or copy private browser data into fixtures. Synthetic browser checks may use an isolated temporary origin without signing in.
+
+The owner requested remembered sign-in for the existing local workspace. It was enabled through the profile, followed by owner-entered login; the UI confirmed remembered sign-in and a reload/startup refresh succeeded without credentials. No global default was changed and no session/token is in the repository. The owner-controlled reassignment verified projectile.weightUnit 0 = grains and 1 = grams; see decision 008. Unknown codes must remain explicit.

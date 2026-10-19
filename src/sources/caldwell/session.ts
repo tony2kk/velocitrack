@@ -16,6 +16,7 @@ export interface CaldwellSession {
   app: FirebaseApp;
   auth: Auth;
   database: Firestore;
+  remembered?: boolean;
 }
 
 // Cache initialization promises as well as ready sessions to prevent duplicate named Firebase apps.
@@ -35,7 +36,7 @@ export async function getSession(source: DataSource, remember: boolean): Promise
           persistence: remember ? indexedDBLocalPersistence : inMemoryPersistence,
         });
         await auth.authStateReady();
-        return { app, auth, database: getFirestore(app) };
+        return { app, auth, database: getFirestore(app), remembered: remember };
       } catch (error) {
         await deleteApp(app);
         throw error;
@@ -44,7 +45,13 @@ export async function getSession(source: DataSource, remember: boolean): Promise
     sessions.set(source.id, pending);
     void pending.catch(() => sessions.delete(source.id));
   }
-  return pending;
+  const session = await pending;
+  // Another tab can change the local opt-in while this tab already has an SDK handle.
+  if (session.remembered !== remember) {
+    await setPersistence(session.auth, remember ? indexedDBLocalPersistence : inMemoryPersistence);
+    session.remembered = remember;
+  }
+  return session;
 }
 
 /** Migrate configured SDK sessions after a profile consent change; password storage is never involved. */
@@ -54,8 +61,9 @@ export async function changeSessionPersistence(
   remember: boolean,
 ) {
   for (const source of sources.filter((item) => item.kind === 'caldwell' && item.connection)) {
-    const { auth } = await getSession(source, wasRemembered);
-    await setPersistence(auth, remember ? indexedDBLocalPersistence : inMemoryPersistence);
+    const session = await getSession(source, wasRemembered);
+    await setPersistence(session.auth, remember ? indexedDBLocalPersistence : inMemoryPersistence);
+    session.remembered = remember;
   }
 }
 

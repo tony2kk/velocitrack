@@ -1,5 +1,5 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
-import { ArrowUpRight, ChartNoAxesCombined, Info } from 'lucide-react';
+import { ArrowUpRight, ChartNoAxesCombined } from 'lucide-react';
 import type {
   Series,
   Shot,
@@ -8,10 +8,19 @@ import type {
   Annotation,
   Tag,
   Profile,
+  CatalogItem,
+  Attachment,
+  ChartSettings,
 } from '../domain/model';
 import { saveProfile } from '../storage/workspace';
 import { chartGroupsCompatible, inspectPoints, summarizeShots } from '../domain/measurements';
-import { chartColors } from '../domain/chart';
+import { chartStyle } from '../domain/chart';
+import { defaultAnalysis, defaultProfile } from '../domain/model';
+import { availableQuantities, normalizeChart, quantityLabel } from '../domain/analysis';
+import { saveAnalysis } from '../storage/analysis';
+import { ColumnPicker } from './ColumnPicker';
+import { tableColumns, visibleColumns } from '../domain/table';
+import { StringInfo } from './StringInfo';
 import { ShotTable } from './ShotTable';
 import { displayValue, formatValue, unitLabels } from '../domain/units';
 
@@ -33,6 +42,11 @@ export function AnalysisPanel({
   annotations = [],
   tags = [],
   profile,
+  catalog = [],
+  attachments = [],
+  onDetails,
+  dark = false,
+  colorOrder,
 }: {
   series: Series[];
   shots: Shot[];
@@ -47,6 +61,11 @@ export function AnalysisPanel({
   annotations?: Annotation[];
   tags?: Tag[];
   profile?: Profile;
+  catalog?: CatalogItem[];
+  attachments?: Attachment[];
+  onDetails?: (id: string) => void;
+  dark?: boolean;
+  colorOrder?: string[];
 }) {
   const [columnError, setColumnError] = useState('');
   /** Persist column choices without changing annotations or the active shot selection. */
@@ -58,7 +77,45 @@ export function AnalysisPanel({
       setColumnError('Column choices could not be saved.');
     }
   }
-  const [mode, setMode] = useState<'distance' | 'shot'>('distance');
+  const kind = profile?.analysis?.mode ?? 'simple';
+  const chartKind = kind === 'info' ? 'simple' : kind;
+  const settings = useMemo(
+    () => normalizeChart(profile?.analysis?.[chartKind] ?? defaultAnalysis()[chartKind]),
+    [profile?.analysis, chartKind],
+  );
+  const mode = settings.axis;
+  const quantities = useMemo(
+    () => availableQuantities(shots, series, fields, annotations, unitSystem),
+    [shots, series, fields, annotations, unitSystem],
+  );
+  const tableQuantities = useMemo(
+    () =>
+      availableQuantities(
+        allShots.map((shot) => ({ ...shot, excluded: false })),
+        series,
+        fields,
+        annotations,
+        unitSystem,
+        true,
+      ),
+    [allShots, series, fields, annotations, unitSystem],
+  );
+  const infoSeries = series.find((item) => item.id === profile?.infoSeriesId) ?? series[0];
+  /** Persist explicit control edits; missing readings alone never overwrite a saved quantity. */
+  async function changeChart(patch: Partial<ChartSettings>) {
+    const next = normalizeChart({ ...settings, ...patch });
+    const available = quantities.filter((q) => next.axis === 'shot' || q.id === 'velocity');
+    if (patch.axis && available.length && !available.some((q) => q.id === next.quantity))
+      next.quantity = available[0]!.id;
+    if (!available.some((q) => q.id === next.secondary && q.id !== next.quantity))
+      next.secondary = available.find((q) => q.id !== next.quantity)?.id ?? next.quantity;
+    try {
+      await saveAnalysis(chartKind, next);
+      setColumnError('');
+    } catch {
+      setColumnError('Analysis settings could not be saved.');
+    }
+  }
   const summary = useMemo(() => summarizeShots(shots), [shots]);
   const quality = useMemo(
     () =>
@@ -77,6 +134,14 @@ export function AnalysisPanel({
     [shots],
   );
   const compatible = chartGroupsCompatible(shots);
+  // Distance velocity is usable even when the provider supplied no separate muzzle scalar.
+  const choices =
+    mode === 'distance'
+      ? quality.points
+        ? [{ id: 'velocity', label: quantityLabel('velocity', unitSystem) }]
+        : []
+      : quantities;
+  const secondaryChoices = choices.filter((item) => item.id !== settings.quantity);
   if (!series.length)
     return (
       <section className="analysis-empty">
@@ -130,98 +195,213 @@ export function AnalysisPanel({
           </div>
         ))}
       </div>
-      <div className="notice unit-notice">
-        <Info size={17} />
-        <span>
-          {summary.incompatible
-            ? 'Combined statistics are unavailable across different sources or unit codes.'
-            : `Displaying ${unitLabels[unitSystem].velocity} and ${unitLabels[unitSystem].distance}. Original measurements are preserved.`}
-        </span>
-      </div>
-      <div className="chart-panel">
-        <header className="chart-heading">
-          <div>
-            <h3>
-              {view === 'table'
-                ? 'Shot records'
-                : mode === 'distance'
-                  ? 'Velocity over distance'
-                  : 'Muzzle velocity by shot'}
-            </h3>
-            <p className="muted">
-              {view === 'table'
-                ? 'Selected display units, including excluded shots'
-                : 'Measured points · no modeled trajectory'}
-            </p>
-          </div>
-          {view === 'chart' && (
-            <select
-              aria-label="Chart type"
-              value={mode}
-              onChange={(event) => setMode(event.target.value as typeof mode)}
-            >
-              <option value="distance">Over distance</option>
-              <option value="shot">By shot</option>
-            </select>
+      {summary.incompatible && (
+        <p className="notice">
+          Combined statistics are unavailable across different sources or unit codes.
+        </p>
+      )}
+      {kind === 'info' && infoSeries ? (
+        <div className="chart-panel">
+          {series.length > 1 && (
+            <label className="field">
+              String
+              <select
+                value={infoSeries.id}
+                onChange={(event) => void columns({ infoSeriesId: event.target.value })}
+              >
+                {series.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
-        </header>
-        {!shots.length ? (
-          <p className="empty-note">
-            No shots selected. Select shots in the table below to display measurements.
-          </p>
-        ) : view === 'chart' ? (
-          compatible ? (
+          <StringInfo
+            series={infoSeries}
+            shots={allShots.filter((shot) => shot.seriesId === infoSeries.id)}
+            profile={profile ?? defaultProfile()}
+            fields={fields}
+            annotations={annotations}
+            tags={tags}
+            catalog={catalog}
+            photos={attachments.filter((photo) => photo.seriesId === infoSeries.id)}
+            onDetails={onDetails}
+          />
+        </div>
+      ) : (
+        <div className="chart-panel">
+          <header className="chart-heading">
+            <div>
+              <h3>
+                {view === 'table'
+                  ? 'Shot records'
+                  : kind === 'dual'
+                    ? 'Dual chart'
+                    : kind === 'compare'
+                      ? 'String compare'
+                      : 'Simple chart'}
+              </h3>
+              <p className="muted">
+                {mode === 'distance' && kind === 'compare'
+                  ? 'Mean of measured traces · linear interpolation within measured ranges'
+                  : mode === 'shot' && kind !== 'compare'
+                    ? 'One sequence across selected strings'
+                    : 'Recorded measurements'}
+              </p>
+            </div>
+            {view === 'chart' && (
+              <div className="analysis-controls">
+                <label>
+                  Horizontal axis
+                  <select
+                    aria-label="Chart type"
+                    value={mode}
+                    onChange={(event) =>
+                      void changeChart({ axis: event.target.value as typeof mode })
+                    }
+                  >
+                    <option value="distance">Over distance</option>
+                    <option value="shot">By shot</option>
+                  </select>
+                </label>
+                <label>
+                  Quantity
+                  <select
+                    aria-label="Chart quantity"
+                    value={settings.quantity}
+                    onChange={(event) => void changeChart({ quantity: event.target.value })}
+                  >
+                    {!choices.some((q) => q.id === settings.quantity) && (
+                      <option value={settings.quantity} disabled>
+                        {quantityLabel(settings.quantity, unitSystem)} — no readings
+                      </option>
+                    )}
+                    {choices.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        {q.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {kind === 'dual' && (
+                  <label>
+                    Second quantity
+                    <select
+                      aria-label="Second chart quantity"
+                      disabled={!secondaryChoices.length}
+                      value={secondaryChoices.length ? settings.secondary : ''}
+                      onChange={(event) => void changeChart({ secondary: event.target.value })}
+                    >
+                      {!secondaryChoices.length && (
+                        <option value="">No second quantity available</option>
+                      )}
+                      {secondaryChoices.length > 0 &&
+                        !secondaryChoices.some((q) => q.id === settings.secondary) && (
+                          <option value={settings.secondary} disabled>
+                            Saved quantity — no readings
+                          </option>
+                        )}
+                      {secondaryChoices.map((q) => (
+                        <option key={q.id} value={q.id}>
+                          {q.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+              </div>
+            )}
+          </header>
+          {!shots.length ? (
+            <p className="empty-note">
+              No shots selected. Select shots in the table below to display measurements.
+            </p>
+          ) : view === 'table' ? (
+            <ShotTable
+              shots={shots}
+              series={series}
+              activeShotId={activeShotId}
+              onHoverShot={onHoverShot}
+              unitSystem={unitSystem}
+            />
+          ) : compatible ? (
             <>
               <Suspense fallback={<p className="empty-note">Loading chart…</p>}>
                 <MeasurementChart
                   shots={shots}
                   series={series}
                   mode={mode}
+                  settings={settings}
+                  kind={kind}
+                  quantities={quantities}
+                  dark={dark}
+                  colorOrder={colorOrder}
                   activeShotId={activeShotId}
                   onHoverShot={onHoverShot}
                   unitSystem={unitSystem}
                 />
               </Suspense>
               <div className="chart-legend">
-                {series.map((item, index) => (
-                  <span key={item.id}>
+                {(kind === 'compare'
+                  ? [...series].sort((a, b) => a.id.localeCompare(b.id)).map((item) => item.name)
+                  : [
+                      settings.quantity,
+                      ...(kind === 'dual' && settings.secondary !== settings.quantity
+                        ? [settings.secondary]
+                        : []),
+                    ].map(
+                      (id) =>
+                        quantities.find((q) => q.id === id)?.label ?? quantityLabel(id, unitSystem),
+                    )
+                ).map((label, index) => (
+                  <span key={index}>
                     <i
                       style={{
-                        background: chartColors[index % chartColors.length],
+                        background: chartStyle(
+                          kind === 'compare' && colorOrder
+                            ? Math.max(
+                                0,
+                                colorOrder.indexOf(
+                                  [...series].sort((a, b) => a.id.localeCompare(b.id))[index]!.id,
+                                ),
+                              )
+                            : index,
+                          dark,
+                        ).color,
                       }}
                     />
-                    {item.name}
+                    {label}
                   </span>
                 ))}
               </div>
-              {mode === 'distance' && shots.filter((shot) => !shot.excluded).length > 100 && (
-                <p className="notice">
-                  Showing the first 100 included shot traces. Narrow the selection to see the
-                  others.
+              {kind === 'dual' && mode === 'distance' && (
+                <p className="muted">
+                  Only velocity is recorded over distance. Choose By shot to compare two quantities.
                 </p>
               )}
-              {!quality.points && mode === 'distance' && (
+              {mode === 'distance' &&
+                kind !== 'compare' &&
+                shots.filter((shot) => !shot.excluded).length > 100 && (
+                  <p className="notice">
+                    Showing the first 100 included shot traces. Narrow the selection to see the
+                    others.
+                  </p>
+                )}
+              {mode === 'distance' && !quality.points && (
                 <p className="notice">
-                  No usable distance/velocity pairs. Choose By shot to inspect muzzle readings.
+                  No usable distance/velocity pairs. Choose By shot to inspect recorded scalars.
                 </p>
               )}
             </>
           ) : (
             <p className="empty-note">
               Select series from one source with the same unit code to draw a comparison. All
-              records remain available in Table.
+              records remain available below.
             </p>
-          )
-        ) : (
-          <ShotTable
-            shots={shots}
-            series={series}
-            activeShotId={activeShotId}
-            onHoverShot={onHoverShot}
-            unitSystem={unitSystem}
-          />
-        )}
-      </div>
+          )}
+        </div>
+      )}
       {view === 'chart' && (
         <section className="shot-table-panel">
           <header className="chart-heading">
@@ -231,35 +411,11 @@ export function AnalysisPanel({
                 Uncheck shots to omit them from analysis. Rows stay available here.
               </p>
             </div>
-            <details className="column-picker">
-              <summary>Columns</summary>
-              <div>
-                <label className="check-field compact">
-                  <input
-                    type="checkbox"
-                    checked={profile?.showTags ?? false}
-                    onChange={(event) => void columns({ showTags: event.target.checked })}
-                  />
-                  Tags
-                </label>
-                {fields.map((field) => (
-                  <label className="check-field compact" key={field.id}>
-                    <input
-                      type="checkbox"
-                      checked={profile?.visibleFieldIds?.includes(field.id) ?? false}
-                      onChange={(event) =>
-                        void columns({
-                          visibleFieldIds: event.target.checked
-                            ? [...(profile?.visibleFieldIds ?? []), field.id]
-                            : profile?.visibleFieldIds?.filter((id) => id !== field.id),
-                        })
-                      }
-                    />
-                    {field.name}
-                  </label>
-                ))}
-              </div>
-            </details>
+            <ColumnPicker
+              available={tableColumns(fields, tableQuantities, unitSystem)}
+              selected={visibleColumns(profile)}
+              onChange={(tableColumns) => void columns({ tableColumns })}
+            />
           </header>
           {columnError && (
             <p className="error" role="alert">
@@ -274,11 +430,18 @@ export function AnalysisPanel({
             unitSystem={unitSystem}
             hiddenShots={hiddenShots}
             onToggleShot={onToggleShot}
-            fields={fields.filter((field) => profile?.visibleFieldIds?.includes(field.id))}
+            fields={fields}
+            columnIds={visibleColumns(profile)}
+            catalog={catalog}
+            showProjectileWeight={profile?.showProjectileWeight}
             annotations={annotations}
             tags={tags}
             showTags={profile?.showTags}
-            shotDetail={profile?.shotDetail}
+            shotDetail={
+              settings.quantity === 'g1' || settings.quantity === 'g7'
+                ? settings.quantity
+                : 'muzzleVelocity'
+            }
           />
         </section>
       )}

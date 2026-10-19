@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   Series,
   Shot,
@@ -7,11 +7,17 @@ import type {
   Annotation,
   Tag,
   ShotDetail,
+  CatalogItem,
 } from '../domain/model';
-import { fieldDisplay, fieldUnit } from '../domain/customFields';
+import { fieldDisplay } from '../domain/customFields';
 import { TagLabels } from './CustomizationManager';
 import { inspectPoints } from '../domain/measurements';
 import { displayValue, formatValue, unitLabels } from '../domain/units';
+
+import { availableQuantities, rawPath } from '../domain/analysis';
+import { tableColumns, DEFAULT_COLUMNS } from '../domain/table';
+import { projectileName } from '../domain/projectiles';
+import { providerTime } from './StringInfo';
 
 /** Show selected records in display units and reveal a linked hovered shot without changing selection. */
 export function ShotTable({
@@ -27,6 +33,9 @@ export function ShotTable({
   tags = [],
   showTags = false,
   shotDetail = 'muzzleVelocity',
+  columnIds,
+  catalog = [],
+  showProjectileWeight = false,
 }: {
   shots: Shot[];
   series: Series[];
@@ -40,6 +49,9 @@ export function ShotTable({
   tags?: Tag[];
   showTags?: boolean;
   shotDetail?: ShotDetail;
+  columnIds?: string[];
+  catalog?: CatalogItem[];
+  showProjectileWeight?: boolean;
 }) {
   const [page, setPage] = useState(0);
   const scrollArea = useRef<HTMLDivElement>(null);
@@ -50,6 +62,30 @@ export function ShotTable({
       ? Math.floor(hoveredIndex / 100)
       : Math.min(page, Math.max(0, Math.ceil(shots.length / 100) - 1));
   const names = new Map(series.map((item) => [item.id, item.name]));
+  const sessions = new Map(series.map((item) => [item.id, item]));
+  const catalogNames = new Map(catalog.map((item) => [item.id, item.name]));
+  const quantities = useMemo(
+    () =>
+      availableQuantities(
+        shots.map((shot) => ({ ...shot, excluded: false })),
+        series,
+        fields,
+        annotations,
+        unitSystem,
+        true,
+      ),
+    [shots, series, fields, annotations, unitSystem],
+  );
+  const definitions = tableColumns(fields, quantities, unitSystem);
+  const ids = columnIds ?? [
+    ...DEFAULT_COLUMNS,
+    ...(showTags ? ['tags'] : []),
+    ...fields.map((field) => `field:${field.id}`),
+  ];
+  const columns = ids.flatMap((id) => {
+    const definition = definitions.find((item) => item.id === id);
+    return definition ? [definition] : [];
+  });
   const details = new Map(annotations.map((item) => [item.entityId, item]));
   useEffect(() => {
     // Keep a revealed page in place after the pointer leaves the navigation row.
@@ -78,22 +114,8 @@ export function ShotTable({
           <thead>
             <tr>
               {onToggleShot && <th>Analyze</th>}
-              <th>Series</th>
-              <th>Shot</th>
-              <th>Muzzle velocity ({unitLabels[unitSystem].velocity})</th>
-              <th>G1</th>
-              <th>G7</th>
-              <th>Points</th>
-              <th>Source unit code</th>
-              <th>Status</th>
-              {showTags && <th>Tags</th>}
-              {fields.map((field) => (
-                <th key={field.id}>
-                  {field.name}
-                  {fieldUnit(field.type, unitSystem)
-                    ? ` (${fieldUnit(field.type, unitSystem)})`
-                    : ''}
-                </th>
+              {columns.map((column) => (
+                <th key={column.id}>{column.label}</th>
               ))}
             </tr>
           </thead>
@@ -120,46 +142,92 @@ export function ShotTable({
                     />
                   </td>
                 )}
-                <td>{names.get(shot.seriesId)}</td>
-                <td>{shot.number}</td>
-                <td
-                  className={`numeric ${shotDetail === 'muzzleVelocity' ? 'preferred-reading' : ''}`}
-                >
-                  {formatValue(displayValue(shot.muzzleVelocity, 'velocity', unitSystem))}
-                </td>
-                <td className={`numeric ${shotDetail === 'g1' ? 'preferred-reading' : ''}`}>
-                  {shot.ballisticCoefficientG1 ?? '—'}
-                </td>
-                <td className={`numeric ${shotDetail === 'g7' ? 'preferred-reading' : ''}`}>
-                  {shot.ballisticCoefficientG7 ?? '—'}
-                </td>
-                <td>{inspectPoints(shot).points.length}</td>
-                <td>{shot.rawUnit}</td>
-                <td>
-                  {shot.excluded
-                    ? 'Source excluded'
-                    : hiddenShots.has(shot.id)
-                      ? 'Not selected'
-                      : 'Included'}
-                </td>
-                {showTags && (
-                  <td className="tags-column">
-                    <TagLabels
-                      tags={tags.filter((tag) =>
-                        details.get(shot.seriesId)?.tagIds?.includes(tag.id),
-                      )}
-                    />
-                  </td>
-                )}
-                {fields.map((field) => (
-                  <td className="custom-value" key={field.id}>
-                    {fieldDisplay(
-                      details.get(shot.seriesId)?.values?.[field.id],
-                      field.type,
-                      unitSystem,
-                    ) || '—'}
-                  </td>
-                ))}
+                {columns.map((column) => {
+                  const session = sessions.get(shot.seriesId);
+                  const field = fields.find((item) => `field:${item.id}` === column.id);
+                  let value: React.ReactNode;
+                  switch (column.id) {
+                    case 'series':
+                      value = names.get(shot.seriesId);
+                      break;
+                    case 'shot':
+                      value = shot.number;
+                      break;
+                    case 'velocity':
+                      value = formatValue(
+                        displayValue(shot.muzzleVelocity, 'velocity', unitSystem),
+                      );
+                      break;
+                    case 'g1':
+                      value = formatValue(shot.ballisticCoefficientG1);
+                      break;
+                    case 'g7':
+                      value = formatValue(shot.ballisticCoefficientG7);
+                      break;
+                    case 'points':
+                      value = inspectPoints(shot).points.length;
+                      break;
+                    case 'rawUnit':
+                      value = shot.rawUnit;
+                      break;
+                    case 'status':
+                      value = shot.excluded
+                        ? 'Source excluded'
+                        : hiddenShots.has(shot.id)
+                          ? 'Not selected'
+                          : 'Included';
+                      break;
+                    case 'tags':
+                      value = (
+                        <TagLabels
+                          tags={tags.filter((tag) =>
+                            details.get(shot.seriesId)?.tagIds?.includes(tag.id),
+                          )}
+                        />
+                      );
+                      break;
+                    case 'shotNotes':
+                      value = typeof shot.raw.notes === 'string' ? shot.raw.notes : '—';
+                      break;
+                    case 'seriesNotes':
+                      value = typeof session?.raw.notes === 'string' ? session.raw.notes : '—';
+                      break;
+                    case 'timestamp':
+                      value = providerTime(shot.raw.timestamp);
+                      break;
+                    case 'firearm':
+                      value = session
+                        ? (catalogNames.get(session.firearmId) ??
+                          (rawPath(session.raw, 'firearm.name') as string))
+                        : '—';
+                      break;
+                    case 'projectile':
+                      value = session
+                        ? projectileName(session, catalogNames, showProjectileWeight)
+                        : '—';
+                      break;
+                    default:
+                      value = field
+                        ? fieldDisplay(
+                            details.get(shot.seriesId)?.values?.[field.id],
+                            field.type,
+                            unitSystem,
+                          ) || '—'
+                        : formatValue(
+                            quantities.find((q) => q.id === column.id)?.read(shot) ?? null,
+                          );
+                  }
+                  const preferred =
+                    column.id === (shotDetail === 'muzzleVelocity' ? 'velocity' : shotDetail);
+                  return (
+                    <td
+                      key={column.id}
+                      className={`${preferred ? 'preferred-reading' : ''} ${column.id === 'tags' ? 'tags-column' : ''} ${field || column.id.endsWith('Notes') ? 'custom-value' : ''}`}
+                    >
+                      {value}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

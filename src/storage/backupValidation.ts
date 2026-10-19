@@ -232,6 +232,11 @@ export function validateBackup(value: unknown): asserts value is Workspace {
     'caldwellConnection',
     'visibleFieldIds',
     'showTags',
+    'analysis',
+    'theme',
+    'showProjectileWeight',
+    'tableColumns',
+    'infoSeriesId',
   ]);
   requireValid(
     p.id === 'local' &&
@@ -246,6 +251,37 @@ export function validateBackup(value: unknown): asserts value is Workspace {
       (strings(p.visibleFieldIds) && p.visibleFieldIds.every((id) => definitions.has(id))),
   );
   requireValid(p.showTags === undefined || typeof p.showTags === 'boolean');
+  requireValid(p.showProjectileWeight === undefined || typeof p.showProjectileWeight === 'boolean');
+  requireValid(p.theme === undefined || ['auto', 'light', 'dark'].includes(p.theme));
+  requireValid(p.infoSeriesId === undefined || string(p.infoSeriesId));
+  if (p.tableColumns !== undefined)
+    requireValid(
+      strings(p.tableColumns) &&
+        p.tableColumns.every(
+          (id) =>
+            id.length <= 200 &&
+            /^[a-zA-Z0-9_.:-]+$/.test(id) &&
+            (!id.startsWith('field:') || definitions.has(id.slice(6))),
+        ),
+    );
+  if (p.analysis !== undefined) {
+    requireValid(object(p.analysis));
+    keys(p.analysis, ['mode', 'simple', 'dual', 'compare']);
+    requireValid(['simple', 'dual', 'compare', 'info'].includes(p.analysis.mode));
+    for (const mode of ['simple', 'dual', 'compare'] as const) {
+      const settings = p.analysis[mode];
+      requireValid(object(settings));
+      keys(settings, ['axis', 'quantity', 'secondary']);
+      requireValid(['distance', 'shot'].includes(settings.axis));
+      for (const id of [settings.quantity, settings.secondary])
+        requireValid(
+          string(id) &&
+            id.length <= 200 &&
+            /^[a-zA-Z0-9_.:-]+$/.test(id) &&
+            (!id.startsWith('field:') || definitions.has(id.slice(6))),
+        );
+    }
+  }
   if (p.caldwellConnection !== undefined) {
     requireValid(object(p.caldwellConnection));
     keys(p.caldwellConnection, ['projectId', 'apiKey']);

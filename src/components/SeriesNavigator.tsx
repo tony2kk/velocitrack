@@ -9,6 +9,7 @@ export function SeriesNavigator({
   shots,
   selected,
   catalogNames,
+  projectileNames,
   sourceNames,
   onToggleSeries,
   annotations = [],
@@ -22,6 +23,7 @@ export function SeriesNavigator({
   shots: Shot[];
   selected: string[];
   catalogNames: Map<string, string>;
+  projectileNames?: Map<string, string>;
   sourceNames: Map<string, string>;
   onToggleSeries: (id: string, checked: boolean) => void;
 }) {
@@ -65,7 +67,9 @@ export function SeriesNavigator({
                 </div>
                 <strong>{item.name}</strong>
                 <span>{catalogNames.get(item.firearmId)}</span>
-                <span className="projectile-name">{catalogNames.get(item.projectileId)}</span>
+                <span className="projectile-name">
+                  {projectileNames?.get(item.id) ?? catalogNames.get(item.projectileId)}
+                </span>
                 <small>
                   <span className="dot" />
                   {sourceNames.get(item.sourceId)}
