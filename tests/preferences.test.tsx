@@ -3,7 +3,7 @@ import 'fake-indexeddb/auto';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProfileDialog } from '../src/components/ProfileDialog';
-import { SeriesNavigator } from '../src/components/SeriesNavigator';
+import { ShotTable } from '../src/components/ShotTable';
 import { AnalysisPanel } from '../src/components/AnalysisPanel';
 import { defaultProfile } from '../src/domain/model';
 import { db } from '../src/storage/database';
@@ -48,7 +48,7 @@ describe('display preferences', () => {
     expect(await db.shots.get(record.id)).toEqual(record);
   });
 
-  it('switches navigation values independently of shot selection, preserving zero and missing coefficients', () => {
+  it('emphasizes the preferred table reading without changing selection or missing coefficients', () => {
     const props = {
       series: [series()],
       shots: [
@@ -63,14 +63,30 @@ describe('display preferences', () => {
       onToggleShot: vi.fn(),
       onHoverShot: vi.fn(),
     };
-    const { rerender } = render(<SeriesNavigator {...props} unitSystem="metric" />);
-    expect(screen.getByTitle('Muzzle velocity').textContent).toBe('304.8 m/s');
-    rerender(<SeriesNavigator {...props} unitSystem="metric" shotDetail="g1" />);
-    expect(screen.getByTitle('G1').textContent).toBe('0.123456');
-    rerender(<SeriesNavigator {...props} shotDetail="g7" />);
-    expect(screen.getByTitle('G7').textContent).toBe('0');
-    rerender(<SeriesNavigator {...props} shots={[shot()]} shotDetail="g7" />);
-    expect(screen.getByTitle('G7').textContent).toBe('—');
+    const { rerender } = render(<ShotTable {...props} unitSystem="metric" />);
+    expect(
+      screen
+        .getByRole('row', { name: 'Shot 1 in Synthetic series' })
+        .querySelector('.preferred-reading')?.textContent,
+    ).toBe('304.8');
+    rerender(<ShotTable {...props} unitSystem="metric" shotDetail="g1" />);
+    expect(
+      screen
+        .getByRole('row', { name: 'Shot 1 in Synthetic series' })
+        .querySelector('.preferred-reading')?.textContent,
+    ).toBe('0.123456');
+    rerender(<ShotTable {...props} shotDetail="g7" />);
+    expect(
+      screen
+        .getByRole('row', { name: 'Shot 1 in Synthetic series' })
+        .querySelector('.preferred-reading')?.textContent,
+    ).toBe('0');
+    rerender(<ShotTable {...props} shots={[shot()]} shotDetail="g7" />);
+    expect(
+      screen
+        .getByRole('row', { name: 'Shot 1 in Synthetic series' })
+        .querySelector('.preferred-reading')?.textContent,
+    ).toBe('—');
     expect(
       (screen.getByLabelText('Select shot 1 in Synthetic series') as HTMLInputElement).checked,
     ).toBe(true);

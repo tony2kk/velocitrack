@@ -71,7 +71,7 @@ These checks supplement the earlier live-import checks; they do not constitute a
 - Provider permission and any app-specific terms remain unconfirmed. The owner approved publication after reviewing this uncertainty; see `TERMS_REVIEW.md`. This is a release decision, not a technical test result.
 - Provider unit-code enums and atmosphere semantics beyond the owner's confirmed ft/s, ft and °F input contract. The display conversion checks below do not establish a vendor specification.
 - Real-device installation across Safari/iOS/Android, browser eviction/quota behavior, and assistive-technology testing beyond the checks above.
-- Large-dataset stress tests, future schema migrations and full workspace backup/restore.
+- Large-dataset stress tests and future schema migrations beyond the v1→v2 migration verified below.
 
 File parsing and IndexedDB tests do not replace these remaining checks. Any future change to persistence, import semantics or units must add appropriate tests and update this record.
 
@@ -92,3 +92,15 @@ File parsing and IndexedDB tests do not replace these remaining checks. Any futu
 - The first file import reported two new series and four new shots. Reimporting the same fixture displayed **No new data detected**. Importing an extended fixture reported **1 new shot imported** and retained two series with five total shots.
 - Stored raw measurements remain unchanged by display preferences; automated tests cover this invariant. Fahrenheit conversion has reference-value tests in the shared utility; the application does not yet display an atmosphere panel.
 - This batch did not sign into a Caldwell account, read private measurements, retest persistent authentication or deploy Pages. The file and connected-source paths share the tested storage counting and notification formatter; live connected refresh remains supported by the earlier checks above.
+
+## Series context and workspace backup — 2026-10-19
+
+Full verification passed: TypeScript, ESLint, Prettier, **119 behavioral tests across 20 files**, production/PWA build and public-content guard. Git diff whitespace checks passed.
+
+- Version 0.4.0 adds schema v2 without clearing existing tables. Automated coverage exercises legacy annotation migration, typed value validation/conversion (including zero vs missing), unchanged-value precision, refresh preservation, field rename/type-change/removal, tag filtering/cleanup, photo validation/source removal, and inherited table columns.
+- Backup tests cover a complete ZIP round trip including raw measurements, profile, custom values, tags and photo bytes; corrupted/missing entries, unsafe paths, unsupported versions, invalid references/identities, reserved field IDs and rollback after a late simulated quota failure. The empty-workspace round trip also passes.
+- UI tests exercise confirmation before field removal, series detail saves and the new table selection behavior. A shared Web Lock surrounds imports; restore uses an exclusive lock to avoid overlapping downloads/commits.
+- The browser workflow ran on isolated loopback port 4193 with one invented series, three invented shots and a generated test image only. Created a Weight field and colored tag, assigned both to the series, added a PNG and caption, enabled inherited table columns and unchecked a shot. Counts/statistics changed while the unchecked row remained available. The tag-column width was corrected after visual review.
+- Changed the profile to Metric, downloaded the actual ZIP through the UI, selected that ZIP, saw the validated count preview and confirmed restoration of the synthetic workspace. The restored series retained its tag, caption and rendered image; one gr displayed as 0.06479891 g. Temporary selection reset on restore. No user account, real export or private measurement was accessed.
+- fflate is pinned to 0.8.3. The dependency audit reported zero known vulnerabilities after replacing the version affected by the malformed ZIP64 advisory.
+- Screenshots and generated browser fixtures remain outside versioned content. No Pages deployment or live Caldwell sign-in was performed. Physical mobile devices, narrow-screen browser review, maximum-sized archives, real quota exhaustion and persistent authentication across restarts remain unverified; the automated quota test simulates a write failure.

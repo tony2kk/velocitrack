@@ -1,6 +1,6 @@
 {
   "name": "velocitrack",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "A private, local workspace for recorded VelociRadar measurements",
   "license": "MIT",
@@ -25,6 +25,7 @@
     "dexie": "4.4.6",
     "dexie-react-hooks": "4.4.0",
     "echarts": "6.1.0",
+    "fflate": "0.8.3",
     "firebase": "12.19.0",
     "lucide-react": "1.59.0",
     "papaparse": "5.7.0",

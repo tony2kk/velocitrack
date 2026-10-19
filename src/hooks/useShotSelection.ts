@@ -12,14 +12,19 @@ export function useShotSelection(shots: Shot[], selectedSeries: Series[]) {
       return next;
     });
   }, []);
-  const selectedShots = useMemo(() => {
+  const seriesShots = useMemo(() => {
     const ids = new Set(selectedSeries.map((item) => item.id));
     return shots
-      .filter((shot) => ids.has(shot.seriesId) && !hiddenShots.has(shot.id))
+      .filter((shot) => ids.has(shot.seriesId))
       .sort(
         (a, b) =>
           a.seriesId.localeCompare(b.seriesId) || a.number - b.number || a.id.localeCompare(b.id),
       );
-  }, [shots, selectedSeries, hiddenShots]);
-  return { hiddenShots, selectedShots, toggleShot };
+  }, [shots, selectedSeries]);
+  const selectedShots = useMemo(
+    () => seriesShots.filter((shot) => !hiddenShots.has(shot.id)),
+    [seriesShots, hiddenShots],
+  );
+  const resetSelection = useCallback(() => setHiddenShots(new Set()), []);
+  return { hiddenShots, seriesShots, selectedShots, toggleShot, resetSelection };
 }

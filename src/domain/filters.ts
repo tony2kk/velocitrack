@@ -1,4 +1,4 @@
-import type { Filters, Series } from './model';
+import type { Annotation, Filters, Series } from './model';
 
 /** Parse a real calendar date in local time, optionally including the entire final day. */
 function dateBoundary(value: string, endOfDay: boolean): number | null {
@@ -24,7 +24,13 @@ export function filterDateError(filters: Filters): string | null {
 }
 
 /** Apply inclusive criteria without mutating the input, then sort newest sessions first. */
-export function filterSeries(series: Series[], filters: Filters, now = new Date()): Series[] {
+export function filterSeries(
+  series: Series[],
+  filters: Filters,
+  now = new Date(),
+  annotations: Annotation[] = [],
+): Series[] {
+  const tags = new Map(annotations.map((item) => [item.entityId, item.tagIds ?? []]));
   if (filterDateError(filters)) return [];
   let from: number | null = null;
   let to: number | null = null;
@@ -51,6 +57,8 @@ export function filterSeries(series: Series[], filters: Filters, now = new Date(
 
   return series
     .filter((item) => {
+      if (filters.tagIds?.length && !filters.tagIds.some((id) => tags.get(item.id)?.includes(id)))
+        return false;
       if (filters.sourceIds.length && !filters.sourceIds.includes(item.sourceId)) return false;
       if (filters.firearmIds.length && !filters.firearmIds.includes(item.firearmId)) return false;
       if (filters.projectileIds.length && !filters.projectileIds.includes(item.projectileId))
@@ -75,6 +83,7 @@ export function filterSeries(series: Series[], filters: Filters, now = new Date(
 export function hasFilters(filters: Filters): boolean {
   return Boolean(
     filters.sourceIds.length ||
+    filters.tagIds?.length ||
     filters.firearmIds.length ||
     filters.projectileIds.length ||
     filters.dateMode !== 'all',

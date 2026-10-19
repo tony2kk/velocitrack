@@ -2,7 +2,7 @@
 
 A private, local workspace for exploring recorded Caldwell VelociRadar measurements. An unofficial community project, built for the browser. End users need no EXE, Python installation or VelociTrack account.
 
-**MVP:** JSON/CSV/text imports, read-only Caldwell account imports, shared catalogs, persistent filters, series comparison, charts, a shot table and an offline application shell. Local and hosted installations use the same standard Caldwell client configuration, so users enter only their email/password. See the [verification record](docs/VERIFICATION.md) for observed sign-in/import results and remaining checks.
+**MVP:** JSON/CSV/text imports, read-only Caldwell account imports, shared catalogs, persistent filters, series comparison, charts, a shot table below the chart, series custom fields/tags, local photos, ZIP backup/restore and an offline application shell. Local and hosted installations use the same standard Caldwell client configuration, so users enter only their email/password. See the [verification record](docs/VERIFICATION.md) for observed sign-in/import results and remaining checks.
 
 VelociTrack is not affiliated with, endorsed by or supported by Caldwell or American Outdoor Brands (AOB). The original feasibility study, proprietary APK and private exports are not part of this project.
 
@@ -16,7 +16,7 @@ Open the published app at **[tony2kk.github.io/velocitrack](https://tony2kk.gith
 
 Measurements, source settings, catalogs, annotations, profile and filters live only in this browser's **IndexedDB**. File imports stay local. Caldwell sign-in and read requests go directly to the provider; no measurements or settings are uploaded to a VelociTrack server. Git, the build and GitHub Pages contain application assets only. There is no telemetry, external font service, credential proxy or server database.
 
-Storage belongs to a specific origin and browser profile. Development, preview and GitHub Pages have separate workspaces. Clearing site data, private browsing or browser eviction can remove local content. **Keep original exports.** Full workspace backup/restore is planned. Local storage is not separately encrypted by the application; use an appropriate device/browser profile on shared devices.
+Storage belongs to a specific origin and browser profile. Development, preview and GitHub Pages have separate workspaces. Clearing site data, private browsing or browser eviction can remove local content. **Keep original exports and regular ZIP backups.** Use Backup / Restore for the entire workspace, including photos. Restore replaces local data after validation and confirmation; archives are private and not encrypted. Local storage is not separately encrypted by the application; use an appropriate device/browser profile on shared devices.
 
 The production PWA caches static application assets after a successful online visit. Imported data remains in IndexedDB. Offline mode is not a backup. Updates offer a reload prompt. Installation requires browser support and HTTPS (loopback is allowed for previews). Development mode does not install the service worker.
 
@@ -27,7 +27,7 @@ The production PWA caches static application assets after a successful online vi
 - Source-excluded shots stay visible in the table but do not enter charts/statistics. Positive finite muzzle readings contribute to mean, sample SD (`n − 1`) and extreme spread.
 - Charts/statistics retain the existing one-source/raw-unit-code comparison grouping. Source codes are metadata, not display-unit selectors.
 - Distance charts show up to 100 included shot traces; narrow the selection for others. Tables paginate in groups of 100. These are measured points, not predicted trajectories.
-- Use the horizontal and vertical sliders to zoom either axis. **Shot detail** in the profile chooses Muzzle velocity, G1 or G7 beside navigation shots. Import messages count only new records; unchanged imports report **No new data detected**.
+- Use the horizontal and vertical sliders to zoom either axis. **Shot detail** in the profile chooses Muzzle velocity, G1 or G7 as the emphasized table reading. Import messages count only new records; unchanged imports report **No new data detected**.
 
 ## Develop locally
 

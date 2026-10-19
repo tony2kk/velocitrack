@@ -87,8 +87,6 @@ function ShotWorkspace({ shots, groups }: { shots: Shot[]; groups: Series[] }) {
         series={groups}
         shots={shots}
         selected={selected}
-        hiddenShots={selection.hiddenShots}
-        activeShotId={active}
         catalogNames={new Map()}
         sourceNames={new Map()}
         onToggleSeries={(id, checked) =>
@@ -96,11 +94,11 @@ function ShotWorkspace({ shots, groups }: { shots: Shot[]; groups: Series[] }) {
             checked ? [...current, id] : current.filter((value) => value !== id),
           )
         }
-        onToggleShot={selection.toggleShot}
-        onHoverShot={setActive}
       />
       <ShotTable
-        shots={selection.selectedShots}
+        shots={shots.filter((shot) => selected.includes(shot.seriesId))}
+        hiddenShots={selection.hiddenShots}
+        onToggleShot={selection.toggleShot}
         series={groups}
         activeShotId={active}
         onHoverShot={setActive}
@@ -110,7 +108,7 @@ function ShotWorkspace({ shots, groups }: { shots: Shot[]; groups: Series[] }) {
 }
 
 describe('linked shot controls', () => {
-  it('expands series, filters rows and restores choices after collapsing', () => {
+  it('keeps deselected rows available in the table and restores choices after reselecting series', () => {
     render(
       <ShotWorkspace
         shots={[shot({ id: 'one' }), shot({ id: 'two', number: 2 })]}
@@ -123,7 +121,9 @@ describe('linked shot controls', () => {
     const first = screen.getByLabelText('Select shot 1 in Synthetic series') as HTMLInputElement;
     expect(first.checked).toBe(true);
     fireEvent.click(first);
-    expect(screen.queryByRole('row', { name: 'Shot 1 in Synthetic series' })).toBeNull();
+    expect(screen.getByRole('row', { name: 'Shot 1 in Synthetic series' }).textContent).toContain(
+      'Not selected',
+    );
     expect(screen.getByRole('row', { name: 'Shot 2 in Synthetic series' })).toBeTruthy();
     fireEvent.click(selectSeries);
     fireEvent.click(selectSeries);
@@ -141,8 +141,8 @@ describe('linked shot controls', () => {
     );
     fireEvent.click(screen.getByLabelText('Select series Synthetic series'));
     fireEvent.click(screen.getByLabelText('Select series Second'));
-    const first = screen.getByLabelText('Select shot 1 in Synthetic series').closest('label')!;
-    const second = screen.getByLabelText('Select shot 1 in Second').closest('label')!;
+    const first = screen.getByLabelText('Select shot 1 in Synthetic series').closest('tr')!;
+    const second = screen.getByLabelText('Select shot 1 in Second').closest('tr')!;
     const firstRow = screen.getByRole('row', { name: 'Shot 1 in Synthetic series' });
     const secondRow = screen.getByRole('row', { name: 'Shot 1 in Second' });
     fireEvent.mouseEnter(second);

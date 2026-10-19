@@ -1,5 +1,5 @@
 import { CalendarDays, ChevronDown, RotateCcw } from 'lucide-react';
-import type { CatalogItem, DataSource, Filters } from '../domain/model';
+import type { CatalogItem, DataSource, Filters, Tag } from '../domain/model';
 import { EMPTY_FILTERS } from '../domain/model';
 import { filterDateError, hasFilters } from '../domain/filters';
 
@@ -58,11 +58,13 @@ export function FilterBar({
   sources,
   catalog,
   onChange,
+  tags = [],
 }: {
   filters: Filters;
   sources: DataSource[];
   catalog: CatalogItem[];
   onChange: (filters: Filters) => void;
+  tags?: Tag[];
 }) {
   const dateLabel =
     filters.dateMode === 'all'
@@ -75,6 +77,12 @@ export function FilterBar({
     <div className="toolbar-group filter-group">
       <span className="group-label">FILTERS</span>
       <div className="group-controls">
+        <MultiFilter
+          label="Tags"
+          options={tags}
+          selected={filters.tagIds ?? []}
+          onChange={(tagIds) => onChange({ ...filters, tagIds })}
+        />
         <MultiFilter
           label="Source"
           options={sources}

@@ -18,9 +18,32 @@ beforeEach(async () => {
 });
 afterEach(async () => {
   await db.delete();
+  vi.unstubAllGlobals();
 });
 
 describe('refresh coordination', () => {
+  it('holds an origin-wide shared lock until the import finishes', async () => {
+    let locked = false;
+    const request = vi.fn(
+      async (_name: string, options: { mode: string }, callback: () => Promise<unknown>) => {
+        expect(options.mode).toBe('shared');
+        locked = true;
+        try {
+          return await callback();
+        } finally {
+          locked = false;
+        }
+      },
+    );
+    vi.stubGlobal('navigator', { locks: { request } });
+    importOnline.mockImplementation(async () => {
+      expect(locked).toBe(true);
+      return { series: 0, shots: 0 };
+    });
+    await refreshCaldwell('synthetic-lock-source');
+    expect(locked).toBe(false);
+    expect(request).toHaveBeenCalledOnce();
+  });
   it('combines new records across the batch instead of showing the last unchanged result', async () => {
     await db.sources.bulkAdd([
       { ...createSource('New records', true, 'caldwell'), id: 'a' },

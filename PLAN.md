@@ -35,8 +35,8 @@ The owner authorized the next batch on 2026-10-18 (decision 006):
 
 1. Review the MVP workflow and appearance using local exports.
 2. Validate provider enum meanings, distance origin and remaining atmosphere fields; the owner confirmed ft/s, ft and °F for the supported raw inputs.
-3. Design workspace backup/restore, quota handling and larger-dataset pagination.
-4. Define typed custom-field definitions, applicable entities and editor UX.
+3. Stress-test workspace backup/restore, physical-device quota handling and larger datasets.
+4. Review the implemented series custom fields, tag filters and photos with the owner.
 5. Design explicit mapping/merging across source catalogs.
 6. Add agreed chart/report tools using validated measurement semantics.
 
@@ -59,3 +59,14 @@ The private browser-only test and local product import passed on 2026-10-18; the
 ## Publication
 
 Review candidate files, built assets and history before publishing. The owner authorized committing and pushing each completed, verified functional batch to `origin/main` on 2026-10-18 and explicitly approved proceeding with the Caldwell connector after the terms review. Continue on `main` unless instructed otherwise. Pages deployment remains manual and requires a separate instruction.
+
+## Series context and portable workspace — 2026-10-19
+
+- [x] Series-only navigator and shot table below the chart.
+- [x] Profile Custom fields and Tags management, inherited table columns and tag filters.
+- [x] Local original photos and captions per series.
+- [x] Structured ZIP backup, validation preview and atomic full-workspace restore.
+- [x] Additive v2 migration, unit conversion and behavioral regression tests.
+- [ ] Future target/group analysis with calibration and per-photo result provenance.
+
+See decision 007. No Pages deployment is implied.

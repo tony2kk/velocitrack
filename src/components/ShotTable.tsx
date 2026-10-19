@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Series, Shot, UnitSystem } from '../domain/model';
+import type {
+  Series,
+  Shot,
+  UnitSystem,
+  FieldDefinition,
+  Annotation,
+  Tag,
+  ShotDetail,
+} from '../domain/model';
+import { fieldDisplay, fieldUnit } from '../domain/customFields';
+import { TagLabels } from './CustomizationManager';
 import { inspectPoints } from '../domain/measurements';
 import { displayValue, formatValue, unitLabels } from '../domain/units';
 
@@ -10,12 +20,26 @@ export function ShotTable({
   activeShotId,
   onHoverShot,
   unitSystem = 'imperial',
+  hiddenShots = new Set<string>(),
+  onToggleShot,
+  fields = [],
+  annotations = [],
+  tags = [],
+  showTags = false,
+  shotDetail = 'muzzleVelocity',
 }: {
   shots: Shot[];
   series: Series[];
   activeShotId: string | null;
   onHoverShot: (id: string | null) => void;
   unitSystem?: UnitSystem;
+  hiddenShots?: ReadonlySet<string>;
+  onToggleShot?: (id: string, checked: boolean) => void;
+  fields?: FieldDefinition[];
+  annotations?: Annotation[];
+  tags?: Tag[];
+  showTags?: boolean;
+  shotDetail?: ShotDetail;
 }) {
   const [page, setPage] = useState(0);
   const scrollArea = useRef<HTMLDivElement>(null);
@@ -26,6 +50,7 @@ export function ShotTable({
       ? Math.floor(hoveredIndex / 100)
       : Math.min(page, Math.max(0, Math.ceil(shots.length / 100) - 1));
   const names = new Map(series.map((item) => [item.id, item.name]));
+  const details = new Map(annotations.map((item) => [item.entityId, item]));
   useEffect(() => {
     // Keep a revealed page in place after the pointer leaves the navigation row.
     if (hoveredIndex >= 0) setPage(Math.floor(hoveredIndex / 100));
@@ -47,11 +72,12 @@ export function ShotTable({
       <div className="table-scroll" ref={scrollArea}>
         <table>
           <caption className="sr-only">
-            Selected shots. Muzzle velocity in {unitLabels[unitSystem].velocity}; G1 and G7
-            coefficients are unchanged.
+            Shots in selected series. Muzzle velocity in {unitLabels[unitSystem].velocity}; G1 and
+            G7 coefficients are unchanged.
           </caption>
           <thead>
             <tr>
+              {onToggleShot && <th>Analyze</th>}
               <th>Series</th>
               <th>Shot</th>
               <th>Muzzle velocity ({unitLabels[unitSystem].velocity})</th>
@@ -60,6 +86,15 @@ export function ShotTable({
               <th>Points</th>
               <th>Source unit code</th>
               <th>Status</th>
+              {showTags && <th>Tags</th>}
+              {fields.map((field) => (
+                <th key={field.id}>
+                  {field.name}
+                  {fieldUnit(field.type, unitSystem)
+                    ? ` (${fieldUnit(field.type, unitSystem)})`
+                    : ''}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -69,22 +104,62 @@ export function ShotTable({
                 tabIndex={0}
                 ref={activeShotId === shot.id ? activeRow : undefined}
                 aria-label={`Shot ${shot.number} in ${names.get(shot.seriesId)}`}
-                className={`${shot.excluded ? 'excluded' : ''} ${activeShotId === shot.id ? 'shot-highlighted' : ''}`}
+                className={`${shot.excluded || hiddenShots.has(shot.id) ? 'excluded' : ''} ${activeShotId === shot.id ? 'shot-highlighted' : ''}`}
                 onMouseEnter={() => onHoverShot(shot.id)}
                 onMouseLeave={() => onHoverShot(null)}
                 onFocus={() => onHoverShot(shot.id)}
                 onBlur={() => onHoverShot(null)}
               >
+                {onToggleShot && (
+                  <td>
+                    <input
+                      type="checkbox"
+                      aria-label={`Select shot ${shot.number} in ${names.get(shot.seriesId)}`}
+                      checked={!hiddenShots.has(shot.id)}
+                      onChange={(event) => onToggleShot(shot.id, event.target.checked)}
+                    />
+                  </td>
+                )}
                 <td>{names.get(shot.seriesId)}</td>
                 <td>{shot.number}</td>
-                <td className="numeric">
+                <td
+                  className={`numeric ${shotDetail === 'muzzleVelocity' ? 'preferred-reading' : ''}`}
+                >
                   {formatValue(displayValue(shot.muzzleVelocity, 'velocity', unitSystem))}
                 </td>
-                <td className="numeric">{shot.ballisticCoefficientG1 ?? '—'}</td>
-                <td className="numeric">{shot.ballisticCoefficientG7 ?? '—'}</td>
+                <td className={`numeric ${shotDetail === 'g1' ? 'preferred-reading' : ''}`}>
+                  {shot.ballisticCoefficientG1 ?? '—'}
+                </td>
+                <td className={`numeric ${shotDetail === 'g7' ? 'preferred-reading' : ''}`}>
+                  {shot.ballisticCoefficientG7 ?? '—'}
+                </td>
                 <td>{inspectPoints(shot).points.length}</td>
                 <td>{shot.rawUnit}</td>
-                <td>{shot.excluded ? 'Source excluded' : 'Included'}</td>
+                <td>
+                  {shot.excluded
+                    ? 'Source excluded'
+                    : hiddenShots.has(shot.id)
+                      ? 'Not selected'
+                      : 'Included'}
+                </td>
+                {showTags && (
+                  <td className="tags-column">
+                    <TagLabels
+                      tags={tags.filter((tag) =>
+                        details.get(shot.seriesId)?.tagIds?.includes(tag.id),
+                      )}
+                    />
+                  </td>
+                )}
+                {fields.map((field) => (
+                  <td className="custom-value" key={field.id}>
+                    {fieldDisplay(
+                      details.get(shot.seriesId)?.values?.[field.id],
+                      field.type,
+                      unitSystem,
+                    ) || '—'}
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>

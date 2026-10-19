@@ -1,6 +1,15 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
 import { ArrowUpRight, ChartNoAxesCombined, Info } from 'lucide-react';
-import type { Series, Shot, UnitSystem } from '../domain/model';
+import type {
+  Series,
+  Shot,
+  UnitSystem,
+  FieldDefinition,
+  Annotation,
+  Tag,
+  Profile,
+} from '../domain/model';
+import { saveProfile } from '../storage/workspace';
 import { chartGroupsCompatible, inspectPoints, summarizeShots } from '../domain/measurements';
 import { chartColors } from '../domain/chart';
 import { ShotTable } from './ShotTable';
@@ -17,6 +26,13 @@ export function AnalysisPanel({
   activeShotId,
   onHoverShot,
   unitSystem = 'imperial',
+  allShots = shots,
+  hiddenShots,
+  onToggleShot,
+  fields = [],
+  annotations = [],
+  tags = [],
+  profile,
 }: {
   series: Series[];
   shots: Shot[];
@@ -24,7 +40,24 @@ export function AnalysisPanel({
   activeShotId: string | null;
   onHoverShot: (id: string | null) => void;
   unitSystem?: UnitSystem;
+  allShots?: Shot[];
+  hiddenShots?: ReadonlySet<string>;
+  onToggleShot?: (id: string, checked: boolean) => void;
+  fields?: FieldDefinition[];
+  annotations?: Annotation[];
+  tags?: Tag[];
+  profile?: Profile;
 }) {
+  const [columnError, setColumnError] = useState('');
+  /** Persist column choices without changing annotations or the active shot selection. */
+  async function columns(patch: Partial<Profile>) {
+    try {
+      await saveProfile(patch);
+      setColumnError('');
+    } catch {
+      setColumnError('Column choices could not be saved.');
+    }
+  }
   const [mode, setMode] = useState<'distance' | 'shot'>('distance');
   const summary = useMemo(() => summarizeShots(shots), [shots]);
   const quality = useMemo(
@@ -134,7 +167,7 @@ export function AnalysisPanel({
         </header>
         {!shots.length ? (
           <p className="empty-note">
-            No shots selected. Select shots in the series list to display measurements.
+            No shots selected. Select shots in the table below to display measurements.
           </p>
         ) : view === 'chart' ? (
           compatible ? (
@@ -189,6 +222,66 @@ export function AnalysisPanel({
           />
         )}
       </div>
+      {view === 'chart' && (
+        <section className="shot-table-panel">
+          <header className="chart-heading">
+            <div>
+              <h3>Shot records</h3>
+              <p className="muted">
+                Uncheck shots to omit them from analysis. Rows stay available here.
+              </p>
+            </div>
+            <details className="column-picker">
+              <summary>Columns</summary>
+              <div>
+                <label className="check-field compact">
+                  <input
+                    type="checkbox"
+                    checked={profile?.showTags ?? false}
+                    onChange={(event) => void columns({ showTags: event.target.checked })}
+                  />
+                  Tags
+                </label>
+                {fields.map((field) => (
+                  <label className="check-field compact" key={field.id}>
+                    <input
+                      type="checkbox"
+                      checked={profile?.visibleFieldIds?.includes(field.id) ?? false}
+                      onChange={(event) =>
+                        void columns({
+                          visibleFieldIds: event.target.checked
+                            ? [...(profile?.visibleFieldIds ?? []), field.id]
+                            : profile?.visibleFieldIds?.filter((id) => id !== field.id),
+                        })
+                      }
+                    />
+                    {field.name}
+                  </label>
+                ))}
+              </div>
+            </details>
+          </header>
+          {columnError && (
+            <p className="error" role="alert">
+              {columnError}
+            </p>
+          )}
+          <ShotTable
+            shots={allShots}
+            series={series}
+            activeShotId={activeShotId}
+            onHoverShot={onHoverShot}
+            unitSystem={unitSystem}
+            hiddenShots={hiddenShots}
+            onToggleShot={onToggleShot}
+            fields={fields.filter((field) => profile?.visibleFieldIds?.includes(field.id))}
+            annotations={annotations}
+            tags={tags}
+            showTags={profile?.showTags}
+            shotDetail={profile?.shotDetail}
+          />
+        </section>
+      )}
       <details className="quality">
         <summary>
           Data quality <span>{quality.points} usable points</span>

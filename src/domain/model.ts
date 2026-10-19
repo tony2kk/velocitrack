@@ -72,7 +72,7 @@ export interface Shot {
   raw: RawRecord;
 }
 
-/** Storage variants for future annotation editors; field definitions are not yet implemented. */
+/** Legacy annotation variants are retained for lossless workspace migration and backup. */
 export type CustomFieldValue =
   | { type: 'text'; value: string }
   | { type: 'number'; value: number; unit?: string }
@@ -85,10 +85,44 @@ export interface Annotation {
   entityId: string;
   notes: string;
   fields: Record<string, CustomFieldValue>;
+  values?: Record<string, string | number>;
+  tagIds?: string[];
+}
+
+/** Typed series fields; dimensional numbers are stored in gr, ft/s and ft, independently of display. */
+export type FieldType = 'short-text' | 'note' | 'number' | 'weight' | 'speed' | 'distance';
+/** Workspace-wide definition with stable identity and user-controlled ordering. */
+export interface FieldDefinition {
+  id: string;
+  name: string;
+  type: FieldType;
+  order: number;
+}
+/** Reusable named label; color is a validated six-digit hex value. */
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+/** Photo metadata stays separate from bytes so normal workspace reads do not load every image. */
+export interface Attachment {
+  id: string;
+  seriesId: string;
+  name: string;
+  caption: string;
+  mime: string;
+  size: number;
+  createdAt: string;
+}
+/** Browser-owned original raster bytes, referenced by attachment identity. */
+export interface AttachmentContent {
+  id: string;
+  blob: Blob;
 }
 
 /** Persisted criteria: OR within each list, AND between lists; relative dates stay relative. */
 export interface Filters {
+  tagIds?: string[];
   sourceIds: string[];
   firearmIds: string[];
   projectileIds: string[];
@@ -100,6 +134,8 @@ export interface Filters {
 
 /** Singleton local preferences, independent of any connected provider account. */
 export interface Profile {
+  visibleFieldIds?: string[];
+  showTags?: boolean;
   id: 'local';
   nickname: string;
   rememberSignIn: boolean;
@@ -112,6 +148,7 @@ export interface Profile {
 }
 
 export const EMPTY_FILTERS: Filters = {
+  tagIds: [],
   sourceIds: [],
   firearmIds: [],
   projectileIds: [],

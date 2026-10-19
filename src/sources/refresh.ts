@@ -29,7 +29,12 @@ function runSourceImport(sourceId: string, load: () => Promise<ImportCounts>) {
   const existing = running.get(sourceId);
   if (existing) return existing;
   // Deferring work ensures the progress snapshot exists even if loading fails immediately.
-  const job = Promise.resolve().then(load);
+  // Hold a shared origin-wide lock through download and commit so restore cannot race an import.
+  const job = Promise.resolve().then(() =>
+    typeof navigator !== 'undefined' && navigator.locks
+      ? navigator.locks.request('velocitrack-workspace-import', { mode: 'shared' }, load)
+      : load(),
+  );
   running.set(sourceId, job);
   notify();
   void job

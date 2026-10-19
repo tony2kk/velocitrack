@@ -4,6 +4,8 @@ VelociTrack is a local workspace for recorded measurements. It is an unofficial 
 
 - [Sources](#sources)
 - [Filters and selection](#filters-and-selection)
+- [Custom fields, tags and photos](#custom-fields-tags-and-photos)
+- [Backup and restore](#backup-and-restore)
 - [Profile and offline use](#profile-and-offline-use)
 - [Measurement interpretation](#measurement-interpretation)
 
@@ -143,21 +145,58 @@ An array cell can be `"[0,10,20]"`. Separate series and shots files are required
 
 Known source identifiers take precedence. A unique, unlinked manual catalog name can resolve a new reference. Existing entries from different sources are not automatically merged. Manual renames survive refresh; mapping and merging will be added later.
 
-You can rename a source or exclude it from all-source Refresh. **Remove source and data** signs out a connected source and permanently removes its local measurements and annotations after confirmation. Catalog names remain. Nothing is deleted from Caldwell. Removal cannot be undone within VelociTrack.
+You can rename a source or exclude it from all-source Refresh. **Remove source and data** signs out a connected source and permanently removes its local measurements, annotations and photos after confirmation. Catalog names remain. Nothing is deleted from Caldwell. Removal cannot be undone within VelociTrack.
 
 ## Filters and selection
 
-Select one or more sources, firearms and projectiles. Choices inside a filter combine as alternatives; different filters combine together. An empty filter means all. Date ranges include entire local days; relative week/month windows remain relative. Filters save automatically in the local profile and return on your next visit.
+Select one or more sources, firearms, projectiles and tags. Choices inside a filter combine as alternatives; different filters combine together. An empty filter means all. Date ranges include entire local days; relative week/month windows remain relative. Filters save automatically in the local profile and return on your next visit.
 
-Select one or more series to view charts or the shot table. Each selected series expands to show its shots. All shots start checked; uncheck individual shots to remove them from the table, charts and summary statistics. A source-excluded shot can be selected for inspection in the table but remains excluded from charts/statistics.
+Select one or more series on the left. The chart appears above the shot table. All shots start checked; uncheck individual shots in the table to omit them from charts and summary statistics. Unchecked rows remain visible as **Not selected**, so they can be selected again. A source-excluded shot can be selected for inspection in the table but remains excluded from charts/statistics.
 
-Shot choices remain in page memory while you collapse/reselect series, change filters or refresh data. Newly imported shots start checked. Reloading or closing the page resets these temporary choices. No provider record or persisted exclusion flag changes. A series hidden by a filter leaves the active comparison.
+Shot choices remain in page memory while you deselect/reselect series, change filters or refresh data. Newly imported shots start checked. Reloading or closing the page resets these temporary choices. No provider record or persisted exclusion flag changes. A series hidden by a filter leaves the active comparison.
 
-Hover over a shot in the navigation, table or chart to highlight the same shot in the other visible views. Keyboard focus on a shot checkbox/table row also highlights it. A hovered shot on a later table page is brought into view. Unchecked shots do not appear in the analysis, and the existing 100-trace chart limit still applies.
+Hover over a shot in the table or chart to highlight it in the other view. Keyboard focus on a shot checkbox/table row also highlights it. A hovered shot on a later table page is brought into view. Unchecked shots remain in the table but do not enter chart/statistical analysis, and the existing 100-trace chart limit still applies.
 
 Hover or tap a measured chart point to see its series, shot number, original sample number, distance and velocity in your selected units. Table and tooltip readings show up to six decimal places; stored values remain unchanged. The tooltip reports an actual sample, never an interpolated value between points.
 
 Use the bottom slider to zoom the distance/shot-number axis and the right slider to zoom velocity. Drag the range or either end handle. Both work in either chart mode. Zoom affects the visible range, not selected shots or summary statistics.
+
+## Custom fields, tags and photos
+
+A series is the imported string. Open **Profile → Custom fields** to define named optional fields shared across the workspace. Add, edit, reorder with the arrow buttons, or remove definitions. These changes save immediately, independently of **Save profile** in General.
+
+| Type | Entry and display |
+| --- | --- |
+| Short text | One line, up to 100 characters |
+| Note | Long multiline text |
+| Number | A finite decimal number, without units; negative values allowed |
+| Weight | Nonnegative; gr in Imperial, g in Metric |
+| Speed | Nonnegative; ft/s in Imperial, m/s in Metric |
+| Distance | Nonnegative; ft in Imperial, m in Metric |
+
+Names must be unique within custom fields (1–100 characters). There is no fixed field-count limit. Empty is different from zero. Dimensional values follow General's saved unit preference; changing units preserves the physical value. A field with values cannot change type. Renaming retains values. Removing a field requires confirmation and removes its values from every series.
+
+Open **Profile → Tags** to create named colored tags. Names must be unique within tags; you may reuse an existing name in custom fields. Use **Details & photos** under a series to assign multiple tags and enter custom values, then **Save details**. These values belong to the series and survive import/refresh. Tag changes in Profile save immediately. Removing a tag requires confirmation, removes its assignments and clears it from saved filters; measurements remain.
+
+Use **Columns** above the shot table to show custom fields and Tags. Choices persist in the profile. Every shot row displays its parent series' values; edit those values in series details. **Tags** filtering matches at least one selected tag, together with all other filter groups.
+
+The **Photos** section in series details accepts multiple JPEG, PNG or WebP files, up to 20 MiB and 60 megapixels each. Original bytes remain on this device. Photo additions and caption saves take effect immediately, even if you close without saving field edits. Click a thumbnail to open full size in a new tab. Removing a photo requires confirmation. Earlier successful additions remain if a later file in a batch fails. Target/group analysis is planned separately and is not included yet.
+
+## Backup and restore
+
+Open **Backup / Restore** in the toolbar. **Download backup ZIP** saves all measurements (including raw records), catalogs, source settings/account bindings, annotations, custom-field definitions/values, tags, profile/filter/column preferences and original photos. The archive contains **manifest.json**, structured **data/*.json** files and **attachments/** images. It never contains Firebase SDK authentication sessions or passwords. The ZIP is not encrypted and can contain private data: store it securely.
+
+To restore:
+
+1. Download and keep a backup of the current workspace first. Close other VelociTrack tabs and wait for active imports to finish.
+2. Choose a VelociTrack backup ZIP. The app validates the version, contents, checksums and references without changing the workspace.
+3. Review the displayed counts, then check the explicit replacement confirmation.
+4. Select **Replace workspace from backup**. This replaces the entire local workspace; it does not merge records. It does not change Caldwell cloud data.
+5. Sign in again when you next want to refresh a connected source. File sources retain their measurements and request files for the next refresh.
+
+A failed validation or database write does not replace the workspace. Sign-in cleanup happens before the database transaction and may still sign you out if a later write fails. On a quota error, retain both backups and use a browser profile with enough storage; do not clear the existing workspace as a troubleshooting step.
+
+Archives and expanded content are limited to 256 MiB; at most 10,000 entries and a 2 MiB manifest are accepted. Restore requires a modern browser supporting Web Locks. Approximate browser storage usage/quota is shown when available. Photos consume local storage and increase backup sizes. Offline caching alone is not a backup.
 
 ## Profile and offline use
 
@@ -165,11 +204,11 @@ For troubleshooting, include the version shown in the footer, for example `v0.1.
 
 The profile icon opens your local nickname and startup/sign-in preferences. There is no VelociTrack server account. **Refresh all enabled sources after startup** refreshes signed-in online sources and marks file sources as awaiting files. Missing sign-in waits for you to open Sources.
 
-**Units** selects **Imperial — ft/s, ft, °F** (default) or **Metric — m/s, m, °C**. After **Save profile**, the workspace updates its chart axes/points/tooltips, shot table, summary statistics and navigation muzzle readings. The choice survives reopening the app. Original measurements are never converted in storage. Temperature conversion is defined for future atmosphere displays; no atmosphere panel is shown yet.
+**Units** selects **Imperial — ft/s, ft, °F** (default) or **Metric — m/s, m, °C**. After **Save profile**, the workspace updates its chart axes/points/tooltips, shot table, summary statistics and dimensional custom fields. The choice survives reopening the app. Original measurements are never converted in storage. Temperature conversion is defined for future atmosphere displays; no atmosphere panel is shown yet.
 
-**Shot detail** selects **Muzzle velocity** (default), **G1** or **G7** beside each shot in the left series list. Muzzle velocity follows your unit preference; coefficients are shown unchanged. Missing readings appear as **—**. This preference also persists and does not change which shots are selected.
+**Shot detail** selects **Muzzle velocity** (default), **G1** or **G7** as the emphasized reading in the shot table. Muzzle velocity follows your unit preference; coefficients are shown unchanged. Missing readings appear as **—**. This preference also persists and does not change which shots are selected.
 
-Measurements and settings belong to this browser profile and site address. Changing port, hostname or browser creates a separate workspace. Clearing site data or browser eviction can remove it. Keep your original exports; full workspace backup/restore is not yet available.
+Measurements and settings belong to this browser profile and site address. Changing port, hostname or browser creates a separate workspace. Clearing site data or browser eviction can remove it. Keep your original exports and download regular workspace ZIP backups, especially after adding notes or photos.
 
 After its assets are cached, the application shell and imported measurements work offline. Online refresh and GitHub-hosted help require a connection. Updates offer a reload prompt. Reloading ends in-memory sign-in, so finish an active import before accepting an update.
 

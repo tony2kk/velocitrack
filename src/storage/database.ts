@@ -1,5 +1,16 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Annotation, CatalogItem, DataSource, Profile, Series, Shot } from '../domain/model';
+import type {
+  Annotation,
+  CatalogItem,
+  DataSource,
+  Profile,
+  Series,
+  Shot,
+  FieldDefinition,
+  Tag,
+  Attachment,
+  AttachmentContent,
+} from '../domain/model';
 
 /** Own the versioned local schema; imported records and user annotations use separate tables. */
 export class WorkspaceDatabase extends Dexie {
@@ -9,6 +20,10 @@ export class WorkspaceDatabase extends Dexie {
   shots!: EntityTable<Shot, 'id'>;
   profiles!: EntityTable<Profile, 'id'>;
   annotations!: EntityTable<Annotation, 'entityId'>;
+  fieldDefinitions!: EntityTable<FieldDefinition, 'id'>;
+  tags!: EntityTable<Tag, 'id'>;
+  attachments!: EntityTable<Attachment, 'id'>;
+  attachmentContents!: EntityTable<AttachmentContent, 'id'>;
 
   /** Allow isolated test databases; future schema changes must add migrations, never reset data. */
   constructor(name = 'velocitrack-local') {
@@ -20,6 +35,13 @@ export class WorkspaceDatabase extends Dexie {
       shots: 'id, sourceId, seriesId',
       profiles: 'id',
       annotations: 'entityId',
+    });
+    // Additive migration preserves version-one measurements and legacy annotation values.
+    this.version(2).stores({
+      fieldDefinitions: 'id, order',
+      tags: 'id',
+      attachments: 'id, seriesId',
+      attachmentContents: 'id',
     });
   }
 }

@@ -11,7 +11,6 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import {
   Activity,
   BookOpen,
-  ChartNoAxesCombined,
   ChevronRight,
   CircleHelp,
   Database,
@@ -19,10 +18,11 @@ import {
   Library,
   RefreshCw,
   ShieldCheck,
-  Table2,
   UserRound,
   X,
 } from 'lucide-react';
+import { SeriesDetails } from './components/SeriesDetails';
+import { BackupDialog } from './components/BackupDialog';
 import type { Filters } from './domain/model';
 import { filterDateError, filterSeries, hasFilters } from './domain/filters';
 import { loadWorkspace, saveProfile, type Workspace } from './storage/workspace';
@@ -70,22 +70,41 @@ export default function App() {
 
 /** Coordinate persisted filters, transient comparison selection and workspace dialogs. */
 function WorkspaceApp({ workspace }: { workspace: Workspace }) {
-  const { sources, catalog, profile, series, shots } = workspace;
-  const [dialog, setDialog] = useState<'sources' | 'refresh' | 'profile' | 'catalog' | null>(null);
+  const {
+    sources,
+    catalog,
+    profile,
+    series,
+    shots,
+    annotations,
+    fieldDefinitions,
+    tags,
+    attachments,
+  } = workspace;
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const detailSeries = series.find((item) => item.id === detailId);
+  const [dialog, setDialog] = useState<
+    'sources' | 'refresh' | 'profile' | 'catalog' | 'backup' | null
+  >(null);
   const [selected, setSelected] = useState<string[]>([]);
-  const [view, setView] = useState<'chart' | 'table'>('chart');
   const { message, showMessage, dismissMessage } = useNotification();
   const [refreshingAll, setRefreshingAll] = useState(false);
   const [activeShotId, setActiveShotId] = useState<string | null>(null);
   const [filters, setOptimisticFilters] = useOptimistic(profile.filters);
   const startupHandled = useRef(false);
   const refreshing = useSyncExternalStore(subscribeToRefresh, getRefreshingSources);
-  const filtered = useMemo(() => filterSeries(series, filters), [series, filters]);
+  const filtered = useMemo(
+    () => filterSeries(series, filters, new Date(), annotations),
+    [series, filters, annotations],
+  );
   const selectedSeries = useMemo(
     () => filtered.filter((item) => selected.includes(item.id)),
     [filtered, selected],
   );
-  const { hiddenShots, selectedShots, toggleShot } = useShotSelection(shots, selectedSeries);
+  const { hiddenShots, seriesShots, selectedShots, toggleShot, resetSelection } = useShotSelection(
+    shots,
+    selectedSeries,
+  );
   const catalogNames = new Map(catalog.map((item) => [item.id, item.name]));
   const sourceNames = new Map(sources.map((item) => [item.id, item.name]));
   const lastUpdate = sources
@@ -107,7 +126,9 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
 
   /** Apply filters immediately, drop hidden selections, then persist the local preference. */
   function changeFilters(next: Filters) {
-    const visible = new Set(filterSeries(series, next).map((item) => item.id));
+    const visible = new Set(
+      filterSeries(series, next, new Date(), annotations).map((item) => item.id),
+    );
     setSelected((current) => current.filter((id) => visible.has(id)));
     startTransition(async () => {
       setOptimisticFilters(next);
@@ -201,18 +222,17 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
             </button>
           </div>
         </div>
-        <FilterBar filters={filters} sources={sources} catalog={catalog} onChange={changeFilters} />
+        <FilterBar
+          tags={tags}
+          filters={filters}
+          sources={sources}
+          catalog={catalog}
+          onChange={changeFilters}
+        />
         <div className="toolbar-group tools-group">
           <span className="group-label">TOOLS</span>
-          <div className="segmented">
-            <button aria-pressed={view === 'chart'} onClick={() => setView('chart')}>
-              <ChartNoAxesCombined size={16} />
-              Chart
-            </button>
-            <button aria-pressed={view === 'table'} onClick={() => setView('table')}>
-              <Table2 size={16} />
-              Table
-            </button>
+          <div className="group-controls">
+            <button onClick={() => setDialog('backup')}>Backup / Restore</button>
           </div>
         </div>
       </nav>
@@ -245,19 +265,16 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
             series={filtered}
             shots={shots}
             selected={selected}
-            hiddenShots={hiddenShots}
-            activeShotId={activeShotId}
             catalogNames={catalogNames}
             sourceNames={sourceNames}
-            unitSystem={profile.unitSystem}
-            shotDetail={profile.shotDetail}
             onToggleSeries={(id, checked) =>
               setSelected((current) =>
                 checked ? [...current, id] : current.filter((value) => value !== id),
               )
             }
-            onToggleShot={toggleShot}
-            onHoverShot={setActiveShotId}
+            annotations={annotations}
+            tags={tags}
+            onDetails={setDetailId}
           />
           {!filtered.length && (
             <div className="sidebar-empty">
@@ -283,7 +300,14 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
         <AnalysisPanel
           series={selectedSeries}
           shots={selectedShots}
-          view={view}
+          view="chart"
+          allShots={seriesShots}
+          hiddenShots={hiddenShots}
+          onToggleShot={toggleShot}
+          fields={fieldDefinitions}
+          annotations={annotations}
+          tags={tags}
+          profile={profile}
           activeShotId={activeShotId}
           onHoverShot={setActiveShotId}
           unitSystem={profile.unitSystem}
@@ -322,9 +346,37 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
         </div>
       )}
       <UpdateNotice />
+      {detailSeries && (
+        <SeriesDetails
+          key={detailSeries.id}
+          series={detailSeries}
+          annotation={annotations.find((a) => a.entityId === detailSeries.id)}
+          fields={fieldDefinitions}
+          tags={tags}
+          photos={attachments.filter((photo) => photo.seriesId === detailSeries.id)}
+          units={profile.unitSystem}
+          onClose={() => setDetailId(null)}
+        />
+      )}
+      {dialog === 'backup' && (
+        <BackupDialog
+          refreshing={refreshingAll || refreshing.length > 0}
+          onClose={() => setDialog(null)}
+          onRestored={() => {
+            setSelected([]);
+            resetSelection();
+            setDetailId(null);
+            setActiveShotId(null);
+            setDialog(null);
+            showMessage('Workspace restored. Sign in again to refresh connected sources.');
+          }}
+        />
+      )}
       {dialog === 'profile' && (
         <ProfileDialog
           profile={profile}
+          fields={fieldDefinitions}
+          tags={tags}
           sources={sources}
           refreshing={refreshing.length > 0}
           onClose={() => setDialog(null)}

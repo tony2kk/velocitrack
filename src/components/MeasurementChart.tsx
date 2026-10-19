@@ -53,7 +53,7 @@ export default function MeasurementChart({
       aria: {
         enabled: true,
         label: {
-          description: `Recorded measurements in ${unitLabels[unitSystem].velocity} and ${unitLabels[unitSystem].distance}. An accessible shot table is available using the Table button.`,
+          description: `Recorded measurements in ${unitLabels[unitSystem].velocity} and ${unitLabels[unitSystem].distance}. An accessible shot table is available below the chart.`,
         },
       },
       textStyle: { fontFamily: 'system-ui, sans-serif', color: '#63716e' },

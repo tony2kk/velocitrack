@@ -1,45 +1,29 @@
 import { useMemo } from 'react';
-import type { Series, Shot, ShotDetail, UnitSystem } from '../domain/model';
-import { displayValue, formatValue, unitLabels } from '../domain/units';
+import type { Annotation, Tag } from '../domain/model';
+import { TagLabels } from './CustomizationManager';
+import type { Series, Shot } from '../domain/model';
 
-const detailLabels = { muzzleVelocity: 'Muzzle velocity', g1: 'G1', g7: 'G7' };
-
-/** Select a recorded coefficient or display-unit muzzle reading without changing the shot. */
-function shotReading(shot: Shot, detail: ShotDetail, units: UnitSystem): string {
-  if (detail === 'muzzleVelocity')
-    return `${formatValue(displayValue(shot.muzzleVelocity, 'velocity', units), 2)} ${unitLabels[units].velocity}`;
-  return String(
-    (detail === 'g1' ? shot.ballisticCoefficientG1 : shot.ballisticCoefficientG7) ?? '—',
-  );
-}
-
-/** Expand selected series into independently selectable shots with shared pointer/keyboard emphasis. */
+/** Select series only; shot selection lives in the table below the chart. */
 export function SeriesNavigator({
   series,
   shots,
   selected,
-  hiddenShots,
-  activeShotId,
   catalogNames,
   sourceNames,
   onToggleSeries,
-  onToggleShot,
-  onHoverShot,
-  unitSystem = 'imperial',
-  shotDetail = 'muzzleVelocity',
+  annotations = [],
+  tags = [],
+  onDetails,
 }: {
+  annotations?: Annotation[];
+  tags?: Tag[];
+  onDetails?: (id: string) => void;
   series: Series[];
   shots: Shot[];
   selected: string[];
-  hiddenShots: ReadonlySet<string>;
-  activeShotId: string | null;
   catalogNames: Map<string, string>;
   sourceNames: Map<string, string>;
   onToggleSeries: (id: string, checked: boolean) => void;
-  onToggleShot: (id: string, checked: boolean) => void;
-  onHoverShot: (id: string | null) => void;
-  unitSystem?: UnitSystem;
-  shotDetail?: ShotDetail;
 }) {
   const grouped = useMemo(() => {
     const groups = new Map<string, Shot[]>();
@@ -88,38 +72,19 @@ export function SeriesNavigator({
                 </small>
               </div>
             </label>
-            {expanded && (
-              <div className="shot-list" role="group" aria-label={`Shots in ${item.name}`}>
-                <p className="shot-selection-count">
-                  {records.filter((shot) => !hiddenShots.has(shot.id)).length} / {records.length}{' '}
-                  selected · {detailLabels[shotDetail]}
-                </p>
-                {records.map((shot) => (
-                  <label
-                    key={shot.id}
-                    className={`shot-option ${activeShotId === shot.id ? 'shot-highlighted' : ''}`}
-                    onMouseEnter={() => onHoverShot(shot.id)}
-                    onMouseLeave={() => onHoverShot(null)}
-                    onFocus={() => onHoverShot(shot.id)}
-                    onBlur={() => onHoverShot(null)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={!hiddenShots.has(shot.id)}
-                      aria-label={`Select shot ${shot.number} in ${item.name}`}
-                      onChange={(event) => onToggleShot(shot.id, event.target.checked)}
-                    />
-                    <span>
-                      Shot {shot.number}
-                      {shot.excluded && <small>Source excluded</small>}
-                    </span>
-                    <span className="shot-reading" title={detailLabels[shotDetail]}>
-                      {shotReading(shot, shotDetail, unitSystem)}
-                    </span>
-                  </label>
-                ))}
-                {!records.length && <p className="muted">No shots in this series.</p>}
-              </div>
+            <TagLabels
+              tags={tags.filter((tag) =>
+                annotations.find((a) => a.entityId === item.id)?.tagIds?.includes(tag.id),
+              )}
+            />
+            {onDetails && (
+              <button
+                className="text-button"
+                onClick={() => onDetails(item.id)}
+                aria-label={`Details for ${item.name}`}
+              >
+                Details & photos
+              </button>
             )}
           </section>
         );

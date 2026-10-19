@@ -14,3 +14,5 @@ Committed fixtures are invented from scratch. Tests never read personal exports 
 - `units.test.ts` and `preferences.test.tsx`: conversion reference points, unchanged raw values, chart/tooltip/table/statistic consistency, navigation detail and local profile persistence. Storage tests cover legacy defaults and counting new identities under repeats/concurrent imports; feedback/refresh tests cover zero additions and multi-source aggregation. Chart bridge tests cover independently bound sliders and tooltip clearing on zoom.
 
 Run `npm test` or `npm run verify`. Empty suites fail. Browser testing is separate; see `docs/VERIFICATION.md`. Fake IndexedDB tests do not prove browser quota, migration or service-worker behavior.
+
+Series-context coverage includes the additive v2 migration, custom field unit/value semantics, tag filters and cleanup, inherited shot columns, original photo lifecycle, ZIP validation/round trips, and full rollback when a restore write fails. All records and raster fixtures are invented. Browser smoke checks use an isolated origin and are recorded in docs/VERIFICATION.md.

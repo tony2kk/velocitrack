@@ -19,6 +19,10 @@ export async function loadWorkspace(database = db) {
     catalog: await database.catalog.toArray(),
     series: await database.series.toArray(),
     shots: await database.shots.toArray(),
+    annotations: await database.annotations.toArray(),
+    fieldDefinitions: await database.fieldDefinitions.orderBy('order').toArray(),
+    tags: await database.tags.toArray(),
+    attachments: await database.attachments.toArray(),
     // Add defaults for older profiles without resetting their data, filters or consent.
     profile: { ...defaultProfile(), ...(await database.profiles.get('local')) },
   }));
@@ -233,6 +237,9 @@ export async function removeSource(sourceId: string, database = db) {
   await database.transaction('rw', database.tables, async () => {
     const series = await database.series.where('sourceId').equals(sourceId).primaryKeys();
     const shots = await database.shots.where('sourceId').equals(sourceId).primaryKeys();
+    const attachments = await database.attachments.where('seriesId').anyOf(series).primaryKeys();
+    await database.attachmentContents.bulkDelete(attachments);
+    await database.attachments.bulkDelete(attachments);
     await database.annotations.bulkDelete([...series, ...shots]);
     await database.shots.where('sourceId').equals(sourceId).delete();
     await database.series.where('sourceId').equals(sourceId).delete();
