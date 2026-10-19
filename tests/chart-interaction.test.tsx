@@ -41,6 +41,39 @@ afterEach(() => {
 });
 
 describe('chart hover bridge', () => {
+  it('links a comparison mean to its contributing rows and a row to matching mean points', () => {
+    const onHoverShots = vi.fn();
+    const props = {
+      shots: [
+        shot({ id: 'a', distances: [0, 10], velocities: [100, 80] }),
+        shot({ id: 'b', distances: [5, 15], velocities: [110, 90] }),
+      ],
+      series: [series()],
+      mode: 'distance' as const,
+      kind: 'compare' as const,
+      settings: { ...defaultAnalysis().compare, axis: 'distance' as const },
+      activeShotId: null as string | null,
+      onHoverShot: vi.fn(),
+      onHoverShots,
+    };
+    const { rerender } = render(<MeasurementChart {...props} />);
+    act(() =>
+      chart.on.mock.calls.find(([name]) => name === 'mouseover')![1]({
+        seriesIndex: 0,
+        dataIndex: 1,
+      }),
+    );
+    expect(onHoverShots).toHaveBeenLastCalledWith(['a', 'b']);
+    rerender(<MeasurementChart {...props} activeShotId="b" activeShotIds={['b']} />);
+    expect(chart.init).toHaveBeenCalledTimes(1);
+    expect(
+      chart.dispatchAction.mock.calls
+        .filter(([action]) => action.type === 'highlight')
+        .map(([action]) => action.dataIndex),
+    ).toEqual([1, 2, 3]);
+    act(() => chart.on.mock.calls.find(([name]) => name === 'globalout')![1]());
+    expect(onHoverShots).toHaveBeenLastCalledWith([]);
+  });
   it('binds dual quantities to separate axes and zooms both without removing missing positions', () => {
     render(
       <MeasurementChart

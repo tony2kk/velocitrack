@@ -115,13 +115,22 @@ export interface Annotation {
 }
 
 /** Typed series fields; dimensional numbers are stored in gr, ft/s and ft, independently of display. */
-export type FieldType = 'short-text' | 'note' | 'number' | 'weight' | 'speed' | 'distance';
+export type FieldType =
+  | 'short-text'
+  | 'note'
+  | 'number'
+  | 'weight'
+  | 'weight-grams'
+  | 'weight-grains'
+  | 'speed'
+  | 'distance';
 /** Workspace-wide definition with stable identity and user-controlled ordering. */
 export interface FieldDefinition {
   id: string;
   name: string;
   type: FieldType;
   order: number;
+  showInNavigator?: boolean;
 }
 /** Reusable named label; color is a validated six-digit hex value. */
 export interface Tag {
@@ -159,6 +168,7 @@ export interface Filters {
 
 /** Singleton local preferences, independent of any connected provider account. */
 export interface Profile {
+  tableSort?: { columnId: string; direction: 'asc' | 'desc' };
   tableColumns?: string[];
   infoSeriesId?: string;
   analysis?: AnalysisSettings;

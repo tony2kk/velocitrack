@@ -19,7 +19,7 @@ import { defaultAnalysis, defaultProfile } from '../domain/model';
 import { availableQuantities, normalizeChart, quantityLabel } from '../domain/analysis';
 import { saveAnalysis } from '../storage/analysis';
 import { ColumnPicker } from './ColumnPicker';
-import { tableColumns, visibleColumns } from '../domain/table';
+import { sortShots, tableColumns, visibleColumns } from '../domain/table';
 import { StringInfo } from './StringInfo';
 import { ShotTable } from './ShotTable';
 import { displayValue, formatValue, unitLabels } from '../domain/units';
@@ -33,6 +33,8 @@ export function AnalysisPanel({
   shots,
   view,
   activeShotId,
+  activeShotIds,
+  onHoverShots,
   onHoverShot,
   unitSystem = 'imperial',
   allShots = shots,
@@ -52,6 +54,8 @@ export function AnalysisPanel({
   shots: Shot[];
   view: 'chart' | 'table';
   activeShotId: string | null;
+  activeShotIds?: string[];
+  onHoverShots?: (ids: string[]) => void;
   onHoverShot: (id: string | null) => void;
   unitSystem?: UnitSystem;
   allShots?: Shot[];
@@ -101,6 +105,32 @@ export function AnalysisPanel({
     [allShots, series, fields, annotations, unitSystem],
   );
   const infoSeries = series.find((item) => item.id === profile?.infoSeriesId) ?? series[0];
+  const sortedRows = useMemo(
+    () =>
+      sortShots(allShots, series, profile?.tableSort, {
+        quantities: tableQuantities,
+        annotations,
+        tags,
+        catalog,
+        hiddenShots,
+        showProjectileWeight: profile?.showProjectileWeight,
+      }),
+    [
+      allShots,
+      series,
+      profile?.tableSort,
+      tableQuantities,
+      annotations,
+      tags,
+      catalog,
+      hiddenShots,
+      profile?.showProjectileWeight,
+    ],
+  );
+  const sortedShots = useMemo(() => {
+    const selected = new Set(shots.map((shot) => shot.id));
+    return sortedRows.filter((shot) => selected.has(shot.id));
+  }, [sortedRows, shots]);
   /** Persist explicit control edits; missing readings alone never overwrite a saved quantity. */
   async function changeChart(patch: Partial<ChartSettings>) {
     const next = normalizeChart({ ...settings, ...patch });
@@ -319,7 +349,7 @@ export function AnalysisPanel({
             </p>
           ) : view === 'table' ? (
             <ShotTable
-              shots={shots}
+              shots={sortedShots}
               series={series}
               activeShotId={activeShotId}
               onHoverShot={onHoverShot}
@@ -329,7 +359,7 @@ export function AnalysisPanel({
             <>
               <Suspense fallback={<p className="empty-note">Loading chart…</p>}>
                 <MeasurementChart
-                  shots={shots}
+                  shots={sortedShots}
                   series={series}
                   mode={mode}
                   settings={settings}
@@ -338,6 +368,8 @@ export function AnalysisPanel({
                   dark={dark}
                   colorOrder={colorOrder}
                   activeShotId={activeShotId}
+                  activeShotIds={activeShotIds}
+                  onHoverShots={onHoverShots}
                   onHoverShot={onHoverShot}
                   unitSystem={unitSystem}
                 />
@@ -423,9 +455,12 @@ export function AnalysisPanel({
             </p>
           )}
           <ShotTable
-            shots={allShots}
+            shots={sortedRows}
             series={series}
             activeShotId={activeShotId}
+            activeShotIds={activeShotIds}
+            sort={profile?.tableSort}
+            onSort={(tableSort) => void columns({ tableSort })}
             onHoverShot={onHoverShot}
             unitSystem={unitSystem}
             hiddenShots={hiddenShots}

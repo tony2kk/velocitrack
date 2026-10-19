@@ -1,5 +1,6 @@
 import {
   startTransition,
+  useCallback,
   useEffect,
   useMemo,
   useOptimistic,
@@ -94,7 +95,9 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
   const [selected, setSelected] = useState<string[]>([]);
   const { message, showMessage, dismissMessage } = useNotification();
   const [refreshingAll, setRefreshingAll] = useState(false);
-  const [activeShotId, setActiveShotId] = useState<string | null>(null);
+  const [activeShotIds, setActiveShotIds] = useState<string[]>([]);
+  const activeShotId = activeShotIds[0] ?? null;
+  const setActiveShotId = useCallback((id: string | null) => setActiveShotIds(id ? [id] : []), []);
   const [filters, setOptimisticFilters] = useOptimistic(profile.filters);
   const startupHandled = useRef(false);
   const refreshing = useSyncExternalStore(subscribeToRefresh, getRefreshingSources);
@@ -310,6 +313,8 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
             }
             annotations={annotations}
             tags={tags}
+            fields={fieldDefinitions}
+            unitSystem={profile.unitSystem}
             onDetails={setDetailId}
           />
           {!filtered.length && (
@@ -345,6 +350,8 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           tags={tags}
           profile={profile}
           activeShotId={activeShotId}
+          activeShotIds={activeShotIds}
+          onHoverShots={setActiveShotIds}
           onHoverShot={setActiveShotId}
           unitSystem={profile.unitSystem}
           dark={dark}

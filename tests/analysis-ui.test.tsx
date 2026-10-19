@@ -30,6 +30,60 @@ afterEach(async () => {
 });
 
 describe('persistent analysis controls', () => {
+  it('offers sorting beside every header except Shot, persists it and restores row order', async () => {
+    const props = {
+      series: [series()],
+      shots: [
+        shot({ id: 'a', number: 1, muzzleVelocity: 200 }),
+        shot({ id: 'b', number: 2, muzzleVelocity: 100 }),
+      ],
+      view: 'chart' as const,
+      activeShotId: null,
+      onHoverShot: vi.fn(),
+    };
+    const { rerender } = render(<AnalysisPanel {...props} profile={defaultProfile()} />);
+    expect(screen.queryByRole('button', { name: /^Sort by Shot$/ })).toBeNull();
+    expect(screen.getByRole('columnheader', { name: /String/ }).getAttribute('aria-sort')).toBe(
+      'ascending',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Sort by Muzzle velocity (ft/s)' }));
+    await waitFor(async () =>
+      expect((await loadWorkspace()).profile.tableSort).toEqual({
+        columnId: 'velocity',
+        direction: 'asc',
+      }),
+    );
+    rerender(<AnalysisPanel {...props} profile={(await loadWorkspace()).profile} />);
+    expect(
+      screen
+        .getAllByRole('row')
+        .slice(1)
+        .map((row) => row.getAttribute('aria-label')),
+    ).toEqual(['Shot 2 in Synthetic series', 'Shot 1 in Synthetic series']);
+    fireEvent.click(screen.getByRole('button', { name: 'Sort by Muzzle velocity (ft/s)' }));
+    await waitFor(async () =>
+      expect((await loadWorkspace()).profile.tableSort?.direction).toBe('desc'),
+    );
+    rerender(<AnalysisPanel {...props} profile={(await loadWorkspace()).profile} />);
+    expect(screen.getAllByRole('row')[1]?.getAttribute('aria-label')).toBe(
+      'Shot 1 in Synthetic series',
+    );
+  });
+  it('highlights every contributor row while retaining exact row hover identities', () => {
+    const onHoverShot = vi.fn();
+    render(
+      <ShotTable
+        shots={[shot({ id: 'a' }), shot({ id: 'b', number: 2 }), shot({ id: 'c', number: 3 })]}
+        series={[series()]}
+        activeShotId="a"
+        activeShotIds={['a', 'b']}
+        onHoverShot={onHoverShot}
+      />,
+    );
+    expect(document.querySelectorAll('.shot-highlighted')).toHaveLength(2);
+    fireEvent.mouseEnter(screen.getByRole('row', { name: 'Shot 3 in Synthetic series' }));
+    expect(onHoverShot).toHaveBeenLastCalledWith('c');
+  });
   it('reorders from the pointer handle and ignores drops outside the panel rows', () => {
     vi.stubGlobal('PointerEvent', MouseEvent);
     const change = vi.fn();
@@ -59,8 +113,17 @@ describe('persistent analysis controls', () => {
     fireEvent.pointerUp(handle, { clientX: 600, clientY: 20 });
     expect(change).not.toHaveBeenCalled();
     fireEvent.pointerDown(handle, { clientX: 20, clientY: 100 });
+    fireEvent.pointerMove(handle, { clientX: 20, clientY: 20 });
+    expect(screen.getByRole('status').textContent).toContain('G1');
+    expect(
+      document
+        .querySelector('.column-drop-marker')
+        ?.closest('[data-column-id]')
+        ?.getAttribute('data-column-id'),
+    ).toBe('series');
     fireEvent.pointerUp(handle, { clientX: 20, clientY: 20 });
     expect(change).toHaveBeenCalledWith(['g1', 'series', 'shot']);
+    expect(screen.queryByRole('status')).toBeNull();
   });
   it('retains configured source columns when the selected string has no value', () => {
     render(
@@ -148,6 +211,7 @@ describe('persistent analysis controls', () => {
     expect(await db.shots.get(original.id)).toEqual(original);
   });
   it('reorders columns using buttons or drag/drop and restores saved order', async () => {
+    vi.stubGlobal('DragEvent', MouseEvent);
     const available = [
       { id: 'series', label: 'Series' },
       { id: 'g1', label: 'G1' },
@@ -176,10 +240,16 @@ describe('persistent analysis controls', () => {
     const checkbox = screen.getByRole('checkbox', { name: 'G1' });
     const source = checkbox.closest('.column-option')!;
     const target = screen.getByRole('checkbox', { name: 'Series' }).closest('.column-option')!;
+    vi.spyOn(target, 'getBoundingClientRect').mockReturnValue({
+      left: 0,
+      right: 400,
+      top: 0,
+      bottom: 40,
+    } as DOMRect);
     const dataTransfer = { setData: vi.fn(), effectAllowed: '' };
     fireEvent.dragStart(source, { dataTransfer });
-    fireEvent.dragOver(target, { dataTransfer });
-    fireEvent.drop(target, { dataTransfer });
+    fireEvent.dragOver(target, { dataTransfer, clientX: 20, clientY: 10 });
+    fireEvent.drop(target, { dataTransfer, clientX: 20, clientY: 10 });
     await waitFor(async () =>
       expect((await loadWorkspace()).profile.tableColumns).toEqual(['g1', 'series', 'velocity']),
     );

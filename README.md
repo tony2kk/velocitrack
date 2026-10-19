@@ -27,7 +27,7 @@ The production PWA caches static application assets after a successful online vi
 - Source-excluded shots stay visible in the table but do not enter charts/statistics. Positive finite muzzle readings contribute to mean, sample SD (`n − 1`) and extreme spread.
 - Charts/statistics retain the existing one-source/raw-unit-code comparison grouping. Source codes are metadata, not display-unit selectors.
 - Simple/Dual distance charts show up to 100 included shot traces; narrow the selection for others. Tables paginate in groups of 100. These are measured points, not predicted trajectories.
-- Use the horizontal and vertical sliders to zoom either axis. Analysis offers Simple chart, Dual chart, String compare and String info. Chart axes/quantities and table-column selection/order persist. Profile → Display controls projectile weight labels and Light/Dark/Auto theme. Import messages count only new records; unchanged imports report **No new data detected**.
+- Use the horizontal and vertical sliders to zoom either axis. Analysis offers Simple chart, Dual chart, String compare and String info. Chart axes/quantities and table-column selection/order/sort persist. Sort with header arrows (default String, then Shot); By shot charts follow table order. Compare means link to contributing rows. Profile → Custom fields offers optional string-panel values and fixed grams/grains fields. Profile → Display controls projectile weight labels and Light/Dark/Auto theme. Import messages count only new records; unchanged imports report **No new data detected**.
 
 ## Develop locally
 

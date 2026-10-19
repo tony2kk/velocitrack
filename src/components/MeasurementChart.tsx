@@ -10,6 +10,7 @@ import {
   buildChartTraces,
   buildAnalysisTraces,
   findShotTargets,
+  pointShotIds,
   formatPointTooltip,
   type ChartMode,
   type ChartPoint,
@@ -24,6 +25,8 @@ export default function MeasurementChart({
   series,
   mode,
   activeShotId,
+  activeShotIds,
+  onHoverShots,
   onHoverShot,
   unitSystem = 'imperial',
   settings,
@@ -36,6 +39,8 @@ export default function MeasurementChart({
   series: Series[];
   mode: ChartMode;
   activeShotId: string | null;
+  activeShotIds?: string[];
+  onHoverShots?: (ids: string[]) => void;
   onHoverShot: (id: string | null) => void;
   unitSystem?: UnitSystem;
   settings?: ChartSettings;
@@ -90,7 +95,9 @@ export default function MeasurementChart({
             ? `Distance (${unitLabels[unitSystem].distance})`
             : settings && kind !== 'compare'
               ? 'Shot sequence'
-              : 'Shot number',
+              : settings
+                ? 'Shot order within string'
+                : 'Shot number',
         nameLocation: 'middle',
         nameGap: 32,
         minInterval: mode === 'shot' ? 1 : undefined,
@@ -197,7 +204,9 @@ export default function MeasurementChart({
         }
       }
       if (point?.value[1] === null) point = undefined;
-      onHoverShot((trace?.shotId ?? point?.shotId) || null);
+      const ids = trace ? pointShotIds(trace, point) : [];
+      if (onHoverShots) onHoverShots(ids);
+      else onHoverShot(ids[0] ?? null);
       const measured = point;
       if (!measured) {
         setDetails(null);
@@ -221,7 +230,8 @@ export default function MeasurementChart({
     /** Release both linked emphasis and point details when leaving a trace or the canvas. */
     function leavePoint() {
       setDetails(null);
-      onHoverShot(null);
+      if (onHoverShots) onHoverShots([]);
+      else onHoverShot(null);
     }
     chart.on('mouseover', hoverPoint);
     chart.on('mousemove', hoverPoint);
@@ -236,18 +246,25 @@ export default function MeasurementChart({
       chart.dispose();
       instance.current = null;
     };
-  }, [traces, mode, onHoverShot, unitSystem, settings, kind, dark, quantities]);
+  }, [traces, mode, onHoverShot, onHoverShots, unitSystem, settings, kind, dark, quantities]);
 
   useEffect(() => {
     const chart = instance.current;
     if (!chart) return;
     // Hover changes emphasis only; it must not recreate the canvas or reset the user's zoom.
     chart.dispatchAction({ type: 'downplay' });
-    if (activeShotId)
+    if (activeShotIds && activeShotIds.length > 1) {
+      const ids = new Set(activeShotIds);
+      // An aggregate hover represents many rows; emphasize its curve once, not shots × grid points.
+      traces.forEach((trace, seriesIndex) => {
+        if (trace.members?.some((member) => ids.has(member.shotId)))
+          chart.dispatchAction({ type: 'highlight', seriesIndex });
+      });
+    } else if (activeShotId)
       for (const target of findShotTargets(traces, activeShotId)) {
         chart.dispatchAction({ type: 'highlight', ...target });
       }
-  }, [activeShotId, traces]);
+  }, [activeShotId, activeShotIds, traces]);
   return (
     <div className="chart-frame">
       <div

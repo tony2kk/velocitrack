@@ -1,5 +1,7 @@
 import { useMemo } from 'react';
-import type { Annotation, Tag } from '../domain/model';
+import { SquarePen } from 'lucide-react';
+import type { Annotation, Tag, FieldDefinition, UnitSystem } from '../domain/model';
+import { fieldDisplay, fieldUnit } from '../domain/customFields';
 import { TagLabels } from './CustomizationManager';
 import type { Series, Shot } from '../domain/model';
 
@@ -15,7 +17,11 @@ export function SeriesNavigator({
   annotations = [],
   tags = [],
   onDetails,
+  fields = [],
+  unitSystem = 'imperial',
 }: {
+  fields?: FieldDefinition[];
+  unitSystem?: UnitSystem;
   annotations?: Annotation[];
   tags?: Tag[];
   onDetails?: (id: string) => void;
@@ -44,7 +50,11 @@ export function SeriesNavigator({
         const expanded = selected.includes(item.id);
         const records = grouped.get(item.id) ?? [];
         return (
-          <section className="series-group" key={item.id} aria-label={item.name}>
+          <section
+            className={`series-group ${expanded ? 'selected' : ''}`}
+            key={item.id}
+            aria-label={item.name}
+          >
             <label className={`series-card ${expanded ? 'selected' : ''}`}>
               <input
                 type="checkbox"
@@ -76,20 +86,39 @@ export function SeriesNavigator({
                 </small>
               </div>
             </label>
+            {onDetails && (
+              <button
+                type="button"
+                className="icon-button series-edit"
+                title="Edit string details & photos"
+                onClick={() => onDetails(item.id)}
+                aria-label={`Details for ${item.name}`}
+              >
+                <SquarePen size={15} aria-hidden="true" />
+              </button>
+            )}
             <TagLabels
               tags={tags.filter((tag) =>
                 annotations.find((a) => a.entityId === item.id)?.tagIds?.includes(tag.id),
               )}
             />
-            {onDetails && (
-              <button
-                className="text-button"
-                onClick={() => onDetails(item.id)}
-                aria-label={`Details for ${item.name}`}
-              >
-                Details & photos
-              </button>
-            )}
+            <dl className="navigator-fields">
+              {fields
+                .filter((field) => field.showInNavigator)
+                .map((field) => {
+                  const value = annotations.find((a) => a.entityId === item.id)?.values?.[field.id];
+                  if (value === undefined || value === '') return null;
+                  return (
+                    <div key={field.id}>
+                      <dt>{field.name}</dt>
+                      <dd>
+                        {fieldDisplay(value, field.type, unitSystem)}{' '}
+                        {fieldUnit(field.type, unitSystem)}
+                      </dd>
+                    </div>
+                  );
+                })}
+            </dl>
           </section>
         );
       })}

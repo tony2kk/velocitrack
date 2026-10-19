@@ -26,7 +26,10 @@ async function seed() {
     database,
   );
   const series = (await database.series.toArray())[0]!;
-  await saveField({ id: 'weight', name: 'Mass', type: 'weight', order: 0 }, database);
+  await saveField(
+    { id: 'weight', name: 'Mass', type: 'weight-grams', order: 0, showInNavigator: true },
+    database,
+  );
   await saveTag({ id: 'tag', name: 'Example', color: '#123456' }, database);
   await saveSeriesDetails(series.id, { weight: 0 }, ['tag'], database);
   await saveProfile(
@@ -37,6 +40,7 @@ async function seed() {
       theme: 'dark',
       showProjectileWeight: true,
       tableColumns: ['g1', 'velocity', 'field:weight'],
+      tableSort: { columnId: 'field:weight', direction: 'desc' },
       analysis: {
         ...defaultAnalysis(),
         mode: 'dual',
@@ -115,6 +119,12 @@ describe('structured ZIP backup and atomic restore', () => {
     const identity = await prepareBackup(archive);
     identity.workspace.shots[0]!.remoteId = 'changed-identity';
     await expect(restoreBackup(identity, database)).rejects.toThrow('invalid records');
+    const badSort = await prepareBackup(archive);
+    badSort.workspace.profile.tableSort = { columnId: 'shot', direction: 'asc' };
+    await expect(restoreBackup(badSort, database)).rejects.toThrow('invalid records');
+    const badVisibility = await prepareBackup(archive);
+    Object.assign(badVisibility.workspace.fieldDefinitions[0]!, { showInNavigator: 'yes' });
+    await expect(restoreBackup(badVisibility, database)).rejects.toThrow('invalid records');
     expect(await database.shots.count()).toBe(4);
   });
   it('rolls back all cleared tables when a late photo write fails', async () => {

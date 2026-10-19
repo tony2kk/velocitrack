@@ -4,13 +4,17 @@ export const FIELD_TYPES: Record<FieldType, string> = {
   'short-text': 'Short text',
   note: 'Note',
   number: 'Number',
-  weight: 'Weight',
+  weight: 'Weight (profile units)',
+  'weight-grams': 'Weight (grams)',
+  'weight-grains': 'Weight (grains)',
   speed: 'Speed',
   distance: 'Distance',
 };
 
 /** Unit labels follow the profile; plain numbers and text have no unit. */
 export function fieldUnit(type: FieldType, units: UnitSystem): string {
+  if (type === 'weight-grams') return 'g';
+  if (type === 'weight-grains') return 'gr';
   if (type === 'weight') return units === 'metric' ? 'g' : 'gr';
   if (type === 'speed') return units === 'metric' ? 'm/s' : 'ft/s';
   if (type === 'distance') return units === 'metric' ? 'm' : 'ft';
@@ -19,6 +23,8 @@ export function fieldUnit(type: FieldType, units: UnitSystem): string {
 
 /** Exact conversion factors keep stored dimensional values independent of the active profile. */
 export function fieldFactor(type: FieldType, units: UnitSystem): number {
+  if (type === 'weight-grams') return 0.06479891;
+  if (type === 'weight-grains') return 1;
   if (units === 'imperial') return 1;
   return type === 'weight' ? 0.06479891 : type === 'speed' || type === 'distance' ? 0.3048 : 1;
 }

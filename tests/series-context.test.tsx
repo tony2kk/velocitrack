@@ -8,6 +8,7 @@ import { loadWorkspace } from '../src/storage/workspace';
 import { SeriesDetails } from '../src/components/SeriesDetails';
 import { ShotTable } from '../src/components/ShotTable';
 import { CustomizationManager } from '../src/components/CustomizationManager';
+import { SeriesNavigator } from '../src/components/SeriesNavigator';
 import { series, shot } from './fixtures/synthetic';
 
 beforeEach(async () => {
@@ -25,6 +26,60 @@ afterEach(async () => {
 });
 
 describe('series context UI', () => {
+  it('saves string-panel visibility and displays assigned values including zero in fixed weight units', async () => {
+    const manager = render(<CustomizationManager kind="fields" fields={[]} tags={[]} />);
+    fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Sample mass' } });
+    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'weight-grams' } });
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Show on string panel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Add field' }));
+    await waitFor(async () => expect(await db.fieldDefinitions.count()).toBe(1));
+    const definition = (await db.fieldDefinitions.toArray())[0]!;
+    expect(definition).toMatchObject({ type: 'weight-grams', showInNavigator: true });
+    manager.unmount();
+    const onDetails = vi.fn();
+    const onToggleSeries = vi.fn();
+    render(
+      <SeriesNavigator
+        series={[series()]}
+        shots={[]}
+        selected={[]}
+        catalogNames={new Map()}
+        sourceNames={new Map()}
+        onToggleSeries={onToggleSeries}
+        onDetails={onDetails}
+        tags={[{ id: 'tag', name: 'Panel tag', color: '#123456' }]}
+        fields={[
+          definition,
+          { id: 'hidden', name: 'Hidden field', type: 'number', order: 1 },
+          { id: 'empty', name: 'Empty field', type: 'short-text', order: 2, showInNavigator: true },
+          { id: 'unset', name: 'Unset field', type: 'number', order: 3, showInNavigator: true },
+        ]}
+        annotations={[
+          {
+            entityId: 'series',
+            notes: '',
+            fields: {},
+            tagIds: ['tag'],
+            values: { [definition.id]: 0, hidden: 42, empty: '' },
+          },
+        ]}
+        unitSystem="imperial"
+      />,
+    );
+    expect(screen.getByText('Sample mass')).toBeTruthy();
+    expect(screen.getByText('0 g')).toBeTruthy();
+    expect(screen.queryByText('Hidden field')).toBeNull();
+    expect(screen.queryByText('Empty field')).toBeNull();
+    expect(screen.queryByText('Unset field')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Details for Synthetic series' }));
+    expect(onDetails).toHaveBeenCalledWith('series');
+    expect(onToggleSeries).not.toHaveBeenCalled();
+    expect(
+      screen
+        .getByRole('button', { name: 'Details for Synthetic series' })
+        .compareDocumentPosition(screen.getByText('Panel tag')) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
   it('edits dimensional values in profile units, preserves untouched precision and inherits values on each shot', async () => {
     await saveField({ id: 'mass', name: 'Sample mass', type: 'weight', order: 0 });
     await saveField({ id: 'speed', name: 'Reference speed', type: 'speed', order: 1 });

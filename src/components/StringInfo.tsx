@@ -13,20 +13,12 @@ import { availableQuantities, rawPath } from '../domain/analysis';
 import { projectileName } from '../domain/projectiles';
 import { formatValue } from '../domain/units';
 import { TagLabels } from './CustomizationManager';
+import { providerTimestamp } from '../domain/providerData';
 
 /** Read a provider timestamp without assuming every numeric metadata field is a timestamp. */
 export function providerTime(value: unknown): string {
-  if (value === null || value === undefined || value === '') return '—';
-  const numeric =
-    typeof value === 'number'
-      ? value
-      : typeof value === 'string' && /^\d+(\.\d+)?$/.test(value)
-        ? Number(value)
-        : null;
-  const date = new Date(
-    numeric === null ? String(value) : numeric < 100_000_000_000 ? numeric * 1000 : numeric,
-  );
-  return Number.isFinite(date.getTime()) ? date.toLocaleString('en-GB') : '—';
+  const time = providerTimestamp(value);
+  return time === null ? '—' : new Date(time).toLocaleString('en-GB');
 }
 
 /** Present imported context and local annotations together, retaining provider provenance and unit caveats. */

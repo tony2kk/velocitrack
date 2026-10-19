@@ -30,6 +30,7 @@ export function CustomizationManager({
   const [id, setId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [type, setType] = useState<FieldType>('short-text');
+  const [showInNavigator, setShowInNavigator] = useState(false);
   const [color, setColor] = useState('#08796e');
   const [confirm, setConfirm] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -51,7 +52,7 @@ export function CustomizationManager({
     <section>
       <p className="muted">
         {kind === 'fields'
-          ? 'Define optional fields for every series. Values appear in selected table columns. Dimensional fields follow profile units.'
+          ? 'Define optional fields for every string. Choose table columns and optional string panel values. Weight can use fixed grams or grains; speed and distance follow profile units.'
           : 'Create reusable labels, assign them to series and filter by them.'}{' '}
         Changes here are saved immediately.
       </p>
@@ -64,6 +65,7 @@ export function CustomizationManager({
                 id: id ?? crypto.randomUUID(),
                 name,
                 type,
+                showInNavigator,
                 order:
                   fields.find((field) => field.id === id)?.order ??
                   Math.max(-1, ...fields.map((field) => field.order)) + 1,
@@ -71,6 +73,7 @@ export function CustomizationManager({
             else await saveTag({ id: id ?? crypto.randomUUID(), name, color });
             setId(null);
             setName('');
+            setShowInNavigator(false);
           });
         }}
       >
@@ -100,6 +103,16 @@ export function CustomizationManager({
             <input type="color" value={color} onChange={(event) => setColor(event.target.value)} />
           </label>
         )}
+        {kind === 'fields' && (
+          <label className="check-field">
+            <input
+              type="checkbox"
+              checked={showInNavigator}
+              onChange={(event) => setShowInNavigator(event.target.checked)}
+            />
+            Show on string panel
+          </label>
+        )}
         <div className="group-controls">
           <button className="primary" disabled={busy}>
             {id ? 'Save changes' : kind === 'fields' ? 'Add field' : 'Add tag'}
@@ -110,6 +123,7 @@ export function CustomizationManager({
               onClick={() => {
                 setId(null);
                 setName('');
+                setShowInNavigator(false);
               }}
             >
               Cancel edit
@@ -159,8 +173,10 @@ export function CustomizationManager({
                 onClick={() => {
                   setId(item.id);
                   setName(item.name);
-                  if ('type' in item) setType(item.type);
-                  else setColor(item.color);
+                  if ('type' in item) {
+                    setType(item.type);
+                    setShowInNavigator(item.showInNavigator ?? false);
+                  } else setColor(item.color);
                 }}
               >
                 Edit

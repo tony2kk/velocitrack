@@ -84,3 +84,13 @@ See decision 007. No Pages deployment is implied.
 - [x] Complete release verification and browser checks (135 tests; see VERIFICATION.md).
 
 See decision 008. Pages deployment remains a separate instruction.
+
+## Table and string-panel refinements — 2026-10-19
+
+- [x] Floating column drag card and labeled insertion gap, with arrow alternatives.
+- [x] Persistent header sorting except Shot; default String then Shot.
+- [x] By shot ordering shared with table and contributor-aware comparison hover.
+- [x] String cards include tags and assigned-only custom values; a top-right edit icon opens details/photos.
+- [x] Fixed grams/grains fields with lossless switching between weight types.
+
+See decision 009. Verification is recorded in VERIFICATION.md.

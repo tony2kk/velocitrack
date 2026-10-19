@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { availableQuantities, normalizeChart } from '../src/domain/analysis';
-import { buildAnalysisTraces, chartStyle, findShotTargets } from '../src/domain/chart';
+import {
+  buildAnalysisTraces,
+  chartStyle,
+  findShotTargets,
+  pointShotIds,
+} from '../src/domain/chart';
 import { defaultAnalysis, defaultProfile } from '../src/domain/model';
 import { projectileName, projectileWeight } from '../src/domain/projectiles';
 import { moveColumn, visibleColumns } from '../src/domain/table';
@@ -100,7 +105,12 @@ describe('analysis quantities and grouping', () => {
       [15, 90],
     ]);
     expect(trace.data.map((p) => p.contributors)).toEqual([1, 2, 2, 1]);
-    expect(findShotTargets([trace], 'a')).toEqual([]);
+    expect(findShotTargets([trace], 'a')).toEqual(
+      [0, 1, 2].map((dataIndex) => ({ seriesIndex: 0, dataIndex })),
+    );
+    expect(pointShotIds(trace, trace.data[0])).toEqual(['a']);
+    expect(pointShotIds(trace, trace.data[1])).toEqual(['a', 'b']);
+    expect(pointShotIds(trace, trace.data[3])).toEqual(['b']);
     const disconnected = buildAnalysisTraces(
       [rows[0]!, shot({ id: 'c', distances: [20, 30], velocities: [70, 60] })],
       [series()],
@@ -115,6 +125,7 @@ describe('analysis quantities and grouping', () => {
       [20, 70],
       [30, 60],
     ]);
+    expect(pointShotIds(disconnected, disconnected.data[2])).toEqual([]);
   });
   it('keeps series colors independent of selection and adds shape/dash cues after palette reuse', () => {
     const config = defaultAnalysis().compare;

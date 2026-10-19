@@ -11,7 +11,7 @@ function checkName(name: string, id: string, items: { id: string; name: string }
   return trimmed;
 }
 
-/** Keep field identity on rename and forbid changing the type of populated fields. */
+/** Keep canonical values on rename; switching weight units changes presentation only. */
 export async function saveField(field: FieldDefinition, database = db) {
   if (
     !/^[a-zA-Z0-9_-]+$/.test(field.id) ||
@@ -20,6 +20,8 @@ export async function saveField(field: FieldDefinition, database = db) {
     throw new Error('Invalid field identity.');
   if (!Number.isSafeInteger(field.order) || field.order < 0)
     throw new Error('Invalid field order.');
+  if (field.showInNavigator !== undefined && typeof field.showInNavigator !== 'boolean')
+    throw new Error('Invalid string panel preference.');
   await database.transaction('rw', [database.fieldDefinitions, database.annotations], async () => {
     if (!Object.hasOwn(FIELD_TYPES, field.type)) throw new Error('Unknown field type.');
     const name = checkName(field.name, field.id, await database.fieldDefinitions.toArray());
@@ -27,6 +29,9 @@ export async function saveField(field: FieldDefinition, database = db) {
     if (
       old &&
       old.type !== field.type &&
+      ![old.type, field.type].every((type) =>
+        ['weight', 'weight-grams', 'weight-grains'].includes(type),
+      ) &&
       (await database.annotations.filter((a) => Object.hasOwn(a.values ?? {}, field.id)).count())
     )
       throw new Error('A field with saved values cannot change type. Create a new field instead.');
@@ -47,6 +52,7 @@ export async function removeField(id: string, database = db) {
       await database.profiles.toCollection().modify((p) => {
         p.visibleFieldIds = p.visibleFieldIds?.filter((value) => value !== id);
         p.tableColumns = p.tableColumns?.filter((value) => value !== `field:${id}`);
+        if (p.tableSort?.columnId === `field:${id}`) delete p.tableSort;
         if (p.analysis)
           for (const mode of ['simple', 'dual', 'compare'] as const) {
             if (p.analysis[mode].quantity === `field:${id}`) p.analysis[mode].quantity = 'velocity';

@@ -17,7 +17,7 @@ import {
   removeTag,
   saveSeriesDetails,
 } from '../src/storage/customization';
-import { fieldDisplay, parseFieldInput } from '../src/domain/customFields';
+import { fieldDisplay, fieldUnit, parseFieldInput } from '../src/domain/customFields';
 import { filterSeries } from '../src/domain/filters';
 import { EMPTY_FILTERS, type FieldType } from '../src/domain/model';
 import { syntheticExport } from './fixtures/synthetic';
@@ -44,6 +44,26 @@ async function seed() {
 }
 
 describe('custom field values and units', () => {
+  it('keeps fixed weight units across profile changes and preserves populated values when units change', async () => {
+    const { series } = await seed();
+    for (const units of ['metric', 'imperial'] as const) {
+      expect(parseFieldInput('2', 'weight-grams', units)).toBeCloseTo(2 / 0.06479891);
+      expect(fieldDisplay(2 / 0.06479891, 'weight-grams', units)).toBe('2');
+      expect(fieldUnit('weight-grams', units)).toBe('g');
+      expect(parseFieldInput('150', 'weight-grains', units)).toBe(150);
+      expect(fieldUnit('weight-grains', units)).toBe('gr');
+    }
+    await saveField({ id: 'mass', name: 'Mass', type: 'weight', order: 0 }, database);
+    await saveSeriesDetails(series.id, { mass: 42.123456789123 }, undefined, database);
+    await saveField(
+      { id: 'mass', name: 'Mass', type: 'weight-grams', order: 0, showInNavigator: true },
+      database,
+    );
+    expect((await database.annotations.get(series.id))?.values?.mass).toBe(42.123456789123);
+    await saveProfile({ tableSort: { columnId: 'field:mass', direction: 'desc' } }, database);
+    await removeField('mass', database);
+    expect((await loadWorkspace(database)).profile.tableSort).toBeUndefined();
+  });
   it('rejects reserved field identities before they can affect annotation dictionaries', async () => {
     await expect(
       saveField({ id: '__proto__', name: 'Invalid', type: 'number', order: 0 }, database),

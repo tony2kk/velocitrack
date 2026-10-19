@@ -165,6 +165,7 @@ export function validateBackup(value: unknown): asserts value is Workspace {
         field.name.trim().length > 0 &&
         field.name.length <= 100 &&
         Object.hasOwn(FIELD_TYPES, field.type) &&
+        (field.showInNavigator === undefined || typeof field.showInNavigator === 'boolean') &&
         Number.isSafeInteger(field.order) &&
         field.order >= 0,
     );
@@ -236,6 +237,7 @@ export function validateBackup(value: unknown): asserts value is Workspace {
     'theme',
     'showProjectileWeight',
     'tableColumns',
+    'tableSort',
     'infoSeriesId',
   ]);
   requireValid(
@@ -254,6 +256,19 @@ export function validateBackup(value: unknown): asserts value is Workspace {
   requireValid(p.showProjectileWeight === undefined || typeof p.showProjectileWeight === 'boolean');
   requireValid(p.theme === undefined || ['auto', 'light', 'dark'].includes(p.theme));
   requireValid(p.infoSeriesId === undefined || string(p.infoSeriesId));
+  if (p.tableSort !== undefined) {
+    requireValid(object(p.tableSort));
+    keys(p.tableSort, ['columnId', 'direction']);
+    const id = p.tableSort.columnId;
+    requireValid(
+      string(id) &&
+        id !== 'shot' &&
+        id.length <= 200 &&
+        /^[a-zA-Z0-9_.:-]+$/.test(id) &&
+        (!id.startsWith('field:') || definitions.has(id.slice(6))) &&
+        ['asc', 'desc'].includes(p.tableSort.direction),
+    );
+  }
   if (p.tableColumns !== undefined)
     requireValid(
       strings(p.tableColumns) &&

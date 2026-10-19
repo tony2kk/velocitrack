@@ -8,7 +8,9 @@ import type {
   Tag,
   ShotDetail,
   CatalogItem,
+  Profile,
 } from '../domain/model';
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { fieldDisplay } from '../domain/customFields';
 import { TagLabels } from './CustomizationManager';
 import { inspectPoints } from '../domain/measurements';
@@ -24,6 +26,7 @@ export function ShotTable({
   shots,
   series,
   activeShotId,
+  activeShotIds,
   onHoverShot,
   unitSystem = 'imperial',
   hiddenShots = new Set<string>(),
@@ -36,7 +39,12 @@ export function ShotTable({
   columnIds,
   catalog = [],
   showProjectileWeight = false,
+  sort,
+  onSort,
 }: {
+  activeShotIds?: string[];
+  sort?: Profile['tableSort'];
+  onSort?: (sort: NonNullable<Profile['tableSort']>) => void;
   shots: Shot[];
   series: Series[];
   activeShotId: string | null;
@@ -115,7 +123,47 @@ export function ShotTable({
             <tr>
               {onToggleShot && <th>Analyze</th>}
               {columns.map((column) => (
-                <th key={column.id}>{column.label}</th>
+                <th
+                  key={column.id}
+                  aria-sort={
+                    (sort?.columnId ?? 'series') === column.id
+                      ? sort?.direction === 'desc'
+                        ? 'descending'
+                        : 'ascending'
+                      : undefined
+                  }
+                >
+                  <span className="column-heading">
+                    {column.label}
+                    {column.id !== 'shot' && onSort && (
+                      <button
+                        className="sort-button"
+                        aria-label={`Sort by ${column.label}`}
+                        title={`Sort by ${column.label}`}
+                        onClick={() =>
+                          onSort({
+                            columnId: column.id,
+                            direction:
+                              (sort?.columnId ?? 'series') === column.id &&
+                              sort?.direction !== 'desc'
+                                ? 'desc'
+                                : 'asc',
+                          })
+                        }
+                      >
+                        {(sort?.columnId ?? 'series') === column.id ? (
+                          sort?.direction === 'desc' ? (
+                            <ArrowDown size={14} />
+                          ) : (
+                            <ArrowUp size={14} />
+                          )
+                        ) : (
+                          <ArrowUpDown size={14} />
+                        )}
+                      </button>
+                    )}
+                  </span>
+                </th>
               ))}
             </tr>
           </thead>
@@ -126,7 +174,7 @@ export function ShotTable({
                 tabIndex={0}
                 ref={activeShotId === shot.id ? activeRow : undefined}
                 aria-label={`Shot ${shot.number} in ${names.get(shot.seriesId)}`}
-                className={`${shot.excluded || hiddenShots.has(shot.id) ? 'excluded' : ''} ${activeShotId === shot.id ? 'shot-highlighted' : ''}`}
+                className={`${shot.excluded || hiddenShots.has(shot.id) ? 'excluded' : ''} ${(activeShotIds ?? (activeShotId ? [activeShotId] : [])).includes(shot.id) ? 'shot-highlighted' : ''}`}
                 onMouseEnter={() => onHoverShot(shot.id)}
                 onMouseLeave={() => onHoverShot(null)}
                 onFocus={() => onHoverShot(shot.id)}

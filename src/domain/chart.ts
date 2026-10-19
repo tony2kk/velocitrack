@@ -1,11 +1,5 @@
 import type { AnalysisMode, ChartQuantity, ChartSettings, Series, Shot, UnitSystem } from './model';
-import {
-  orderedShots,
-  quantityDisplay,
-  quantityLabel,
-  shotQuantity,
-  type Quantity,
-} from './analysis';
+import { quantityDisplay, quantityLabel, shotQuantity, type Quantity } from './analysis';
 import { inspectPoints } from './measurements';
 import { displayValue, formatValue, unitLabels } from './units';
 
@@ -65,6 +59,8 @@ export interface ChartTrace {
   yAxisIndex?: number;
   symbol?: string;
   dash?: 'solid' | 'dashed' | 'dotted';
+  /** Measured coverage links averaged distance points without storing shots × grid identities. */
+  members?: { shotId: string; from: number; to: number }[];
 }
 
 /** Build identity-aware plotted values using the existing provider exclusion and padding rules. */
@@ -141,7 +137,7 @@ export function formatPointTooltip(point: ChartPoint): string {
   ].join('\n');
 }
 
-/** Build one or two merged scalar sequences, or independently numbered comparison curves. */
+/** Preserve table order; comparison curves use each string's rank rather than original shot numbers. */
 export function buildAnalysisTraces(
   shots: Shot[],
   series: Series[],
@@ -152,10 +148,7 @@ export function buildAnalysisTraces(
   definitions?: Quantity[],
   colorOrder?: string[],
 ): ChartTrace[] {
-  const included = orderedShots(
-    shots.filter((shot) => !shot.excluded),
-    series,
-  );
+  const included = shots.filter((shot) => !shot.excluded);
   const names = new Map(series.map((item) => [item.id, item.name]));
   const groups = [...series].sort((a, b) => a.id.localeCompare(b.id));
   /** Full-workspace ordering keeps a string's color stable while the selection changes. */
@@ -173,6 +166,22 @@ export function buildAnalysisTraces(
           item.name,
           units,
         ),
+        members: included
+          .filter((shot) => shot.seriesId === item.id)
+          .flatMap((shot) => {
+            const distances = inspectPoints(shot).points.map((point) =>
+              displayValue(point.distance, 'distance', units)!,
+            );
+            return distances.length
+              ? [
+                  {
+                    shotId: shot.id,
+                    from: distances.reduce((a, b) => Math.min(a, b)),
+                    to: distances.reduce((a, b) => Math.max(a, b)),
+                  },
+                ]
+              : [];
+          }),
       }));
     return buildChartTraces(included, series, 'distance', units).map((trace) => ({
       ...trace,
@@ -186,12 +195,12 @@ export function buildAnalysisTraces(
   const sequence = new Map(included.map((shot, index) => [shot.id, index + 1]));
   /** Keep x positions shared between metrics, even when one reading is missing. */
   function points(rows: Shot[], quantity: ChartQuantity, compare: boolean): ChartPoint[] {
-    return rows.flatMap((shot) => {
+    return rows.flatMap((shot, index) => {
       const definition = definitions?.find((item) => item.id === quantity);
       const value = definition ? definition.read(shot) : fallbackQuantity(shot, quantity, units);
       return [
         {
-          value: [compare ? shot.number : sequence.get(shot.id)!, value] as [number, number | null],
+          value: [compare ? index + 1 : sequence.get(shot.id)!, value] as [number, number | null],
           shotId: shot.id,
           shotNumber: shot.number,
           seriesName: names.get(shot.seriesId) ?? 'Series',
@@ -234,7 +243,7 @@ function fallbackQuantity(shot: Shot, quantity: string, units: UnitSystem): numb
 /**
  * Average interpolated measured segments on a bounded observed-distance grid, never extrapolating.
  * Difference arrays accumulate linear contributions in O(samples log grid), avoiding shots × grid work.
- * Duplicate distances use the last sample; aggregates have no single shot identity to highlight.
+ * Duplicate distances use the last sample; trace coverage resolves the aggregate's contributors lazily.
  */
 function meanDistancePoints(shots: Shot[], name: string, units: UnitSystem): ChartPoint[] {
   const rows = shots.map((shot) =>
@@ -342,9 +351,27 @@ export function findShotTargets(traces: ChartTrace[], shotId: string) {
   return traces.flatMap<{ seriesIndex: number; dataIndex?: number }>((trace, seriesIndex) => {
     if (trace.shotId === shotId && trace.data.length)
       return [{ seriesIndex, dataIndex: undefined }];
+    const member = trace.members?.find((item) => item.shotId === shotId);
+    if (member)
+      return trace.data.flatMap((point, dataIndex) =>
+        point.value[1] !== null && point.value[0] >= member.from && point.value[0] <= member.to
+          ? [{ seriesIndex, dataIndex }]
+          : [],
+      );
     const dataIndex = trace.data.findIndex(
       (point) => point.shotId === shotId && point.value[1] !== null,
     );
     return dataIndex < 0 ? [] : [{ seriesIndex, dataIndex }];
   });
+}
+
+/** Resolve exact contributors at one distance, including single-sample traces and excluding gaps. */
+export function pointShotIds(trace: ChartTrace, point?: ChartPoint): string[] {
+  if (!point || point.value[1] === null) return [];
+  if (trace.shotId || point.shotId) return [trace.shotId || point.shotId];
+  return (
+    trace.members
+      ?.filter((member) => point.value[0] >= member.from && point.value[0] <= member.to)
+      .map((member) => member.shotId) ?? []
+  );
 }
