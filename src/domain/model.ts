@@ -9,6 +9,8 @@ export type AnalysisMode = 'simple' | 'dual' | 'compare' | 'info';
 export type ChartQuantity = string;
 /** Each analysis keeps independent axis/quantity choices across visits. */
 export interface ChartSettings {
+  /** Maximum predicted distance in canonical feet; absent means the shared bounded default. */
+  forecastDistance?: number;
   axis: 'distance' | 'shot';
   quantity: ChartQuantity;
   secondary: ChartQuantity;
@@ -107,6 +109,8 @@ export type CustomFieldValue =
 
 /** Local annotations are separate from replaceable imported records. */
 export interface Annotation {
+  /** Persistent local shot exclusion, independent of replaceable provider records. */
+  invalid?: boolean;
   entityId: string;
   notes: string;
   fields: Record<string, CustomFieldValue>;

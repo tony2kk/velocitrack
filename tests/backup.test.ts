@@ -44,7 +44,12 @@ async function seed() {
       analysis: {
         ...defaultAnalysis(),
         mode: 'dual',
-        dual: { axis: 'shot', quantity: 'g1', secondary: 'field:weight' },
+        dual: {
+          axis: 'distance',
+          quantity: 'velocity',
+          secondary: 'calculated:g1',
+          forecastDistance: 500,
+        },
       },
     },
     database,
@@ -122,6 +127,12 @@ describe('structured ZIP backup and atomic restore', () => {
     const badSort = await prepareBackup(archive);
     badSort.workspace.profile.tableSort = { columnId: 'shot', direction: 'asc' };
     await expect(restoreBackup(badSort, database)).rejects.toThrow('invalid records');
+    const badForecast = await prepareBackup(archive);
+    badForecast.workspace.profile.analysis!.dual.forecastDistance = -1;
+    await expect(restoreBackup(badForecast, database)).rejects.toThrow('invalid records');
+    const badInvalidation = await prepareBackup(archive);
+    Object.assign(badInvalidation.workspace.annotations[0]!, { invalid: true });
+    await expect(restoreBackup(badInvalidation, database)).rejects.toThrow('invalid records');
     const badVisibility = await prepareBackup(archive);
     Object.assign(badVisibility.workspace.fieldDefinitions[0]!, { showInNavigator: 'yes' });
     await expect(restoreBackup(badVisibility, database)).rejects.toThrow('invalid records');

@@ -77,9 +77,11 @@ describe('session shot selection', () => {
 function ShotWorkspace({ shots, groups }: { shots: Shot[]; groups: Series[] }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [active, setActive] = useState<string | null>(null);
+  const [invalid, setInvalid] = useState<ReadonlySet<string>>(() => new Set());
   const selection = useShotSelection(
     shots,
     groups.filter((item) => selected.includes(item.id)),
+    invalid,
   );
   return (
     <>
@@ -99,6 +101,17 @@ function ShotWorkspace({ shots, groups }: { shots: Shot[]; groups: Series[] }) {
         shots={shots.filter((shot) => selected.includes(shot.seriesId))}
         hiddenShots={selection.hiddenShots}
         onToggleShot={selection.toggleShot}
+        onToggleShots={selection.toggleShots}
+        invalidShots={invalid}
+        onInvalidateShot={(id, removed) => {
+          setInvalid((current) => {
+            const next = new Set(current);
+            if (removed) next.add(id);
+            else next.delete(id);
+            return next;
+          });
+          if (!removed) selection.toggleShot(id, true);
+        }}
         series={groups}
         activeShotId={active}
         onHoverShot={setActive}
@@ -108,6 +121,48 @@ function ShotWorkspace({ shots, groups }: { shots: Shot[]; groups: Series[] }) {
 }
 
 describe('linked shot controls', () => {
+  it('invalidates with disabled Analyze and Undo, and bulk selection covers other pages but skips invalid rows', () => {
+    render(
+      <ShotWorkspace
+        shots={Array.from({ length: 101 }, (_, index) =>
+          shot({ id: String(index), number: index + 1 }),
+        )}
+        groups={[series()]}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText('Select series Synthetic series'));
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Mark invalid shot 1 in Synthetic series' }),
+    );
+    const first = screen.getByLabelText('Select shot 1 in Synthetic series') as HTMLInputElement;
+    expect(first.disabled).toBe(true);
+    expect(first.checked).toBe(false);
+    expect(first.closest('tr')?.classList.contains('shot-invalid')).toBe(true);
+    fireEvent.click(screen.getByLabelText('Select shot 2 in Synthetic series'));
+    expect((screen.getByLabelText('Analyze all shots') as HTMLInputElement).indeterminate).toBe(
+      true,
+    );
+    fireEvent.click(screen.getByLabelText('Analyze all shots'));
+    expect((screen.getByLabelText('Analyze all shots') as HTMLInputElement).checked).toBe(true);
+    expect(first.checked).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    expect(
+      (screen.getByLabelText('Select shot 101 in Synthetic series') as HTMLInputElement).checked,
+    ).toBe(true);
+    fireEvent.click(screen.getByLabelText('Analyze all shots'));
+    expect(
+      (screen.getByLabelText('Select shot 101 in Synthetic series') as HTMLInputElement).checked,
+    ).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Previous' }));
+    expect(
+      (screen.getByLabelText('Select shot 2 in Synthetic series') as HTMLInputElement).checked,
+    ).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Restore shot 1 in Synthetic series' }));
+    const restored = screen.getByLabelText('Select shot 1 in Synthetic series') as HTMLInputElement;
+    expect(restored.disabled).toBe(false);
+    expect(restored.checked).toBe(true);
+    expect(restored.closest('tr')?.classList.contains('shot-invalid')).toBe(false);
+  });
   it('keeps deselected rows available in the table and restores choices after reselecting series', () => {
     render(
       <ShotWorkspace

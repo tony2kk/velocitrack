@@ -16,7 +16,18 @@ import { saveProfile } from '../storage/workspace';
 import { chartGroupsCompatible, inspectPoints, summarizeShots } from '../domain/measurements';
 import { chartStyle } from '../domain/chart';
 import { defaultAnalysis, defaultProfile } from '../domain/model';
-import { availableQuantities, normalizeChart, quantityLabel } from '../domain/analysis';
+import {
+  availableQuantities,
+  distanceQuantities,
+  normalizeChart,
+  quantityLabel,
+} from '../domain/analysis';
+import {
+  DEFAULT_FORECAST_DISTANCE,
+  MAX_FORECAST_DISTANCE,
+  predictionInputs,
+  velocityModel,
+} from '../domain/calculatedVelocity';
 import { saveAnalysis } from '../storage/analysis';
 import { ColumnPicker } from './ColumnPicker';
 import { sortShots, tableColumns, visibleColumns } from '../domain/table';
@@ -40,6 +51,9 @@ export function AnalysisPanel({
   allShots = shots,
   hiddenShots,
   onToggleShot,
+  onToggleShots,
+  invalidShots,
+  onInvalidateShot,
   fields = [],
   annotations = [],
   tags = [],
@@ -61,6 +75,9 @@ export function AnalysisPanel({
   allShots?: Shot[];
   hiddenShots?: ReadonlySet<string>;
   onToggleShot?: (id: string, checked: boolean) => void;
+  onToggleShots?: (ids: string[], checked: boolean) => void;
+  invalidShots?: ReadonlySet<string>;
+  onInvalidateShot?: (id: string, invalid: boolean) => void;
   fields?: FieldDefinition[];
   annotations?: Annotation[];
   tags?: Tag[];
@@ -113,6 +130,7 @@ export function AnalysisPanel({
         tags,
         catalog,
         hiddenShots,
+        invalidShots,
         showProjectileWeight: profile?.showProjectileWeight,
       }),
     [
@@ -124,6 +142,7 @@ export function AnalysisPanel({
       tags,
       catalog,
       hiddenShots,
+      invalidShots,
       profile?.showProjectileWeight,
     ],
   );
@@ -134,7 +153,7 @@ export function AnalysisPanel({
   /** Persist explicit control edits; missing readings alone never overwrite a saved quantity. */
   async function changeChart(patch: Partial<ChartSettings>) {
     const next = normalizeChart({ ...settings, ...patch });
-    const available = quantities.filter((q) => next.axis === 'shot' || q.id === 'velocity');
+    const available = next.axis === 'shot' ? quantities : distanceQuantities(shots, unitSystem);
     if (patch.axis && available.length && !available.some((q) => q.id === next.quantity))
       next.quantity = available[0]!.id;
     if (!available.some((q) => q.id === next.secondary && q.id !== next.quantity))
@@ -165,12 +184,11 @@ export function AnalysisPanel({
   );
   const compatible = chartGroupsCompatible(shots);
   // Distance velocity is usable even when the provider supplied no separate muzzle scalar.
-  const choices =
-    mode === 'distance'
-      ? quality.points
-        ? [{ id: 'velocity', label: quantityLabel('velocity', unitSystem) }]
-        : []
-      : quantities;
+  const choices = mode === 'distance' ? distanceQuantities(shots, unitSystem) : quantities;
+  const forecast =
+    mode === 'distance' &&
+    (!!velocityModel(settings.quantity) ||
+      (kind === 'dual' && !!velocityModel(settings.secondary)));
   const secondaryChoices = choices.filter((item) => item.id !== settings.quantity);
   if (!series.length)
     return (
@@ -204,7 +222,7 @@ export function AnalysisPanel({
         </div>
         <span className="outline-badge">
           <ArrowUpRight size={14} />
-          Recorded data
+          {forecast ? 'Recorded + model estimates' : 'Recorded data'}
         </span>
       </div>
       <div className="statistics">
@@ -273,11 +291,13 @@ export function AnalysisPanel({
                       : 'Simple chart'}
               </h3>
               <p className="muted">
-                {mode === 'distance' && kind === 'compare'
-                  ? 'Mean of measured traces · linear interpolation within measured ranges'
-                  : mode === 'shot' && kind !== 'compare'
-                    ? 'One sequence across selected strings'
-                    : 'Recorded measurements'}
+                {forecast
+                  ? 'Model velocity predictions · standard atmosphere'
+                  : mode === 'distance' && kind === 'compare'
+                    ? 'Mean of measured traces · linear interpolation within measured ranges'
+                    : mode === 'shot' && kind !== 'compare'
+                      ? 'One sequence across selected strings'
+                      : 'Recorded measurements'}
               </p>
             </div>
             {view === 'chart' && (
@@ -338,6 +358,45 @@ export function AnalysisPanel({
                         </option>
                       ))}
                     </select>
+                  </label>
+                )}
+                {forecast && (
+                  <label>
+                    Forecast distance ({unitLabels[unitSystem].distance})
+                    <input
+                      aria-label="Forecast distance"
+                      type="number"
+                      key={`${settings.forecastDistance}:${unitSystem}`}
+                      min="0.01"
+                      max={displayValue(MAX_FORECAST_DISTANCE, 'distance', unitSystem)!}
+                      step="any"
+                      defaultValue={Number(
+                        displayValue(
+                          settings.forecastDistance ?? DEFAULT_FORECAST_DISTANCE,
+                          'distance',
+                          unitSystem,
+                        )!.toPrecision(12),
+                      )}
+                      onBlur={(event) => {
+                        const value =
+                          Number(event.target.value) / (unitSystem === 'metric' ? 0.3048 : 1);
+                        if (Number.isFinite(value) && value > 0 && value <= MAX_FORECAST_DISTANCE)
+                          void changeChart({ forecastDistance: value });
+                        else
+                          event.target.value = String(
+                            Number(
+                              displayValue(
+                                settings.forecastDistance ?? DEFAULT_FORECAST_DISTANCE,
+                                'distance',
+                                unitSystem,
+                              )!.toPrecision(12),
+                            ),
+                          );
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') event.currentTarget.blur();
+                      }}
+                    />
                   </label>
                 )}
               </div>
@@ -407,11 +466,41 @@ export function AnalysisPanel({
                   </span>
                 ))}
               </div>
-              {kind === 'dual' && mode === 'distance' && (
-                <p className="muted">
-                  Only velocity is recorded over distance. Choose By shot to compare two quantities.
+              {forecast && (
+                <p className="notice">
+                  Model prediction from muzzle velocity and the matching Caldwell BC. Standard
+                  atmosphere: 15 °C, 1013.25 hPa, dry air, no wind. Constant BC and straight path;
+                  no gravity or weather correction. Dashed curves include extrapolation and are
+                  estimates, not measured readings.
                 </p>
               )}
+              {forecast && shots.filter((shot) => !shot.excluded).length > 100 && (
+                <p className="notice">
+                  Each calculated quantity uses at most the first 100 shots with supported inputs in
+                  table order, including String compare means. Narrow the selection to include other
+                  shots.
+                </p>
+              )}
+              {forecast &&
+                [
+                  settings.quantity,
+                  ...(kind === 'dual' && settings.secondary !== settings.quantity
+                    ? [settings.secondary]
+                    : []),
+                ]
+                  .filter((id) => velocityModel(id))
+                  .map((id) => {
+                    const model = velocityModel(id)!;
+                    const omitted = shots.filter(
+                      (shot) => !shot.excluded && !predictionInputs(shot, model),
+                    ).length;
+                    return omitted ? (
+                      <p className="muted" key={id}>
+                        {omitted} shot(s) omitted from {model.toUpperCase()} predictions: missing or
+                        unsupported muzzle velocity / BC.
+                      </p>
+                    ) : null;
+                  })}
               {mode === 'distance' &&
                 kind !== 'compare' &&
                 shots.filter((shot) => !shot.excluded).length > 100 && (
@@ -420,7 +509,7 @@ export function AnalysisPanel({
                     others.
                   </p>
                 )}
-              {mode === 'distance' && !quality.points && (
+              {mode === 'distance' && !quality.points && !forecast && (
                 <p className="notice">
                   No usable distance/velocity pairs. Choose By shot to inspect recorded scalars.
                 </p>
@@ -465,6 +554,9 @@ export function AnalysisPanel({
             unitSystem={unitSystem}
             hiddenShots={hiddenShots}
             onToggleShot={onToggleShot}
+            onToggleShots={onToggleShots}
+            invalidShots={invalidShots}
+            onInvalidateShot={onInvalidateShot}
             fields={fields}
             columnIds={visibleColumns(profile)}
             catalog={catalog}

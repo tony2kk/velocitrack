@@ -160,7 +160,7 @@ export default function MeasurementChart({
       series: traces.map((trace) => ({
         ...trace,
         type: 'line',
-        showSymbol: true,
+        showSymbol: !trace.data[0]?.model,
         symbol: trace.symbol ?? 'circle',
         symbolSize: mode === 'distance' ? 6 : 8,
         triggerEvent: 'line',

@@ -40,6 +40,7 @@ import { useNotification } from './hooks/useNotification';
 import { useShotSelection } from './hooks/useShotSelection';
 import { useTheme } from './hooks/useTheme';
 import { saveAnalysis } from './storage/analysis';
+import { setShotInvalid } from './storage/shots';
 import { displayCatalog, projectileName } from './domain/projectiles';
 import type { AnalysisMode } from './domain/model';
 
@@ -113,10 +114,22 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
     () => series.map((item) => item.id).sort((a, b) => a.localeCompare(b)),
     [series],
   );
-  const { hiddenShots, seriesShots, selectedShots, toggleShot, resetSelection } = useShotSelection(
-    shots,
-    selectedSeries,
+  const invalidShots = useMemo(
+    () => new Set(annotations.filter((item) => item.invalid).map((item) => item.entityId)),
+    [annotations],
   );
+  const { hiddenShots, seriesShots, selectedShots, toggleShot, toggleShots, resetSelection } =
+    useShotSelection(shots, selectedSeries, invalidShots);
+  /** Undo returns a shot to the transient Analyze selection; provider exclusions still apply. */
+  async function invalidateShot(id: string, invalid: boolean) {
+    try {
+      await setShotInvalid(id, invalid);
+      if (!invalid) toggleShot(id, true);
+      setActiveShotId(null);
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : 'Shot status could not be saved.');
+    }
+  }
   const catalogNames = new Map(catalog.map((item) => [item.id, item.name]));
   const projectileNames = new Map(
     series.map((item) => [
@@ -345,6 +358,9 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           allShots={seriesShots}
           hiddenShots={hiddenShots}
           onToggleShot={toggleShot}
+          onToggleShots={toggleShots}
+          invalidShots={invalidShots}
+          onInvalidateShot={(id, invalid) => void invalidateShot(id, invalid)}
           fields={fieldDefinitions}
           annotations={annotations}
           tags={tags}

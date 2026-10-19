@@ -102,6 +102,7 @@ export function sortShots(
     tags: Tag[];
     catalog: CatalogItem[];
     hiddenShots?: ReadonlySet<string>;
+    invalidShots?: ReadonlySet<string>;
     showProjectileWeight?: boolean;
   },
 ): Shot[] {
@@ -124,11 +125,13 @@ export function sortShots(
       case 'rawUnit':
         return shot.rawUnit;
       case 'status':
-        return shot.excluded
-          ? 'Source excluded'
-          : context.hiddenShots?.has(shot.id)
-            ? 'Not selected'
-            : 'Included';
+        return context.invalidShots?.has(shot.id)
+          ? 'Invalid'
+          : shot.excluded
+            ? 'Source excluded'
+            : context.hiddenShots?.has(shot.id)
+              ? 'Not selected'
+              : 'Included';
       case 'tags':
         return context.tags
           .filter((tag) => annotation?.tagIds?.includes(tag.id))

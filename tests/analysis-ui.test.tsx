@@ -30,6 +30,51 @@ afterEach(async () => {
 });
 
 describe('persistent analysis controls', () => {
+  it('persists calculated distance choices and the display-unit forecast horizon independently', async () => {
+    const profile = {
+      ...defaultProfile(),
+      analysis: { ...defaultProfile().analysis!, mode: 'dual' as const },
+    };
+    const props = {
+      series: [series()],
+      shots: [
+        shot({
+          muzzleVelocity: 1000,
+          ballisticCoefficientG1: 0.3,
+          distances: [0, 10],
+          velocities: [1000, 995],
+        }),
+      ],
+      view: 'chart' as const,
+      activeShotId: null,
+      onHoverShot: vi.fn(),
+      unitSystem: 'metric' as const,
+    };
+    const { rerender } = render(<AnalysisPanel {...props} profile={profile} />);
+    fireEvent.change(screen.getByLabelText('Chart type'), { target: { value: 'distance' } });
+    await waitFor(async () =>
+      expect((await loadWorkspace()).profile.analysis?.dual.axis).toBe('distance'),
+    );
+    // Set the active mode as the toolbar would, without altering the saved dual controls.
+    await saveAnalysis('dual');
+    rerender(<AnalysisPanel {...props} profile={(await loadWorkspace()).profile} />);
+    fireEvent.change(screen.getByLabelText('Second chart quantity'), {
+      target: { value: 'calculated:g1' },
+    });
+    await waitFor(async () =>
+      expect((await loadWorkspace()).profile.analysis?.dual.secondary).toBe('calculated:g1'),
+    );
+    rerender(<AnalysisPanel {...props} profile={(await loadWorkspace()).profile} />);
+    fireEvent.change(screen.getByLabelText('Forecast distance'), { target: { value: '100' } });
+    fireEvent.blur(screen.getByLabelText('Forecast distance'));
+    await waitFor(async () =>
+      expect((await loadWorkspace()).profile.analysis?.dual.forecastDistance).toBeCloseTo(
+        100 / 0.3048,
+      ),
+    );
+    rerender(<AnalysisPanel {...props} profile={(await loadWorkspace()).profile} />);
+    expect((screen.getByLabelText('Forecast distance') as HTMLInputElement).value).toBe('100');
+  });
   it('offers sorting beside every header except Shot, persists it and restores row order', async () => {
     const props = {
       series: [series()],
@@ -156,7 +201,14 @@ describe('persistent analysis controls', () => {
   it('saves each analysis separately, fixes incompatible axes and restores choices after remount', async () => {
     const props = {
       series: [series()],
-      shots: [shot({ ballisticCoefficientG1: 0.2 })],
+      shots: [
+        shot({
+          ballisticCoefficientG1: 0.2,
+          muzzleVelocity: 1000,
+          distances: [0, 10],
+          velocities: [1000, 990],
+        }),
+      ],
       view: 'chart' as const,
       activeShotId: null,
       onHoverShot: vi.fn(),

@@ -2,6 +2,12 @@ import type { AnalysisMode, ChartQuantity, ChartSettings, Series, Shot, UnitSyst
 import { quantityDisplay, quantityLabel, shotQuantity, type Quantity } from './analysis';
 import { inspectPoints } from './measurements';
 import { displayValue, formatValue, unitLabels } from './units';
+import {
+  calculatedVelocity,
+  predictionInputs,
+  velocityModel,
+  type DragModel,
+} from './calculatedVelocity';
 
 export type ChartMode = 'distance' | 'shot';
 // Alternating hue families separate neighboring traces; shape and dash also encode identity.
@@ -47,6 +53,8 @@ export interface ChartPoint {
   contributors?: number;
   distance?: boolean;
   quantityTitle?: string;
+  model?: DragModel;
+  coefficient?: number;
 }
 
 /** Distance traces own one shot; muzzle traces contain independently identifiable shots. */
@@ -126,10 +134,15 @@ export function formatPointTooltip(point: ChartPoint): string {
   return [
     point.seriesName,
     point.contributors
-      ? `Mean of ${point.contributors} shots`
+      ? `${point.model ? 'Mean prediction' : 'Mean'} of ${point.contributors} shots`
       : `Shot ${point.shotNumber}${point.sampleIndex !== undefined ? ` · Sample ${point.sampleIndex + 1}` : ''}`,
     ...(distance
       ? [`Distance: ${formatValue(point.value[0])} ${unitLabels[point.unitSystem].distance}`]
+      : []),
+    ...(point.model
+      ? [
+          `${point.model.toUpperCase()} model · standard atmosphere${point.coefficient ? ` · BC ${formatValue(point.coefficient)}` : ''}`,
+        ]
       : []),
     point.quantity && point.quantity !== 'velocity'
       ? `${point.quantityTitle ?? quantityLabel(point.quantity, point.unitSystem)}: ${formatValue(point.value[1])}`
@@ -155,43 +168,81 @@ export function buildAnalysisTraces(
   function style(id: string, fallback: number) {
     return chartStyle(Math.max(0, colorOrder?.indexOf(id) ?? fallback), dark);
   }
-  if (settings.axis === 'distance') {
-    if (kind === 'compare')
-      return groups.map((item, index) => ({
-        id: item.id,
-        name: item.name,
-        ...style(item.id, index),
-        data: meanDistancePoints(
-          included.filter((shot) => shot.seriesId === item.id),
-          item.name,
-          units,
-        ),
-        members: included
-          .filter((shot) => shot.seriesId === item.id)
-          .flatMap((shot) => {
-            const distances = inspectPoints(shot).points.map((point) =>
-              displayValue(point.distance, 'distance', units)!,
-            );
-            return distances.length
-              ? [
-                  {
-                    shotId: shot.id,
-                    from: distances.reduce((a, b) => Math.min(a, b)),
-                    to: distances.reduce((a, b) => Math.max(a, b)),
-                  },
-                ]
-              : [];
-          }),
-      }));
-    return buildChartTraces(included, series, 'distance', units).map((trace) => ({
-      ...trace,
-      ...chartStyle(0, dark),
-    }));
-  }
   const quantities =
     kind === 'dual' && settings.secondary !== settings.quantity
       ? [settings.quantity, settings.secondary]
       : [settings.quantity];
+  if (settings.axis === 'distance') {
+    return quantities.flatMap<ChartTrace>((quantity, quantityIndex) => {
+      const model = velocityModel(quantity);
+      // Bound model work before integration, including comparison; never compute every selected forecast.
+      const candidates = model
+        ? included.filter((shot) => predictionInputs(shot, model)).slice(0, 100)
+        : kind === 'compare'
+          ? included
+          : included.slice(0, 100);
+      const rows = model
+        ? candidates.map((shot) => {
+            const points = calculatedVelocity(shot, model, settings.forecastDistance);
+            return {
+              ...shot,
+              distances: points.map((point) => point.distance),
+              velocities: points.map((point) => point.velocity),
+            };
+          })
+        : candidates;
+      if (kind === 'compare')
+        return groups.map((item, index) => {
+          const members = rows.filter((shot) => shot.seriesId === item.id);
+          return {
+            id: item.id,
+            name: item.name,
+            ...style(item.id, index),
+            ...(model ? { dash: 'dashed' as const } : {}),
+            data: meanDistancePoints(members, item.name, units).map((point) => ({
+              ...point,
+              model: model ?? undefined,
+              quantity,
+              quantityTitle: quantityLabel(quantity, units),
+            })),
+            members: members.flatMap((shot) => {
+              const distances = inspectPoints(shot).points.map((point) =>
+                displayValue(point.distance, 'distance', units)!,
+              );
+              return distances.length
+                ? [
+                    {
+                      shotId: shot.id,
+                      from: distances.reduce((a, b) => Math.min(a, b)),
+                      to: distances.reduce((a, b) => Math.max(a, b)),
+                    },
+                  ]
+                : [];
+            }),
+          };
+        });
+      return buildChartTraces(rows, series, 'distance', units).map((trace) => ({
+        ...trace,
+        id: `${quantity}:${trace.id}`,
+        ...chartStyle(quantityIndex, dark),
+        ...(model ? { dash: 'dashed' as const } : {}),
+        data: trace.data.map((point) => ({
+          ...point,
+          sampleIndex: model ? undefined : point.sampleIndex,
+          distance: true,
+          model: model ?? undefined,
+          coefficient: model
+            ? ((model === 'g1'
+                ? candidates.find((shot) => shot.id === point.shotId)?.ballisticCoefficientG1
+                : candidates.find((shot) => shot.id === point.shotId)?.ballisticCoefficientG7) ??
+              undefined)
+            : undefined,
+          quantity,
+          quantityTitle: quantityLabel(quantity, units),
+        })),
+      }));
+    });
+  }
   const sequence = new Map(included.map((shot, index) => [shot.id, index + 1]));
   /** Keep x positions shared between metrics, even when one reading is missing. */
   function points(rows: Shot[], quantity: ChartQuantity, compare: boolean): ChartPoint[] {

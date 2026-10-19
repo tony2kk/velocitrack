@@ -10,7 +10,7 @@ import type {
   CatalogItem,
   Profile,
 } from '../domain/model';
-import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Undo2, X } from 'lucide-react';
 import { fieldDisplay } from '../domain/customFields';
 import { TagLabels } from './CustomizationManager';
 import { inspectPoints } from '../domain/measurements';
@@ -31,6 +31,9 @@ export function ShotTable({
   unitSystem = 'imperial',
   hiddenShots = new Set<string>(),
   onToggleShot,
+  onToggleShots,
+  invalidShots = new Set<string>(),
+  onInvalidateShot,
   fields = [],
   annotations = [],
   tags = [],
@@ -52,6 +55,9 @@ export function ShotTable({
   unitSystem?: UnitSystem;
   hiddenShots?: ReadonlySet<string>;
   onToggleShot?: (id: string, checked: boolean) => void;
+  onToggleShots?: (ids: string[], checked: boolean) => void;
+  invalidShots?: ReadonlySet<string>;
+  onInvalidateShot?: (id: string, invalid: boolean) => void;
   fields?: FieldDefinition[];
   annotations?: Annotation[];
   tags?: Tag[];
@@ -64,6 +70,13 @@ export function ShotTable({
   const [page, setPage] = useState(0);
   const scrollArea = useRef<HTMLDivElement>(null);
   const activeRow = useRef<HTMLTableRowElement>(null);
+  const selectAll = useRef<HTMLInputElement>(null);
+  const eligible = shots.filter((shot) => !invalidShots.has(shot.id));
+  const selectedCount = eligible.filter((shot) => !hiddenShots.has(shot.id)).length;
+  const allSelected = eligible.length > 0 && selectedCount === eligible.length;
+  useEffect(() => {
+    if (selectAll.current) selectAll.current.indeterminate = selectedCount > 0 && !allSelected;
+  }, [selectedCount, allSelected]);
   const hoveredIndex = shots.findIndex((shot) => shot.id === activeShotId);
   const currentPage =
     hoveredIndex >= 0
@@ -121,7 +134,26 @@ export function ShotTable({
           </caption>
           <thead>
             <tr>
-              {onToggleShot && <th>Analyze</th>}
+              {onToggleShot && (
+                <th>
+                  <label className="column-heading">
+                    Analyze
+                    <input
+                      ref={selectAll}
+                      type="checkbox"
+                      aria-label="Analyze all shots"
+                      aria-checked={selectedCount > 0 && !allSelected ? 'mixed' : allSelected}
+                      checked={allSelected}
+                      disabled={!eligible.length}
+                      onChange={(event) => {
+                        const ids = eligible.map((shot) => shot.id);
+                        if (onToggleShots) onToggleShots(ids, event.target.checked);
+                        else for (const id of ids) onToggleShot(id, event.target.checked);
+                      }}
+                    />
+                  </label>
+                </th>
+              )}
               {columns.map((column) => (
                 <th
                   key={column.id}
@@ -165,6 +197,11 @@ export function ShotTable({
                   </span>
                 </th>
               ))}
+              {onInvalidateShot && (
+                <th className="shot-actions">
+                  <span className="sr-only">Shot actions</span>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -174,7 +211,7 @@ export function ShotTable({
                 tabIndex={0}
                 ref={activeShotId === shot.id ? activeRow : undefined}
                 aria-label={`Shot ${shot.number} in ${names.get(shot.seriesId)}`}
-                className={`${shot.excluded || hiddenShots.has(shot.id) ? 'excluded' : ''} ${(activeShotIds ?? (activeShotId ? [activeShotId] : [])).includes(shot.id) ? 'shot-highlighted' : ''}`}
+                className={`${shot.excluded || hiddenShots.has(shot.id) ? 'excluded' : ''} ${invalidShots.has(shot.id) ? 'shot-invalid' : ''} ${(activeShotIds ?? (activeShotId ? [activeShotId] : [])).includes(shot.id) ? 'shot-highlighted' : ''}`}
                 onMouseEnter={() => onHoverShot(shot.id)}
                 onMouseLeave={() => onHoverShot(null)}
                 onFocus={() => onHoverShot(shot.id)}
@@ -185,7 +222,8 @@ export function ShotTable({
                     <input
                       type="checkbox"
                       aria-label={`Select shot ${shot.number} in ${names.get(shot.seriesId)}`}
-                      checked={!hiddenShots.has(shot.id)}
+                      checked={!hiddenShots.has(shot.id) && !invalidShots.has(shot.id)}
+                      disabled={invalidShots.has(shot.id)}
                       onChange={(event) => onToggleShot(shot.id, event.target.checked)}
                     />
                   </td>
@@ -219,11 +257,13 @@ export function ShotTable({
                       value = shot.rawUnit;
                       break;
                     case 'status':
-                      value = shot.excluded
-                        ? 'Source excluded'
-                        : hiddenShots.has(shot.id)
-                          ? 'Not selected'
-                          : 'Included';
+                      value = invalidShots.has(shot.id)
+                        ? 'Invalid'
+                        : shot.excluded
+                          ? 'Source excluded'
+                          : hiddenShots.has(shot.id)
+                            ? 'Not selected'
+                            : 'Included';
                       break;
                     case 'tags':
                       value = (
@@ -276,6 +316,27 @@ export function ShotTable({
                     </td>
                   );
                 })}
+                {onInvalidateShot && (
+                  <td className="shot-actions">
+                    <button
+                      type="button"
+                      className={`icon-button ${invalidShots.has(shot.id) ? 'restore-shot' : 'invalidate-shot'}`}
+                      aria-label={`${invalidShots.has(shot.id) ? 'Restore' : 'Mark invalid'} shot ${shot.number} in ${names.get(shot.seriesId)}`}
+                      title={
+                        invalidShots.has(shot.id)
+                          ? 'Undo invalidation'
+                          : 'Mark shot invalid (saved until undone)'
+                      }
+                      onClick={() => onInvalidateShot(shot.id, !invalidShots.has(shot.id))}
+                    >
+                      {invalidShots.has(shot.id) ? (
+                        <Undo2 size={16} aria-hidden="true" />
+                      ) : (
+                        <X size={16} aria-hidden="true" />
+                      )}
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

@@ -94,3 +94,14 @@ See decision 008. Pages deployment remains a separate instruction.
 - [x] Fixed grams/grains fields with lossless switching between weight types.
 
 See decision 009. Verification is recorded in VERIFICATION.md.
+
+## Shot status, calculated velocity and help — 2026-10-19
+
+- [x] Persistent reversible invalid-shot annotations, muted rows and a fixed rightmost cross/Undo.
+- [x] Tri-state bulk Analyze over all eligible selected-string rows/pages.
+- [x] Research and implement model-based G1/G7 velocity from muzzle speed, with explicit assumptions and independent numerical validation.
+- [x] Allow recorded/model comparison in Dual Over distance, with saved forecast horizon and contributor linkage.
+- [x] Omit replacement BC attributes as agreed; retain original Caldwell G1/G7.
+- [x] Replace the long help document with a task-oriented linked hub and separate technical references.
+
+See decision 010 and VELOCITY_RESEARCH.md. Pages deployment remains separate.

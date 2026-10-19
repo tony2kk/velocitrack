@@ -11,6 +11,8 @@ import { displayValue, unitLabels } from './units';
 import { fieldUnit, fieldFactor } from './customFields';
 import { projectileWeight } from './projectiles';
 import { finiteNumber, rawPath } from './providerData';
+import { inspectPoints } from './measurements';
+import { predictionInputs, velocityModel } from './calculatedVelocity';
 export { finiteNumber, rawPath } from './providerData';
 
 export const QUANTITIES: ChartQuantity[] = ['velocity', 'g1', 'g7'];
@@ -146,28 +148,52 @@ export function shotQuantity(shot: Partial<Shot>, quantity: ChartQuantity): numb
     : null;
 }
 
-/** Distance samples contain velocity only; coefficients are recorded once per shot. */
+/** Distance supports recorded/model velocity; coefficient scalars remain per-shot quantities. */
 export function axisQuantities(axis: ChartSettings['axis']): ChartQuantity[] {
-  return axis === 'distance' ? ['velocity'] : QUANTITIES;
+  return axis === 'distance' ? ['velocity', 'calculated:g1', 'calculated:g7'] : QUANTITIES;
+}
+
+/** Offer only distance quantities supported by selected measurements or valid model inputs. */
+export function distanceQuantities(
+  shots: Shot[],
+  units: UnitSystem,
+): { id: string; label: string }[] {
+  return axisQuantities('distance')
+    .filter((id) =>
+      shots.some(
+        (shot) =>
+          !shot.excluded &&
+          (id === 'velocity'
+            ? inspectPoints(shot).points.length > 0
+            : !!predictionInputs(shot, velocityModel(id)!)),
+      ),
+    )
+    .map((id) => ({ id, label: quantityLabel(id, units) }));
 }
 
 /** Changing axes fixes structurally invalid choices, independently of temporary missing data. */
 export function normalizeChart(settings: ChartSettings): ChartSettings {
   const available = axisQuantities(settings.axis);
   const quantity =
-    settings.axis === 'shot' || available.includes(settings.quantity)
+    (settings.axis === 'shot' && !velocityModel(settings.quantity)) ||
+    available.includes(settings.quantity)
       ? settings.quantity
       : available[0]!;
   const secondary =
-    (settings.axis === 'shot' || available.includes(settings.secondary)) &&
+    ((settings.axis === 'shot' && !velocityModel(settings.secondary)) ||
+      available.includes(settings.secondary)) &&
     settings.secondary !== quantity
       ? settings.secondary
-      : (available.find((item) => item !== quantity) ?? quantity);
+      : settings.axis === 'distance'
+        ? quantity
+        : (available.find((item) => item !== quantity) ?? quantity);
   return { ...settings, quantity, secondary };
 }
 
 /** Label units only for physical quantities; G1/G7 remain dimensionless. */
 export function quantityLabel(quantity: ChartQuantity, units: UnitSystem): string {
+  const model = velocityModel(quantity);
+  if (model) return `Calculated velocity (${model.toUpperCase()}) (${unitLabels[units].velocity})`;
   return quantity === 'velocity'
     ? `Velocity (${unitLabels[units].velocity})`
     : quantity === 'g1' || quantity === 'g7'
