@@ -34,7 +34,11 @@ Calibrating from a represented, nonzero dimension `d` sets `mmPerPixel = knownMi
 
 After calibration, editing a number applies a manual override without changing geometry or scale. A later geometry change recomputes represented dimensions and clears those overrides. Circle-only geometry has no POA and preserves independently entered H/V offsets. Recalibration is explicit once a scale exists.
 
-The editor holds a detached draft, a synchronous gesture snapshot and up to 50 undo steps. Pointer cancellation restores the pre-gesture draft. Viewport zoom/pan does not change physical values. Changing the tool may add or remove POA geometry; changing the active adjustment action preserves the drawing. Geometry is saved in original pixels so opening the photo at a different screen size restores the same drawing; viewport position itself is not persisted.
+The editor holds a detached draft, a synchronous gesture snapshot and up to 50 undo steps. Pointer cancellation restores the pre-gesture draft. Viewport zoom/pan does not change physical values. Changing the measurement tool may add or remove POA geometry; selecting the hand tool preserves the drawing. Geometry is saved in original pixels so opening the photo at a different screen size restores the same drawing; viewport position itself is not persisted.
+
+Since 0.12.1, one toolbar row contains the two measurement buttons and labeled icon controls. Numeric fields live only in the fixed panel. Hover/focus highlights the matching dimension and a screen-space connector. The connector follows actual SVG transforms, resizing and scrolling, and disappears when its anchor is outside the canvas. On narrow screens the toolbar scrolls horizontally and fields move below the image.
+
+Ctrl-drag or the hand tool pans; a non-passive canvas listener consumes Ctrl-wheel to zoom around the cursor without zooming the browser page. Ordinary wheel events are untouched. Two captured touch pointers share a centroid/distance navigation snapshot. Adding the second pointer rolls back a provisional geometry edit; after one finger lifts, drawing remains blocked until both are released. Pan/pinch do not create undo entries. Zoom is clamped to 1–12× and the visible image window remains in bounds. Keyboard arrows adjust the last selected handle; Ctrl-arrows or the hand tool pan.
 
 ## Persistence and lifecycle
 
@@ -64,10 +68,12 @@ Custom distance functions receive the detached readonly result through `input.st
 
 - `TargetMeasurementPanel`: direct entry and photo selection in string details.
 - `target/TargetEditor`: draft, calibration, undo, image loading and explicit persistence.
-- `target/TargetCanvas`: pointer capture, coordinate transforms, geometry gestures and zoom/pan.
-- `target/TargetDrawing`: SVG circle, anchors, dimensions and editable labels.
+- `target/TargetCanvas`: mouse/touch capture, geometry gestures and navigation arbitration.
+- `target/targetViewport`: pure screen/image transforms and bounded cursor/centroid zoom.
+- `target/TargetDrawing`: SVG circle, anchors and color-matched dimension arrows.
+- `target/TargetConnections`: focused/hovered field connector with layout/viewport tracking.
 - `TargetValueInput`: local typing, one commit on Enter/blur and Escape cancellation.
 
-Behavior tests cover conversion, calibration/signs, override lifecycle, missing values, storage ownership, refresh preservation, photo deletion, ZIP round trips, readonly custom context, drawing/undo/cancellation, reopening, untouched precision and card display. Browser checks use invented images and a separate origin; see [verification](VERIFICATION.md).
+Behavior tests cover conversion, calibration/signs, override lifecycle, missing values, storage ownership, refresh preservation, photo deletion, ZIP round trips, readonly custom context, drawing/undo/cancellation, reopening, untouched precision and card display. Navigation tests cover letterboxing, cursor anchoring, pan/zoom bounds, Ctrl gestures, two-finger transitions and unchanged saved geometry after navigation. Browser checks use invented images and a separate origin; see [verification](VERIFICATION.md).
 
 [User guide](../help/targets.md) · [Measurement units](MEASUREMENT_UNITS.md) · [Decision 015](decisions/015-target-photo-measurement.md)

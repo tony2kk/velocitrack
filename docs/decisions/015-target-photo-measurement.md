@@ -21,3 +21,9 @@ Expose the three values through the generic scalar/chart/table pipeline and exis
 No automatic hole detection, perspective correction, statistical-center inference, cloud image upload, ammunition optimization or weapon configuration is included. The original photo and imported measurements are unchanged. Optional annotation/profile fields need no database or backup version migration. Pages deployment remains separate.
 
 See [technical contract](../TARGET_MEASUREMENTS.md) and [user help](../../help/targets.md).
+
+## Interaction refinement — 0.12.1
+
+The owner reported overlapping dimension inputs and confusing pan controls, and requested a clearer single-row toolbar. Replace the Tool dropdown with two measurement buttons, remove Action and click/tap mode, and use labeled icons for Undo, Clear drawing, Pan image, zoom and Fit. Handles are edited directly.
+
+Use Ctrl-drag/Ctrl-wheel on desktop and two-finger pan/pinch on touch devices. Navigating must preserve calibration, geometry, manual overrides and undo history, including the transition from one touch to two. Numeric inputs stay in the fixed panel, with color-matched connectors on hover/focus rather than floating input boxes over the photo. Keep keyboard fine adjustment and a hand tool as navigation alternatives. The underlying storage contract is unchanged.

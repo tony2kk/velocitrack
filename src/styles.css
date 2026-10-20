@@ -11,9 +11,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
   }
-  .target-photo-picker,
-  .target-editor-toolbar,
-  .target-view-controls {
+  .target-photo-picker {
     display: flex;
     flex-wrap: wrap;
     align-items: end;
@@ -26,7 +24,7 @@
   .target-editor.modal {
     width: min(1500px, calc(100vw - 24px));
     max-width: none;
-    padding: 22px;
+    padding: 20px;
   }
   .target-editor[open] {
     display: flex;
@@ -44,44 +42,71 @@
     margin-top: 12px;
   }
   .target-editor-toolbar {
-    margin-bottom: 14px;
+    display: flex;
+    flex-wrap: nowrap;
     align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 2px 0 9px;
+    margin-bottom: 8px;
+    scrollbar-width: thin;
   }
-  .target-editor-toolbar .field {
-    margin: 0;
-    min-width: 155px;
+  .target-editor-toolbar > * {
+    flex-shrink: 0;
   }
-  .target-editor-toolbar .check-field {
-    margin: 0;
+  .target-tool-modes {
+    display: flex;
+    gap: 4px;
+  }
+  .target-tool-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 12px;
+  }
+  .target-editor-toolbar .icon-button {
+    width: 40px;
+    height: 40px;
+  }
+  .target-editor-toolbar button[aria-pressed='true'] {
+    color: var(--accent);
+    background: var(--selected);
+    border-color: var(--accent);
+  }
+  .target-toolbar-divider {
+    height: 24px;
+    width: 1px;
+    margin-inline: 4px;
+    background: var(--border);
+  }
+  .target-zoom-level {
+    font-size: 12px;
+    color: var(--muted);
+    min-width: 3.5em;
+    text-align: center;
   }
   .target-editor-body {
+    position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 245px;
+    grid-template-columns: minmax(0, 1fr) 265px;
     gap: 20px;
     min-height: 0;
-    overflow: auto;
+    overflow: hidden;
     flex: 1;
   }
   .target-canvas-area {
     min-width: 0;
-  }
-  .target-view-controls {
-    align-items: center;
-    margin-bottom: 8px;
-  }
-  .target-nudge {
+    min-height: 0;
     display: flex;
-    gap: 3px;
-    margin-left: auto;
-  }
-  .target-nudge button {
-    min-width: 38px;
-    padding: 6px;
+    flex-direction: column;
   }
   .target-canvas {
     display: block;
     width: 100%;
-    height: clamp(240px, calc(100dvh - 280px), 780px);
+    height: 100%;
+    min-height: 0;
+    flex: 1;
     background: #293430;
     border: 1px solid var(--border-strong);
     border-radius: 10px;
@@ -89,10 +114,12 @@
     user-select: none;
     cursor: crosshair;
   }
-  .target-pan {
+  .target-pan,
+  .target-pan [data-handle] {
     cursor: grab;
   }
-  .target-pan:active {
+  .target-pan:active,
+  .target-pan:active [data-handle] {
     cursor: grabbing;
   }
   .target-circle {
@@ -136,37 +163,23 @@
     pointer-events: none;
   }
   .target-dimension-lines {
-    color: #f8cb69;
-    stroke: currentColor;
-  }
-  .target-dimension {
-    background: var(--surface);
-    color: var(--text);
-    border: 1px solid var(--border);
-    opacity: 0.96;
-    line-height: 1.2;
-  }
-  .target-dimension .field {
-    display: block;
-    font-size: 1em;
-    margin: 0;
-  }
-  .target-dimension input {
-    width: 100%;
-    padding: 0.2em 0.3em;
-    min-height: 0;
-    height: 1.9em;
-    font-size: 1.15em;
-    margin-top: 0.2em;
+    filter: drop-shadow(0 0 1px white);
   }
   .target-editor-values {
-    padding: 14px;
+    padding: 16px;
     background: var(--surface-alt);
     border: 1px solid var(--border);
     border-radius: 10px;
+    min-height: 0;
+    overflow: auto;
+  }
+  .target-dimension-field {
+    border-inline-start: 3px solid;
+    padding-inline-start: 10px;
+    margin-block: 14px;
   }
   .target-editor-values .field {
-    margin-bottom: 14px;
+    margin-bottom: 0;
   }
   .target-editor-values .muted,
   .target-canvas-help {
@@ -178,22 +191,46 @@
   }
   .target-use-scale {
     font-size: 11px;
-    margin: -8px 0 12px;
+    margin-top: 8px;
   }
   .target-canvas-help {
     margin: 8px 0 0;
+    flex-shrink: 0;
+  }
+  .target-connections {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+    overflow: hidden;
+  }
+  .target-connector-halo {
+    stroke: var(--surface);
+    stroke-width: 4;
+    opacity: 0.8;
   }
 }
 
 @layer responsive {
   @media (max-width: 850px) {
     .target-editor-body {
-      grid-template-columns: 1fr;
+      display: flex;
+      flex-direction: column;
+      overflow: auto;
+    }
+    .target-canvas-area {
+      min-height: 320px;
+      height: 58vh;
+      flex-shrink: 0;
     }
     .target-editor-values {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px;
+      overflow: visible;
+      flex-shrink: 0;
     }
     .target-editor-values h3,
     .target-editor-values > p {
@@ -201,11 +238,7 @@
       margin-bottom: 0;
     }
     .target-canvas {
-      height: 52vh;
-      min-height: 300px;
-    }
-    .target-dimension {
-      display: none;
+      min-height: 240px;
     }
     .target-editor.modal {
       padding: 14px;
@@ -216,12 +249,20 @@
     .target-editor-values {
       grid-template-columns: 1fr;
     }
-    .target-editor-toolbar .field {
-      flex: 1;
-      min-width: 130px;
+    .target-tool-button {
+      width: 40px;
+      height: 40px;
+      padding: 9px;
+      justify-content: center;
     }
-    .target-nudge {
-      margin-left: 0;
+    .target-tool-button span {
+      display: none;
+    }
+    .target-editor-toolbar {
+      gap: 3px;
+    }
+    .target-toolbar-divider {
+      margin-inline: 2px;
     }
   }
 }

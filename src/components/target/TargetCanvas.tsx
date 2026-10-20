@@ -1,5 +1,12 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import type { UnitSystem } from '../../domain/model';
+import {
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type Ref,
+  type RefObject,
+} from 'react';
 import {
   imagePoint,
   type ImagePoint,
@@ -8,94 +15,119 @@ import {
   type TargetMeasurement,
 } from '../../domain/targetMeasurement';
 import { TargetDrawing } from './TargetDrawing';
+import {
+  constrainView,
+  imageAtClient,
+  zoomView,
+  type CanvasBounds,
+  type TargetView,
+} from './targetViewport';
 
-/** Select which drawing anchor to adjust, or move only the photo viewport. */
-export type TargetAction = 'draw' | 'center' | 'edge' | 'poa' | 'pan';
-/** Visible window in original-image coordinates; independent of physical measurement scale. */
-interface View {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+/** Parent toolbar commands operate only on the photo viewport. */
+export interface TargetCanvasHandle {
+  zoom: (factor: number) => void;
+  fit: () => void;
 }
-/** Immutable pointer-start geometry and viewport used to avoid incremental movement drift. */
+/** The selected handle remains keyboard-adjustable after a pointer gesture. */
+type Handle = 'center' | 'edge' | 'poa';
+/** A single-pointer edit or pan uses an immutable starting snapshot to avoid movement drift. */
 interface Gesture {
   id: number;
-  action: TargetAction;
+  action: Handle | 'draw' | 'pan';
   start: ImagePoint;
   client: ImagePoint;
-  pixels: number;
   geometry?: TargetGeometry;
-  view: View;
-  grabbed?: boolean;
+  view: TargetView;
+  grabbed: boolean;
+}
+/** Two touch pointers navigate from a fixed anchor without editing measurement geometry. */
+interface Pinch {
+  view: TargetView;
+  distance: number;
+  anchor: ImagePoint;
 }
 
-/** Convert client coordinates through the actual SVG viewport, including letterboxing and pan/zoom. */
-function canvasPoint(svg: SVGSVGElement, client: ImagePoint, view: View): ImagePoint {
-  const matrix = svg.getScreenCTM?.();
-  if (matrix) {
-    const point = svg.createSVGPoint();
-    point.x = client.x;
-    point.y = client.y;
-    const transformed = point.matrixTransform(matrix.inverse());
-    return { x: transformed.x, y: transformed.y };
-  }
-  // DOM test environments do not implement SVG matrices; this is the equivalent meet transform.
-  const box = svg.getBoundingClientRect();
-  const scale = Math.min(
-    (box.width || view.width) / view.width,
-    (box.height || view.height) / view.height,
-  );
-  return {
-    x:
-      view.x + (client.x - box.left - ((box.width || view.width) - view.width * scale) / 2) / scale,
-    y:
-      view.y +
-      (client.y - box.top - ((box.height || view.height) - view.height * scale) / 2) / scale,
-  };
-}
-
-/** Draw and adjust a circle with pointer capture, two-click alternatives and bounded image coordinates. */
+/** Draw with one pointer; navigate with Ctrl-drag, Ctrl-wheel, the hand tool or two fingers. */
 export function TargetCanvas({
+  ref,
+  canvasRef,
   url,
   width,
   height,
   measurement,
-  units,
   mode,
-  action,
-  twoClicks,
+  pan,
+  activeField,
   onBegin,
   onChange,
   onEnd,
   onCancel,
-  onValue,
+  onZoom,
 }: {
+  ref: Ref<TargetCanvasHandle>;
+  canvasRef: RefObject<SVGSVGElement | null>;
   url: string;
   width: number;
   height: number;
   measurement: TargetMeasurement;
-  units: UnitSystem;
   mode: 'group' | 'offset';
-  action: TargetAction;
-  twoClicks: boolean;
+  pan: boolean;
+  activeField: TargetField | null;
   onBegin: () => void;
   onChange: (geometry: TargetGeometry) => void;
   onEnd: () => void;
   onCancel: () => void;
-  onValue: (field: TargetField, text: string) => void;
+  onZoom: (zoom: number) => void;
 }) {
-  const svg = useRef<SVGSVGElement>(null);
   const gesture = useRef<Gesture | null>(null);
+  const contacts = useRef(new Map<number, ImagePoint>());
+  const pinch = useRef<Pinch | null>(null);
+  const navigatingTouch = useRef(false);
+  const selected = useRef<Handle | null>(null);
   const [editing, setEditing] = useState(false);
-  const [pending, setPending] = useState<ImagePoint | null>(null);
-  const [view, setView] = useState<View>({ x: 0, y: 0, width, height });
-  const [screenSize, setScreenSize] = useState({ width: 900, height: 550 });
-  const zoom = width / view.width;
+  const [view, setView] = useState<TargetView>({ x: 0, y: 0, width, height });
+  const latestView = useRef(view);
+  const [screenSize, setScreenSize] = useState({ width, height });
   const pixelSize = Math.max(view.width / screenSize.width, view.height / screenSize.height);
-  // Keep handles and dimension fields in screen pixels, including letterboxed or resized photos.
+
+  /** React rendering may trail input events; navigation always reads the latest window. */
+  function updateView(next: TargetView) {
+    latestView.current = next;
+    setView(next);
+  }
+  /** Use original dimensions as a deterministic fallback in DOM-only tests. */
+  function bounds(): CanvasBounds {
+    const box = canvasRef.current?.getBoundingClientRect();
+    return {
+      left: box?.left ?? 0,
+      top: box?.top ?? 0,
+      width: box?.width || width,
+      height: box?.height || height,
+    };
+  }
+  /** Toolbar zoom focuses an existing circle; pointer zoom instead preserves the cursor anchor. */
+  function zoom(factor: number) {
+    if (gesture.current || navigatingTouch.current) return;
+    const current = latestView.current;
+    const box = bounds();
+    const client = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+    const anchor =
+      factor > 1 && measurement.geometry && !pan
+        ? measurement.geometry.center
+        : imageAtClient(client, current, box);
+    updateView(zoomView(current, factor, anchor, client, box, width, height));
+  }
+  useImperativeHandle(ref, () => ({
+    zoom,
+    fit: () => {
+      if (!gesture.current && !navigatingTouch.current) updateView({ x: 0, y: 0, width, height });
+    },
+  }));
   useEffect(() => {
-    const element = svg.current;
+    onZoom(width / view.width);
+  }, [onZoom, view.width, width]);
+  useEffect(() => {
+    const element = canvasRef.current;
     if (!element || typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver(([entry]) => {
       if (entry && entry.contentRect.width > 0 && entry.contentRect.height > 0)
@@ -103,33 +135,48 @@ export function TargetCanvas({
     });
     observer.observe(element);
     return () => observer.disconnect();
-  }, []);
-  // A tool change cancels an unfinished two-click placement but keeps the zoomed photo location.
+  }, [canvasRef]);
+  // A non-passive listener consumes Ctrl-wheel only inside the canvas, preventing browser-page zoom.
   useEffect(() => {
-    setPending(null);
-  }, [mode, action, twoClicks]);
+    const element = canvasRef.current;
+    if (!element) return;
+    const wheel = (event: WheelEvent) => {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      if (gesture.current || navigatingTouch.current) return;
+      const box = element.getBoundingClientRect();
+      const rectangle = {
+        left: box.left,
+        top: box.top,
+        width: box.width || width,
+        height: box.height || height,
+      };
+      const client = { x: event.clientX, y: event.clientY };
+      const current = latestView.current;
+      const delta =
+        event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? rectangle.height : 1);
+      const factor = Math.exp(-Math.max(-600, Math.min(600, delta)) * 0.002);
+      updateView(
+        zoomView(
+          current,
+          factor,
+          imageAtClient(client, current, rectangle),
+          client,
+          rectangle,
+          width,
+          height,
+        ),
+      );
+    };
+    element.addEventListener('wheel', wheel, { passive: false });
+    return () => element.removeEventListener('wheel', wheel);
+  }, [canvasRef, width, height]);
 
-  /** View changes never change measurement geometry, calibration or manual overrides. */
-  function zoomBy(factor: number) {
-    const nextZoom = Math.max(1, Math.min(12, zoom * factor));
-    const w = width / nextZoom,
-      h = height / nextZoom;
-    const center =
-      factor > 1 && action !== 'pan' && measurement.geometry
-        ? measurement.geometry.center
-        : { x: view.x + view.width / 2, y: view.y + view.height / 2 };
-    setView({
-      x: center.x - w / 2,
-      y: center.y - h / 2,
-      width: w,
-      height: h,
-    });
-  }
-  /** Build or move geometry from the original gesture snapshot, avoiding cumulative rounding/drift. */
+  /** Build from the pointer-start snapshot, preserving the initial grab offset on existing handles. */
   function geometryAt(g: Gesture, point: ImagePoint): TargetGeometry | undefined {
     const p = imagePoint(point, width, height);
     const initial = g.geometry;
-    if (g.action === 'draw') {
+    if (g.action === 'draw')
       return {
         width,
         height,
@@ -140,7 +187,6 @@ export function TargetCanvas({
             ? Math.max(1, Math.hypot(p.x - g.start.x, p.y - g.start.y))
             : (initial?.radius ?? Math.min(width, height) * 0.1),
       };
-    }
     if (!initial) return undefined;
     if (g.action === 'edge')
       return {
@@ -148,12 +194,15 @@ export function TargetCanvas({
         radius: Math.max(1, Math.hypot(p.x - initial.center.x, p.y - initial.center.y)),
       };
     if (g.action === 'center' || g.action === 'poa') {
-      const key = g.action === 'center' ? 'center' : 'poa';
+      const key = g.action;
       const anchor = initial[key];
       const next =
         g.grabbed && anchor
           ? imagePoint(
-              { x: anchor.x + point.x - g.start.x, y: anchor.y + point.y - g.start.y },
+              {
+                x: anchor.x + point.x - g.start.x,
+                y: anchor.y + point.y - g.start.y,
+              },
               width,
               height,
             )
@@ -162,116 +211,147 @@ export function TargetCanvas({
     }
     return initial;
   }
-  /** Capture the pointer so releasing outside the image completes the same gesture. */
+  /** The second finger rolls back any provisional single-finger edit before navigation begins. */
+  function beginPinch() {
+    if (gesture.current && gesture.current.action !== 'pan') onCancel();
+    gesture.current = null;
+    setEditing(false);
+    navigatingTouch.current = true;
+    const [a, b] = [...contacts.current.values()];
+    const current = latestView.current;
+    if (!a || !b) return;
+    pinch.current = {
+      view: current,
+      distance: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)),
+      anchor: imageAtClient({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, current, bounds()),
+    };
+  }
+  /** Capture every participating pointer, including a second touch, until release or cancellation. */
   function start(event: ReactPointerEvent<SVGSVGElement>) {
-    if (
-      event.button !== 0 ||
-      gesture.current ||
-      (event.target as Element).closest('[data-control]')
-    )
-      return;
-    const point = imagePoint(
-      canvasPoint(event.currentTarget, { x: event.clientX, y: event.clientY }, view),
-      width,
-      height,
-    );
-    const hit = (event.target as Element).getAttribute('data-handle') as TargetAction | null;
-    const selected = action === 'pan' ? 'pan' : (hit ?? action);
-    if (twoClicks && selected !== 'pan') {
-      if (selected === 'draw' && !pending) {
-        setPending(point);
+    if (event.button !== 0) return;
+    const client = { x: event.clientX, y: event.clientY };
+    if (event.pointerType === 'touch') {
+      if (contacts.current.size >= 2) return;
+      contacts.current.set(event.pointerId, client);
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      if (contacts.current.size === 2) {
+        beginPinch();
         return;
       }
-      const g: Gesture = {
-        id: event.pointerId,
-        action: selected,
-        start: pending ?? point,
-        client: point,
-        pixels: 1,
-        geometry: measurement.geometry,
-        view,
-      };
-      const next = geometryAt(g, point);
-      setPending(null);
-      if (next) {
-        onBegin();
-        onChange(next);
-        onEnd();
-      }
-      return;
+      if (navigatingTouch.current) return;
     }
-    setPending(null);
-    const matrix = event.currentTarget.getScreenCTM?.();
+    if (gesture.current) return;
+    const current = latestView.current;
+    const point = imageAtClient(client, current, bounds());
+    const hit = (event.target as Element).getAttribute('data-handle') as Handle | null;
+    const action = event.ctrlKey || pan ? 'pan' : (hit ?? 'draw');
+    if (action !== 'pan' && (point.x < 0 || point.x > width || point.y < 0 || point.y > height))
+      return;
+    selected.current = hit;
     gesture.current = {
       id: event.pointerId,
-      action: selected,
+      action,
       start: point,
-      client: { x: event.clientX, y: event.clientY },
-      pixels: matrix ? 1 / matrix.a : pixelSize,
+      client,
+      view: current,
       geometry: measurement.geometry ? structuredClone(measurement.geometry) : undefined,
-      view,
       grabbed: !!hit,
     };
     event.currentTarget.setPointerCapture?.(event.pointerId);
-    if (selected !== 'pan') {
+    event.currentTarget.focus();
+    if (action !== 'pan') {
       onBegin();
       setEditing(true);
       const next = geometryAt(gesture.current, point);
       if (next) onChange(next);
     }
   }
-  /** Move only the viewport in pan mode; every other gesture updates an unsaved local draft. */
+  /** Two fingers pan and zoom together; one pointer changes only its selected geometry or view. */
   function move(event: ReactPointerEvent<SVGSVGElement>) {
+    const client = { x: event.clientX, y: event.clientY };
+    if (contacts.current.has(event.pointerId)) contacts.current.set(event.pointerId, client);
+    if (navigatingTouch.current) {
+      const [a, b] = [...contacts.current.values()];
+      const initial = pinch.current;
+      if (a && b && initial)
+        updateView(
+          zoomView(
+            initial.view,
+            Math.hypot(b.x - a.x, b.y - a.y) / initial.distance,
+            initial.anchor,
+            { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+            bounds(),
+            width,
+            height,
+          ),
+        );
+      return;
+    }
     const g = gesture.current;
     if (!g || g.id !== event.pointerId) return;
+    const point = imageAtClient(client, g.view, bounds());
     if (g.action === 'pan') {
-      setView({
-        ...g.view,
-        x: g.view.x - (event.clientX - g.client.x) * g.pixels,
-        y: g.view.y - (event.clientY - g.client.y) * g.pixels,
-      });
-      return;
+      updateView(
+        constrainView(
+          { ...g.view, x: g.view.x + g.start.x - point.x, y: g.view.y + g.start.y - point.y },
+          width,
+          height,
+        ),
+      );
+    } else {
+      const next = geometryAt(g, point);
+      if (next) onChange(next);
     }
-    const next = geometryAt(
-      g,
-      canvasPoint(event.currentTarget, { x: event.clientX, y: event.clientY }, view),
-    );
-    if (next) onChange(next);
   }
-  /** Commit one undo step for the complete gesture, including its release coordinate. */
-  function end(event: ReactPointerEvent<SVGSVGElement>) {
-    if (gesture.current?.id !== event.pointerId) return;
-    move(event);
-    const changed = gesture.current.action !== 'pan';
-    gesture.current = null;
-    setEditing(false);
+  /** End a drawing once; after two-finger navigation, ignore the remaining finger until both lift. */
+  function end(event: ReactPointerEvent<SVGSVGElement>, cancelled = false) {
+    const tracked =
+      gesture.current?.id === event.pointerId || contacts.current.has(event.pointerId);
+    if (!tracked) return;
+    if (!cancelled) move(event);
+    if (gesture.current?.id === event.pointerId) {
+      const changed = gesture.current.action !== 'pan';
+      gesture.current = null;
+      setEditing(false);
+      if (changed) {
+        if (cancelled) onCancel();
+        else onEnd();
+      }
+    }
+    contacts.current.delete(event.pointerId);
+    pinch.current = null;
+    if (!contacts.current.size) navigatingTouch.current = false;
     if (event.currentTarget.hasPointerCapture?.(event.pointerId))
       event.currentTarget.releasePointerCapture(event.pointerId);
-    if (changed) onEnd();
   }
-  /** Cancel interrupted touch/pointer sequences instead of saving half-finished geometry. */
-  function cancel() {
-    if (gesture.current?.action !== 'pan') onCancel();
-    gesture.current = null;
-    setEditing(false);
-    setPending(null);
-  }
-  /** Clickable and keyboard nudge controls are alternatives to dragging small handles. */
-  function nudge(dx: number, dy: number) {
-    const g = measurement.geometry;
-    if (action === 'pan') {
-      setView({ ...view, x: view.x + (dx * view.width) / 20, y: view.y + (dy * view.height) / 20 });
+  /** Keyboard adjustments retain a precise alternative to dragging small image handles. */
+  function nudge(dx: number, dy: number, navigate: boolean) {
+    const current = latestView.current;
+    if (gesture.current || navigatingTouch.current) return;
+    if (navigate || pan) {
+      updateView(
+        constrainView(
+          {
+            ...current,
+            x: current.x + (dx * current.width) / 20,
+            y: current.y + (dy * current.height) / 20,
+          },
+          width,
+          height,
+        ),
+      );
       return;
     }
-    if (!g || action === 'draw') return;
+    const handle = selected.current;
+    const g = measurement.geometry;
+    if (!g || !handle) return;
     const next = structuredClone(g);
-    if (action === 'edge')
+    if (handle === 'edge')
       next.radius = Math.min(Math.hypot(width, height), Math.max(1, next.radius + dx - dy));
     else {
-      const key = action === 'poa' ? 'poa' : 'center';
-      const p = next[key];
+      const p = next[handle];
       if (!p) return;
-      next[key] = imagePoint({ x: p.x + dx, y: p.y + dy }, width, height);
+      next[handle] = imagePoint({ x: p.x + dx, y: p.y + dy }, width, height);
     }
     onBegin();
     onChange(next);
@@ -279,77 +359,28 @@ export function TargetCanvas({
   }
   return (
     <div className="target-canvas-area">
-      <div className="target-view-controls">
-        <button
-          type="button"
-          title="Zoom in without changing measurement values."
-          disabled={editing}
-          onClick={() => zoomBy(1.5)}
-        >
-          Zoom +
-        </button>
-        <button type="button" title="Zoom out." disabled={editing} onClick={() => zoomBy(1 / 1.5)}>
-          Zoom −
-        </button>
-        <button
-          type="button"
-          title="Show the complete photo."
-          onClick={() => setView({ x: 0, y: 0, width, height })}
-        >
-          Fit image
-        </button>
-        <span>{Math.round(zoom * 100)}%</span>
-        <div className="target-nudge" aria-label="Fine adjustments">
-          <button
-            type="button"
-            title="Move selected handle left by one image pixel, or pan left."
-            onClick={() => nudge(-1, 0)}
-          >
-            ←
-          </button>
-          <button
-            type="button"
-            title="Move selected handle up by one image pixel, or pan up."
-            onClick={() => nudge(0, -1)}
-          >
-            ↑
-          </button>
-          <button
-            type="button"
-            title="Move selected handle down by one image pixel, or pan down."
-            onClick={() => nudge(0, 1)}
-          >
-            ↓
-          </button>
-          <button
-            type="button"
-            title="Move selected handle right by one image pixel, or pan right."
-            onClick={() => nudge(1, 0)}
-          >
-            →
-          </button>
-        </div>
-      </div>
       <svg
-        ref={svg}
-        className={`target-canvas ${action === 'pan' ? 'target-pan' : ''}`}
+        ref={canvasRef}
+        className={'target-canvas' + (pan ? ' target-pan' : '')}
         tabIndex={0}
         aria-label="Target photo measurement canvas"
         role="group"
-        viewBox={`${view.x} ${view.y} ${view.width} ${view.height}`}
+        viewBox={[view.x, view.y, view.width, view.height].join(' ')}
         onPointerDown={start}
         onPointerMove={move}
-        onPointerUp={end}
-        onPointerCancel={cancel}
-        onLostPointerCapture={() => {
-          if (gesture.current) cancel();
-        }}
+        onPointerUp={(event) => end(event)}
+        onPointerCancel={(event) => end(event, true)}
+        onLostPointerCapture={(event) => end(event, true)}
         onKeyDown={(event) => {
-          if ((event.target as Element).closest('[data-control]')) return;
-          if (event.key === 'Escape' && (gesture.current || pending)) {
+          if (event.key === 'Escape' && (gesture.current || navigatingTouch.current)) {
             event.preventDefault();
             event.stopPropagation();
-            cancel();
+            if (gesture.current?.action !== 'pan' && gesture.current) onCancel();
+            gesture.current = null;
+            pinch.current = null;
+            contacts.current.clear();
+            navigatingTouch.current = false;
+            setEditing(false);
           }
           const directions: Record<string, [number, number]> = {
             ArrowLeft: [-1, 0],
@@ -363,6 +394,7 @@ export function TargetCanvas({
             nudge(
               direction[0] * (event.shiftKey ? 10 : 1),
               direction[1] * (event.shiftKey ? 10 : 1),
+              event.ctrlKey,
             );
           }
         }}
@@ -370,32 +402,18 @@ export function TargetCanvas({
         <image href={url} width={width} height={height} />
         <TargetDrawing
           measurement={measurement}
-          units={units}
           pixelSize={pixelSize}
-          bounds={view}
           editing={editing}
-          onValue={onValue}
+          activeField={activeField}
         />
-        {pending && (
-          <circle
-            cx={pending.x}
-            cy={pending.y}
-            r={pixelSize * 7}
-            fill="#e69a22"
-            pointerEvents="none"
-          />
-        )}
       </svg>
-      <p className="muted target-canvas-help" aria-live="polite">
-        {pending
-          ? 'Choose the second point. Escape cancels.'
-          : action === 'pan'
-            ? 'Drag to pan, or use the arrow buttons.'
-            : action === 'draw'
-              ? mode === 'offset'
-                ? 'Start at POA; finish at the circle center. Then adjust the circle edge.'
-                : 'Start at the circle center; finish at its edge.'
-              : `Place or drag the ${action === 'poa' ? 'POA' : action === 'edge' ? 'circle edge' : 'circle center'}. Arrow keys adjust by one image pixel; Shift moves ten.`}
+      <p className="muted target-canvas-help">
+        {pan
+          ? 'Drag to pan.'
+          : mode === 'offset'
+            ? 'Drag from POA to group center; drag the circle edge to resize.'
+            : 'Drag from group center to circle edge.'}{' '}
+        Ctrl + drag to pan · Ctrl + wheel to zoom · Two fingers to pan or pinch.
       </p>
     </div>
   );

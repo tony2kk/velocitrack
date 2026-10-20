@@ -88,3 +88,12 @@ Browser verification used an invented six-target image on a separate temporary
 origin. No owner photo or measurement was inspected or copied. The daily local
 origin remains 4180. Automatic target detection and perspective correction are
 outside this release; Pages deployment is separate.
+
+Version 0.12.1 simplifies the target editor to one toolbar row with two tool buttons
+and Undo/trash/hand/zoom/Fit icons. The Action dropdown, click/tap toggle and arrow
+buttons are removed. Users drag handles directly; Ctrl-drag/Ctrl-wheel and two-finger
+pan/pinch navigate without modifying the measurement or undo history. A second touch
+cancels a provisional drawing and suppresses further drawing until both fingers lift.
+Target inputs now exist only in the fixed panel; hover/focus connectors follow the
+photo transform. Read the updated target guide and navigation tests before modifying
+pointer handling. The data contract and existing saved drawings remain unchanged.

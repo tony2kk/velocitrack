@@ -22,14 +22,14 @@ Target values save separately from the custom fields and tags saved by **Save de
 
 1. Add a photo in the string's **Photos** section, or use one already attached.
 2. Choose **Target photo**, then **Measure photo**.
-3. Choose a tool and draw:
+3. Choose one of the two tool buttons and draw:
    - **Group size:** press at the desired circle center and drag to its edge.
    - **Group size + offset:** press at POA and drag to the desired circle center. A rectangle joins the two points; a circle appears around the center.
 4. Drag the center to move the circle, its edge to resize it, or the POA cross to move the aiming point.
-5. Enter one known, nonzero dimension next to an arrow or in **Dimensions**. Press Enter or leave the field to apply it. This sets the image scale and calculates the other dimensions represented by the drawing.
+5. Enter one known, nonzero dimension in the fixed **Dimensions** panel. Press Enter or leave the field to apply it. This sets the image scale and calculates the other dimensions represented by the drawing.
 6. Select **Save measurement** to save the values and drawing together. **Cancel**, the close button and Escape leave the previous saved measurement unchanged.
 
-The diagonal double arrow measures the circle's diameter. The other arrows measure horizontal and vertical offsets. Dimensions hide during a drag and return when it ends.
+The diagonal double arrow measures the circle's diameter. The other arrows measure horizontal and vertical offsets. They hide during a drawing drag and return when it ends. Numeric fields stay outside the image. Hover or focus a field to highlight its arrow and show a matching colored connector to the photo. A dimension outside the visible image has no connector until you pan or zoom it back into view.
 
 ### Calibration and manual overrides
 
@@ -39,15 +39,21 @@ If a known value was entered before opening the photo, draw the geometry, then c
 
 Once calibrated, subsequent numeric edits are marked **Manual**. They override individual values without moving the drawing or changing its scale. The next geometry edit recalculates the dimensions represented by that drawing and replaces their overrides. A circle without POA preserves separately entered offsets.
 
-Use **Recalibrate** to explicitly change the scale from a new known dimension. **Undo** restores the last completed gesture or numeric edit. **Clear drawing** removes the draft geometry and scale while retaining its numbers as manual values.
+Use **Recalibrate** to explicitly change the scale from a new known dimension. The **Undo** arrow restores the last completed gesture or numeric edit. The **trash** button (**Clear drawing**) removes the draft geometry and scale while retaining its numbers as manual values.
 
 ## Several targets on one photo
 
 Each string has its own active measurement. Attach the same sheet to the relevant strings and place each string's circle on its corresponding target. The original image stays unchanged.
 
-Use **Zoom +**, **Zoom −**, **Pan image** and **Fit image** to reach a small target. Zooming or panning changes only the view. It never changes measured values.
+The toolbar stays in one row. The two measurement buttons select circle-only or circle-plus-offset drawing. The remaining icons are Undo, Clear drawing, Pan image, Zoom in, Zoom out and Fit image. Hover an icon for its name and shortcut; on narrow screens the row can scroll horizontally.
 
-**Use clicks / taps** provides an alternative to dragging: choose two points for a new drawing, or one point for **Place center**, **Resize circle** or **Place POA**. The arrow buttons provide fine adjustments. With the canvas focused, arrow keys move the selected handle by one original-image pixel; Shift moves ten.
+**Mouse:** hold **Ctrl and drag** to pan. Use **Ctrl + mouse wheel** over the photo to zoom around the pointer. Plain wheel scrolling keeps its normal behavior. The **hand** button also enables drag-to-pan without holding Ctrl. Choose a measurement button to return to drawing.
+
+**Touch:** use **two fingers** to pan and spread/pinch them to zoom. One finger draws or drags a handle. Adding a second finger cancels the provisional drawing gesture and starts navigation; the remaining finger cannot accidentally draw when the other lifts.
+
+The magnifier buttons zoom in/out; **Fit image** restores the complete photo and its position. Navigation never changes measurement values, calibration, or undo history. Zoom is bounded between 100% and 1200%, and panning stays within the photo.
+
+Drag the circle center, edge or POA directly to adjust it. With the canvas focused, arrow keys nudge the last selected handle by one original-image pixel; Shift moves ten. Ctrl + arrow keys pan, as do plain arrows while the hand tool is active. The old Action dropdown, click/tap mode and on-screen arrow buttons have been removed.
 
 Reopening the active photo restores its saved circle, POA and calibration. A string currently has **one active measurement**. Saving a measurement on a different photo replaces the previous active drawing; cancelling keeps it. Removing the active photo preserves its numeric values as manual entries but removes the drawing and image reference.
 

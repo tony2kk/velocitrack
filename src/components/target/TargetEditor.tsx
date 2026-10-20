@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { CircleDot, Crosshair, Hand, Maximize, Trash2, Undo2, ZoomIn, ZoomOut } from 'lucide-react';
 import type { Attachment, UnitSystem } from '../../domain/model';
 import {
   calibrateTarget,
@@ -15,7 +16,9 @@ import { db } from '../../storage/database';
 import { saveTargetMeasurement } from '../../storage/targetMeasurement';
 import { Modal } from '../Modal';
 import { TargetValueInput } from '../TargetValueInput';
-import { TargetCanvas, type TargetAction } from './TargetCanvas';
+import { TargetCanvas, type TargetCanvasHandle } from './TargetCanvas';
+import { TargetConnections } from './TargetConnections';
+import { TARGET_COLORS } from './TargetDrawing';
 
 /** Load the local original only while its editor is open; revoke blob URLs on completion/unmount. */
 function useTargetPhoto(photo: Attachment) {
@@ -81,8 +84,14 @@ export function TargetEditor({
   const gestureStart = useRef<TargetMeasurement | null>(null);
   const [history, setHistory] = useState<TargetMeasurement[]>([]);
   const [mode, setMode] = useState<'group' | 'offset'>(draft.geometry?.poa ? 'offset' : 'group');
-  const [action, setAction] = useState<TargetAction>('draw');
-  const [twoClicks, setTwoClicks] = useState(false);
+  const [pan, setPan] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const canvas = useRef<TargetCanvasHandle>(null);
+  const canvasElement = useRef<SVGSVGElement>(null);
+  const valuesPanel = useRef<HTMLElement>(null);
+  const [hoveredField, setHoveredField] = useState<TargetField | null>(null);
+  const [focusedField, setFocusedField] = useState<TargetField | null>(null);
+  const activeField = hoveredField ?? focusedField;
   const [calibrating, setCalibrating] = useState(!draft.mmPerPixel);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -133,64 +142,45 @@ export function TargetEditor({
       className="target-editor"
       wide
     >
-      <div className="target-editor-toolbar">
-        <label className="field">
-          Tool
-          <select
-            value={mode}
-            disabled={busy}
-            title="Measure a circle alone, or include the point of aim for horizontal and vertical offsets."
-            onChange={(event) => {
-              const next = event.target.value as 'group' | 'offset';
-              setMode(next);
-              setAction('draw');
-              const g = latest.current.geometry;
-              if (g) {
-                remember(latest.current);
-                geometryChanged({
-                  ...g,
-                  poa: next === 'group' ? null : (g.poa ?? { ...g.center }),
-                });
+      <div className="target-editor-toolbar" role="group" aria-label="Target tools">
+        <div className="target-tool-modes" role="group" aria-label="Measurement tool">
+          {(['group', 'offset'] as const).map((tool) => (
+            <button
+              key={tool}
+              type="button"
+              className="target-tool-button"
+              aria-pressed={mode === tool && !pan}
+              aria-label={tool === 'group' ? 'Group size' : 'Group size + offset'}
+              title={
+                tool === 'group'
+                  ? 'Draw a circle from its center to its edge.'
+                  : 'Draw from the point of aim to the group center, then adjust the circle.'
               }
-            }}
-          >
-            <option value="group">Group size</option>
-            <option value="offset">Group size + offset</option>
-          </select>
-        </label>
-        <label className="field">
-          Action
-          <select
-            value={action}
-            disabled={busy}
-            title="Draw a new result, adjust one part of the drawing, or pan the photo without changing measurements."
-            onChange={(event) => setAction(event.target.value as TargetAction)}
-          >
-            <option value="draw">Draw new</option>
-            <option value="center" disabled={!draft.geometry}>
-              Place center
-            </option>
-            <option value="edge" disabled={!draft.geometry}>
-              Resize circle
-            </option>
-            <option value="poa" disabled={!draft.geometry || mode === 'group'}>
-              Place POA
-            </option>
-            <option value="pan">Pan image</option>
-          </select>
-        </label>
-        <label
-          className="check-field"
-          title="Place points with clicks or taps instead of dragging."
-        >
-          <input
-            type="checkbox"
-            checked={twoClicks}
-            onChange={(event) => setTwoClicks(event.target.checked)}
-          />{' '}
-          Use clicks / taps
-        </label>
+              disabled={busy}
+              onClick={() => {
+                setPan(false);
+                if (tool === mode) return;
+                setMode(tool);
+                const g = latest.current.geometry;
+                if (g) {
+                  remember(latest.current);
+                  geometryChanged({
+                    ...g,
+                    poa: tool === 'group' ? null : (g.poa ?? { ...g.center }),
+                  });
+                }
+              }}
+            >
+              {tool === 'group' ? <CircleDot size={19} /> : <Crosshair size={19} />}
+              <span>{tool === 'group' ? 'Group size' : 'Group + offset'}</span>
+            </button>
+          ))}
+        </div>
+        <span className="target-toolbar-divider" aria-hidden="true" />
         <button
+          type="button"
+          className="icon-button"
+          aria-label="Undo"
           disabled={!history.length || busy}
           title="Undo the last completed gesture or value change."
           onClick={() => {
@@ -204,11 +194,14 @@ export function TargetEditor({
             }
           }}
         >
-          Undo
+          <Undo2 size={20} />
         </button>
         <button
+          type="button"
+          className="icon-button"
+          aria-label="Clear drawing"
           disabled={!draft.geometry || busy}
-          title="Remove this draft's drawing and calibration; keep the numeric values as manual entries."
+          title="Clear this draft's drawing and scale; keep numeric values as manual entries."
           onClick={() => {
             remember(latest.current);
             update({
@@ -216,12 +209,57 @@ export function TargetEditor({
               manual: TARGET_FIELDS.filter((field) => draft.values[field] !== null),
             });
             setCalibrating(true);
-            setAction('draw');
+            setPan(false);
             setError('');
           }}
         >
-          Clear drawing
+          <Trash2 size={20} />
         </button>
+        <span className="target-toolbar-divider" aria-hidden="true" />
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="Pan image"
+          aria-pressed={pan}
+          disabled={busy}
+          title="Drag to pan. You can also hold Ctrl while dragging, or use two fingers."
+          onClick={() => setPan((value) => !value)}
+        >
+          <Hand size={20} />
+        </button>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="Zoom in"
+          disabled={busy || !image}
+          title="Zoom in. Ctrl + wheel or pinch zooms around the pointer."
+          onClick={() => canvas.current?.zoom(1.5)}
+        >
+          <ZoomIn size={20} />
+        </button>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="Zoom out"
+          disabled={busy || !image}
+          title="Zoom out."
+          onClick={() => canvas.current?.zoom(1 / 1.5)}
+        >
+          <ZoomOut size={20} />
+        </button>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="Fit image"
+          disabled={busy || !image}
+          title="Fit the complete photo and reset its position."
+          onClick={() => canvas.current?.fit()}
+        >
+          <Maximize size={20} />
+        </button>
+        <output className="target-zoom-level" aria-label="Image zoom">
+          {Math.round(zoom * 100)}%
+        </output>
       </div>
       {imageError && (
         <p role="alert" className="error">
@@ -238,14 +276,16 @@ export function TargetEditor({
       {image && !mismatch && (
         <div className="target-editor-body">
           <TargetCanvas
+            ref={canvas}
+            canvasRef={canvasElement}
             url={image.url}
             width={image.width}
             height={image.height}
             measurement={draft}
-            units={editorUnits}
             mode={mode}
-            action={action}
-            twoClicks={twoClicks}
+            pan={pan}
+            activeField={activeField}
+            onZoom={setZoom}
             onBegin={() => {
               gestureStart.current = structuredClone(latest.current);
             }}
@@ -263,10 +303,10 @@ export function TargetEditor({
               if (gestureStart.current) update(gestureStart.current);
               gestureStart.current = null;
             }}
-            onValue={valueChanged}
           />
-          <aside className="target-editor-values">
+          <aside ref={valuesPanel} className="target-editor-values">
             <h3>Dimensions</h3>
+            <p className="muted">Hover or focus a value to locate its dimension on the photo.</p>
             <p className="muted">
               {!draft.geometry
                 ? 'Draw a circle to begin.'
@@ -275,7 +315,19 @@ export function TargetEditor({
                   : 'Scale set. Manual overrides are replaced when the corresponding geometry changes.'}
             </p>
             {TARGET_FIELDS.map((field) => (
-              <div key={field}>
+              <div
+                key={field}
+                data-target-field={field}
+                className="target-dimension-field"
+                style={{ borderInlineStartColor: TARGET_COLORS[field] }}
+                onMouseEnter={() => setHoveredField(field)}
+                onMouseLeave={() => setHoveredField(null)}
+                onFocusCapture={() => setFocusedField(field)}
+                onBlurCapture={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+                    setFocusedField(null);
+                }}
+              >
                 <TargetValueInput
                   field={field}
                   value={draft.values[field]}
@@ -319,6 +371,12 @@ export function TargetEditor({
               <p className="muted">Saving replaces the active measurement from the other photo.</p>
             )}
           </aside>
+          <TargetConnections
+            canvasRef={canvasElement}
+            panelRef={valuesPanel}
+            geometry={draft.geometry}
+            field={activeField}
+          />
         </div>
       )}
       {error && (

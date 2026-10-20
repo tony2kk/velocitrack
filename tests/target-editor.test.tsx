@@ -35,9 +35,14 @@ beforeEach(async () => {
     'PointerEvent',
     class extends MouseEvent {
       pointerId: number;
-      constructor(type: string, init: MouseEventInit & { pointerId?: number } = {}) {
+      pointerType: string;
+      constructor(
+        type: string,
+        init: MouseEventInit & { pointerId?: number; pointerType?: string } = {},
+      ) {
         super(type, init);
         this.pointerId = init.pointerId ?? 1;
+        this.pointerType = init.pointerType ?? 'mouse';
       }
     },
   );
@@ -60,14 +65,14 @@ afterEach(async () => {
 /** Pointer events use the SVG fallback's original pixel coordinate system in this DOM test. */
 async function draw(editor = 'group') {
   if (editor === 'offset')
-    fireEvent.change(screen.getByLabelText('Tool'), { target: { value: 'offset' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Group size + offset' }));
   const canvas = await screen.findByRole('group', { name: 'Target photo measurement canvas' });
   fireEvent.pointerDown(canvas, { clientX: 400, clientY: 400, pointerId: 1, button: 0 });
   fireEvent.pointerMove(canvas, { clientX: 500, clientY: 300, pointerId: 1 });
   fireEvent.pointerUp(canvas, { clientX: 500, clientY: 300, pointerId: 1 });
   return canvas;
 }
-/** Commit the same numeric control used in the fixed panel, independent of floating dimension labels. */
+/** Commit a numeric field in the fixed panel without relying on photo-overlay positioning. */
 function enter(label: string, value: string) {
   const input = within(screen.getByRole('complementary')).getByLabelText(label);
   fireEvent.change(input, { target: { value } });
@@ -118,8 +123,12 @@ describe('target editor interaction', () => {
     expect((panel.getByLabelText('Group size (cm)') as HTMLInputElement).value).toBe('16');
     enter('Group size (cm)', '99');
     expect((panel.getByLabelText(/Group size/) as HTMLInputElement).value).toBe('99');
-    fireEvent.change(screen.getByLabelText('Action'), { target: { value: 'edge' } });
-    fireEvent.pointerDown(canvas, { clientX: 600, clientY: 300, pointerId: 1, button: 0 });
+    fireEvent.pointerDown(document.querySelector('[data-handle="edge"]')!, {
+      clientX: 580,
+      clientY: 300,
+      pointerId: 1,
+      button: 0,
+    });
     fireEvent.pointerUp(canvas, { clientX: 600, clientY: 300, pointerId: 1 });
     expect((panel.getByLabelText('Group size (cm)') as HTMLInputElement).value).toBe('20');
     fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
@@ -151,7 +160,8 @@ describe('target editor interaction', () => {
     ).toBe('38.9764');
     expect(document.querySelector('.target-circle')?.getAttribute('r')).toBe('80');
   });
-  it('supports two-click placement, cancels pointer gestures and preserves zoom when changing tools', async () => {
+
+  it('cancels a handle drag and retains the viewport when changing tools', async () => {
     render(
       <TargetEditor
         photo={photo}
@@ -161,23 +171,169 @@ describe('target editor interaction', () => {
         onSaved={vi.fn()}
       />,
     );
-    const canvas = await screen.findByRole('group', { name: 'Target photo measurement canvas' });
-    fireEvent.click(screen.getByLabelText('Use clicks / taps'));
-    fireEvent.pointerDown(canvas, { clientX: 200, clientY: 200, pointerId: 1, button: 0 });
-    fireEvent.pointerDown(canvas, { clientX: 250, clientY: 200, pointerId: 1, button: 0 });
-    expect(document.querySelector('.target-circle')?.getAttribute('r')).toBe('50');
+    const canvas = await draw();
     enter('Group size (cm)', '10');
-    fireEvent.click(screen.getByLabelText('Use clicks / taps'));
-    fireEvent.change(screen.getByLabelText('Action'), { target: { value: 'center' } });
-    fireEvent.pointerDown(canvas, { clientX: 500, clientY: 400, pointerId: 1, button: 0 });
+    const center = document.querySelector('[data-handle="center"]')!;
+    fireEvent.pointerDown(center, { clientX: 400, clientY: 400, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(canvas, { clientX: 500, clientY: 400, pointerId: 1 });
     fireEvent.pointerCancel(canvas, { pointerId: 1 });
-    expect(document.querySelector('.target-circle')?.getAttribute('cx')).toBe('200');
-    fireEvent.click(screen.getByRole('button', { name: 'Zoom +' }));
+    expect(document.querySelector('.target-circle')?.getAttribute('cx')).toBe('400');
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
     const viewBox = canvas.getAttribute('viewBox');
-    fireEvent.change(screen.getByLabelText('Action'), { target: { value: 'pan' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Pan image' }));
     expect(canvas.getAttribute('viewBox')).toBe(viewBox);
-    fireEvent.change(screen.getByLabelText('Tool'), { target: { value: 'offset' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Group size + offset' }));
     expect(canvas.getAttribute('viewBox')).toBe(viewBox);
+    expect(screen.getAllByRole('spinbutton')).toHaveLength(3);
+    expect(canvas.querySelector('foreignObject')).toBeNull();
+  });
+  it('pans with Ctrl-drag, consumes only Ctrl-wheel, and saves unchanged calibrated geometry', async () => {
+    const saved = vi.fn();
+    render(
+      <TargetEditor
+        photo={photo}
+        initial={emptyTarget()}
+        units="metric"
+        onClose={vi.fn()}
+        onSaved={saved}
+      />,
+    );
+    const canvas = await draw('offset');
+    enter('Group size (cm)', '10');
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }));
+    const before = canvas.getAttribute('viewBox')!.split(' ').map(Number);
+    fireEvent.pointerDown(canvas, {
+      clientX: 600,
+      clientY: 400,
+      ctrlKey: true,
+      pointerId: 1,
+      button: 0,
+    });
+    fireEvent.pointerUp(canvas, { clientX: 650, clientY: 425, ctrlKey: true, pointerId: 1 });
+    const after = canvas.getAttribute('viewBox')!.split(' ').map(Number);
+    expect(after[0]).toBeCloseTo(before[0]! - 50 / 1.5);
+    expect(after[1]).toBeCloseTo(before[1]! - 25 / 1.5);
+    const panned = canvas.getAttribute('viewBox');
+    expect(
+      fireEvent.wheel(canvas, { deltaY: -100, clientX: 600, clientY: 400, cancelable: true }),
+    ).toBe(true);
+    expect(canvas.getAttribute('viewBox')).toBe(panned);
+    expect(
+      fireEvent.wheel(canvas, {
+        deltaY: -100,
+        ctrlKey: true,
+        clientX: 600,
+        clientY: 400,
+        cancelable: true,
+      }),
+    ).toBe(false);
+    expect(Number(canvas.getAttribute('viewBox')!.split(' ')[2])).toBeLessThan(after[2]!);
+    fireEvent.click(screen.getByRole('button', { name: 'Fit image' }));
+    expect(canvas.getAttribute('viewBox')).toBe('0 0 1200 800');
+    fireEvent.click(screen.getByRole('button', { name: 'Save measurement' }));
+    await waitFor(() => expect(saved).toHaveBeenCalledOnce());
+    const target = (await db.annotations.get('series'))!.target!;
+    expect(target.geometry).toMatchObject({
+      center: { x: 500, y: 300 },
+      poa: { x: 400, y: 400 },
+      radius: 80,
+    });
+    expect(target.values.groupSize).toBe(100);
+  });
+  it('uses two fingers to pan and pinch without leaving a drawing or an undo step', async () => {
+    const initial: TargetMeasurement = {
+      values: { horizontalOffset: 10, verticalOffset: 5, groupSize: 10 },
+      manual: [],
+      photoId: photo.id,
+      mmPerPixel: 0.1,
+      geometry: {
+        width: 1200,
+        height: 800,
+        center: { x: 600, y: 350 },
+        poa: { x: 500, y: 400 },
+        radius: 50,
+      },
+    };
+    const saved = vi.fn();
+    render(
+      <TargetEditor
+        photo={photo}
+        initial={initial}
+        units="metric"
+        onClose={vi.fn()}
+        onSaved={saved}
+      />,
+    );
+    const canvas = await screen.findByRole('group', { name: 'Target photo measurement canvas' });
+    fireEvent.pointerDown(canvas, {
+      clientX: 400,
+      clientY: 400,
+      pointerId: 10,
+      pointerType: 'touch',
+      button: 0,
+    });
+    fireEvent.pointerMove(canvas, {
+      clientX: 420,
+      clientY: 380,
+      pointerId: 10,
+      pointerType: 'touch',
+    });
+    fireEvent.pointerDown(canvas, {
+      clientX: 600,
+      clientY: 400,
+      pointerId: 11,
+      pointerType: 'touch',
+      button: 0,
+    });
+    expect(document.querySelector('.target-circle')?.getAttribute('cx')).toBe('600');
+    fireEvent.pointerMove(canvas, {
+      clientX: 300,
+      clientY: 400,
+      pointerId: 10,
+      pointerType: 'touch',
+    });
+    fireEvent.pointerMove(canvas, {
+      clientX: 700,
+      clientY: 400,
+      pointerId: 11,
+      pointerType: 'touch',
+    });
+    const zoomed = canvas.getAttribute('viewBox')!.split(' ').map(Number);
+    expect(zoomed[2]).toBeLessThan(1200);
+    fireEvent.pointerMove(canvas, {
+      clientX: 350,
+      clientY: 400,
+      pointerId: 10,
+      pointerType: 'touch',
+    });
+    fireEvent.pointerMove(canvas, {
+      clientX: 750,
+      clientY: 400,
+      pointerId: 11,
+      pointerType: 'touch',
+    });
+    const panned = canvas.getAttribute('viewBox')!.split(' ').map(Number);
+    expect(panned[2]).toBeCloseTo(zoomed[2]!);
+    expect(panned[0]).toBeLessThan(zoomed[0]!);
+    fireEvent.pointerUp(canvas, {
+      clientX: 350,
+      clientY: 400,
+      pointerId: 10,
+      pointerType: 'touch',
+    });
+    const released = canvas.getAttribute('viewBox');
+    fireEvent.pointerMove(canvas, {
+      clientX: 800,
+      clientY: 300,
+      pointerId: 11,
+      pointerType: 'touch',
+    });
+    expect(canvas.getAttribute('viewBox')).toBe(released);
+    fireEvent.pointerCancel(canvas, { pointerId: 11, pointerType: 'touch' });
+    expect((screen.getByRole('button', { name: 'Undo' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Save measurement' }));
+    await waitFor(() => expect(saved).toHaveBeenCalledOnce());
+    expect((await db.annotations.get('series'))!.target).toEqual(initial);
   });
   it('leaves the previous result untouched on Cancel and rejects a zero calibration', async () => {
     const initial = {

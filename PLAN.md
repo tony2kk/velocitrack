@@ -149,10 +149,20 @@ See decision 014. Target-image measurement follows in 0.12.0.
 - [x] Optional string H/V offsets and group size, canonical mm with cm/in display.
 - [x] Direct entry and manual circle/POA photo tools with uniform calibration.
 - [x] Editable dimensions, explicit recalibration, manual overrides and undo.
-- [x] Zoom/pan/Fit and click/tap/nudge alternatives for multi-target sheets.
+- [x] Zoom/pan/Fit and keyboard adjustments for multi-target sheets.
 - [x] Atomic Save/Cancel, exact drawing restoration, independent per-string photo provenance.
 - [x] Shared chart/table/String info quantities and readonly custom-function access.
 - [x] Profile Display option for group size on string cards; cm/in unit labels.
 - [x] Backup compatibility, lifecycle tests and isolated synthetic browser verification.
 
 See decision 015 and TARGET_MEASUREMENTS.md. Automatic hole detection and perspective correction remain outside this release. Pages deployment is separate.
+
+## Target editor ergonomics — 2026-10-20
+
+- [x] One toolbar row with two measurement buttons and labeled Undo/trash/hand/zoom/Fit icons.
+- [x] Direct handle editing; remove Action, click/tap mode and on-screen arrow controls.
+- [x] Ctrl-drag/Ctrl-wheel and two-finger pan/pinch, without changing saved geometry.
+- [x] Fixed numeric fields with color-matched hover/focus connectors; no image input overlays.
+- [x] Gesture transition, cursor anchoring and viewport bound regressions.
+
+Version 0.12.1 refines decision 015. Physical mobile-device verification remains separate.

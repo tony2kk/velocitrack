@@ -1,77 +1,93 @@
 import { useId } from 'react';
-import type { UnitSystem } from '../../domain/model';
-import type { TargetField, TargetMeasurement } from '../../domain/targetMeasurement';
-import { TargetValueInput } from '../TargetValueInput';
+import type {
+  ImagePoint,
+  TargetField,
+  TargetGeometry,
+  TargetMeasurement,
+} from '../../domain/targetMeasurement';
 
-/** SVG geometry uses original pixels; dimension inputs keep a readable size at every zoom level. */
+/** Match each dimension arrow, focus connector and fixed-panel marker without floating text boxes. */
+export const TARGET_COLORS: Record<TargetField, string> = {
+  horizontalOffset: '#397bdb',
+  verticalOffset: '#d79a16',
+  groupSize: '#009f86',
+};
+/** Connect a fixed field to the corresponding dimension, rather than to an arbitrary circle point. */
+export function dimensionAnchor(geometry: TargetGeometry, field: TargetField): ImagePoint | null {
+  const { center, radius, poa } = geometry;
+  if (field === 'groupSize')
+    return { x: center.x + radius / Math.sqrt(2), y: center.y - radius / Math.sqrt(2) };
+  if (!poa) return null;
+  return field === 'horizontalOffset'
+    ? { x: (poa.x + center.x) / 2, y: poa.y }
+    : { x: poa.x, y: (poa.y + center.y) / 2 };
+}
+
+/** Render geometry and dimension arrows only; numeric inputs belong to the fixed side panel. */
 export function TargetDrawing({
   measurement,
-  units,
   pixelSize,
-  bounds,
   editing,
-  onValue,
+  activeField,
 }: {
   measurement: TargetMeasurement;
-  units: UnitSystem;
   pixelSize: number;
-  bounds: { x: number; y: number; width: number; height: number };
   editing: boolean;
-  onValue: (field: TargetField, text: string) => void;
+  activeField: TargetField | null;
 }) {
   const arrowId = useId().replaceAll(':', '');
   const g = measurement.geometry;
   if (!g) return null;
   const diagonal = g.radius / Math.sqrt(2);
   const handle = pixelSize * 6;
-  const boxWidth = pixelSize * 150;
-  const boxHeight = pixelSize * 62;
-  /** Clamp only the label to the viewport; its underlying measurement stays at the original location. */
-  function dimension(field: TargetField, x: number, y: number) {
+  /** Each dimension gets its own marker color and a stronger line when its field is focused. */
+  function dimension(field: TargetField, from: ImagePoint, to: ImagePoint) {
+    const marker = arrowId + field;
     return (
-      <foreignObject
-        data-control="true"
-        x={Math.max(bounds.x, Math.min(bounds.x + bounds.width - boxWidth, x))}
-        y={Math.max(bounds.y, Math.min(bounds.y + bounds.height - boxHeight, y))}
-        width={boxWidth}
-        height={boxHeight}
-        key={field}
-      >
-        <div
-          className="target-dimension"
-          style={{ fontSize: pixelSize * 12, padding: pixelSize * 4, borderRadius: pixelSize * 4 }}
-        >
-          <TargetValueInput
-            field={field}
-            value={measurement.values[field]}
-            units={units}
-            manual={measurement.manual.includes(field)}
-            compact
-            onCommit={onValue}
-          />
-        </div>
-      </foreignObject>
+      <g color={TARGET_COLORS[field]}>
+        <defs>
+          <marker
+            id={marker}
+            markerWidth="7"
+            markerHeight="7"
+            refX="3.5"
+            refY="3.5"
+            orient="auto-start-reverse"
+          >
+            <path d="M 7 0 L 0 3.5 L 7 7" fill="none" stroke="currentColor" />
+          </marker>
+        </defs>
+        <line
+          x1={from.x}
+          y1={from.y}
+          x2={to.x}
+          y2={to.y}
+          strokeWidth={pixelSize * (activeField === field ? 2 : 1.2)}
+          markerStart={'url(#' + marker + ')'}
+          markerEnd={'url(#' + marker + ')'}
+        />
+      </g>
     );
   }
   return (
     <g className="target-drawing">
-      <defs>
-        <marker
-          id={arrowId}
-          markerWidth="7"
-          markerHeight="7"
-          refX="3.5"
-          refY="3.5"
-          orient="auto-start-reverse"
-        >
-          <path d="M 7 0 L 0 3.5 L 7 7" fill="none" stroke="currentColor" />
-        </marker>
-      </defs>
       {g.poa && (
         <path
           className="target-rectangle"
           vectorEffect="non-scaling-stroke"
-          d={`M${g.poa.x} ${g.poa.y} H${g.center.x} V${g.center.y} H${g.poa.x} Z`}
+          d={
+            'M' +
+            g.poa.x +
+            ' ' +
+            g.poa.y +
+            ' H' +
+            g.center.x +
+            ' V' +
+            g.center.y +
+            ' H' +
+            g.poa.x +
+            ' Z'
+          }
         />
       )}
       <circle
@@ -117,7 +133,20 @@ export function TargetDrawing({
             data-handle="poa"
             className="target-poa"
             vectorEffect="non-scaling-stroke"
-            d={`M${g.poa.x - handle * 1.5} ${g.poa.y} h${handle * 3} M${g.poa.x} ${g.poa.y - handle * 1.5} v${handle * 3}`}
+            d={
+              'M' +
+              (g.poa.x - handle * 1.5) +
+              ' ' +
+              g.poa.y +
+              ' h' +
+              handle * 3 +
+              ' M' +
+              g.poa.x +
+              ' ' +
+              (g.poa.y - handle * 1.5) +
+              ' v' +
+              handle * 3
+            }
           />
           <text
             x={g.poa.x + handle * 2}
@@ -130,53 +159,19 @@ export function TargetDrawing({
         </>
       )}
       {!editing && (
-        <>
-          <g className="target-dimension-lines" pointerEvents="none" strokeWidth={pixelSize * 1.2}>
-            <line
-              x1={g.center.x - diagonal}
-              y1={g.center.y + diagonal}
-              x2={g.center.x + diagonal}
-              y2={g.center.y - diagonal}
-              markerStart={`url(#${arrowId})`}
-              markerEnd={`url(#${arrowId})`}
-            />
-            {g.poa && (
-              <>
-                <line
-                  x1={g.poa.x}
-                  y1={g.poa.y}
-                  x2={g.center.x}
-                  y2={g.poa.y}
-                  markerStart={`url(#${arrowId})`}
-                  markerEnd={`url(#${arrowId})`}
-                />
-                <line
-                  x1={g.poa.x}
-                  y1={g.poa.y}
-                  x2={g.poa.x}
-                  y2={g.center.y}
-                  markerStart={`url(#${arrowId})`}
-                  markerEnd={`url(#${arrowId})`}
-                />
-              </>
-            )}
-          </g>
-          {dimension('groupSize', g.center.x + diagonal + pixelSize * 12, g.center.y - diagonal)}
+        <g className="target-dimension-lines" pointerEvents="none" stroke="currentColor">
+          {dimension(
+            'groupSize',
+            { x: g.center.x - diagonal, y: g.center.y + diagonal },
+            { x: g.center.x + diagonal, y: g.center.y - diagonal },
+          )}
           {g.poa && (
             <>
-              {dimension(
-                'horizontalOffset',
-                (g.poa.x + g.center.x) / 2 - boxWidth / 2,
-                g.poa.y + pixelSize * 14,
-              )}
-              {dimension(
-                'verticalOffset',
-                g.poa.x - boxWidth - pixelSize * 14,
-                (g.poa.y + g.center.y) / 2 - boxHeight / 2,
-              )}
+              {dimension('horizontalOffset', g.poa, { x: g.center.x, y: g.poa.y })}
+              {dimension('verticalOffset', g.poa, { x: g.poa.x, y: g.center.y })}
             </>
           )}
-        </>
+        </g>
       )}
     </g>
   );
