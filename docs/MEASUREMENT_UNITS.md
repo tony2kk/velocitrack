@@ -43,6 +43,19 @@ Field definitions are in `input.fields`; values are in `input.shotAnnotation` an
 
 Tags and notes have no physical units. Definition IDs, rather than editable display names, join definitions to values.
 
+## Target measurements
+
+`input.stringAnnotation?.target.values` contains optional `horizontalOffset`,
+`verticalOffset` and `groupSize`, all in canonical **mm**, regardless of the profile.
+Null means absent. H is positive right; V is positive up; group size is a nonnegative
+circle diameter. Display divides by **10** for cm in Metric or **25.4** for inches
+in Imperial. Existing recorded/custom distance values remain in ft and display in m/ft.
+
+Target `geometry` uses decoded original-image **pixels**: width, height, center,
+optional POA and radius. Image Y increases downwards. `mmPerPixel` is **mm/pixel**.
+Neither viewport zoom nor display-unit changes modify those values.
+See [target measurement contract](TARGET_MEASUREMENTS.md) for calibration and manual overrides.
+
 ## Custom-function output
 
 `DistanceSample.distance` is finite non-negative **ft**. `DistanceSample.value` uses the custom definition's chosen canonical unit, declared through its `axisKey`, label and `displayScale`. Do not apply profile conversion in the calculation and again in the renderer. The adapter does not automatically interpret weather, coefficients or other raw fields.

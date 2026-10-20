@@ -33,7 +33,7 @@ The owner plans to contact Caldwell when the application is sufficiently functio
 
 ## Series context update
 
-Version 0.4.0 adds additive schema v2, local custom fields/tags, per-series raster photos and full ZIP backup/restore. Read decision 007 for units, field lifecycle, file limits and authentication/restore behavior. Photos and backups are always user browser data, never repository assets. The pinned fflate 0.8.3 fixes the malformed ZIP64 advisory affecting older versions. Target analysis remains future work.
+Version 0.4.0 adds additive schema v2, local custom fields/tags, per-series raster photos and full ZIP backup/restore. Read decision 007 for units, field lifecycle, file limits and authentication/restore behavior. Photos and backups are always user browser data, never repository assets. The pinned fflate 0.8.3 fixes the malformed ZIP64 advisory affecting older versions. Manual target measurement follows in version 0.12.0.
 
 ## Analysis/display update
 
@@ -62,3 +62,29 @@ Version 0.9.0 adds `domain/distanceCurves`: a shared compile-time registry, cano
 Version 0.10.0 extends callbacks to `DistanceCurveContext`: full detached readonly shot/string records including raw metadata, separate entity annotations, field definitions and assigned tag definitions. The string join checks local ID and source ID; missing context is explicit. Availability, omission notices and Simple/Dual/Compare dispatch receive current local records. `DistanceCurveInput` remains the minimal sample/horizon type for standalone helpers. Read decision 013 and the updated extension/data-access guides. `MEASUREMENT_UNITS.md` records owner-confirmed altitude in ft, pressure in hPa reduced to sea level, diameterUnit 0 = inches / 1 = mm and weightUnit 0 = grains / 1 = grams. Other unresolved units stay explicit. No numerical implementation or cloud change is included.
 
 Version 0.11.0 moves Calculated velocity G1/G7 into explicit entries in `customDistanceCurves.ts`. Each owns a separate definition/callback file; the existing common calculation lives in `distanceCurves/velocityCalculation.ts`, with the old module path retained as re-exports. Saved `calculated:g1`/`calculated:g7` IDs and all numerical behavior remain unchanged. Constants, metadata and working-variable declarations lead the corresponding functions, with documented deferred assignments after guards. Read decision 014. The owner wants target-image connection/processing in the following release; this batch does not implement it.
+
+## Target photo measurement
+
+Version 0.12.0 adds optional `Annotation.target` on strings: H offset positive right,
+V offset positive up, and group size as the diameter of a manually placed circle.
+Values are canonical mm, displayed as cm/in according to the profile. Existing
+recorded distances remain ft, displayed as ft/m. Read decision 015,
+TARGET_MEASUREMENTS.md and the linked user guide before extending the editor.
+
+String details support direct entry and an attached-photo editor with circle or
+POA-plus-circle tools, editable dimensions, explicit calibration, manual overrides,
+undo and zoom/pan/Fit. Save atomically confirms values, original-pixel geometry,
+scale and photo reference. Cancel writes nothing; reopening restores the drawing.
+Each string has one active result, independent even when several strings use the
+same six-target sheet. Deleting its photo retains numbers as manual values.
+
+The scalar pipeline exposes the three `target:*` quantities in charts, tables and
+String info. Custom callbacks receive canonical mm through
+`input.stringAnnotation?.target`; image bytes are not in that context. Display can
+optionally show saved group size on string cards (`showGroupSize`, default false).
+Optional annotation/profile fields need no schema or backup format bump.
+
+Browser verification used an invented six-target image on a separate temporary
+origin. No owner photo or measurement was inspected or copied. The daily local
+origin remains 4180. Automatic target detection and perspective correction are
+outside this release; Pages deployment is separate.

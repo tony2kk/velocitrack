@@ -32,9 +32,13 @@ Create a name and color in **Profile → Tags**. Assign tags in string details a
 
 Add JPEG, PNG, or WebP photos in string details. Add several, give each a caption, and open thumbnails at full size. Each can be up to 20 MiB and 60 megapixels.
 
-Photos and captions save immediately. Field/tag edits save with **Save details**. Removing a photo asks for confirmation. Target/group analysis is planned separately.
+Photos and captions save immediately. Field/tag edits save with **Save details**. Removing a photo asks for confirmation. If it has the active target measurement, its numeric values remain as manual entries.
 
 > [!TIP]
 > Photos stay in this browser. Include them in a regular [workspace backup](backup.md).
+
+## Measure group size and offsets
+
+Use **Target measurement** to enter optional H/V offsets and group size, or choose an attached photo and select **Measure photo**. Values use cm/in from your profile. See the [target measurement guide](targets.md) for drawing, calibration, multi-target sheets and the optional group-size display on string cards.
 
 **Related:** [Table columns](shots.md) · [Display preferences](profile.md)

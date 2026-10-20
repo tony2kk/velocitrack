@@ -4,8 +4,8 @@ export type MeasurementKind = 'velocity' | 'distance' | 'temperature';
 
 /** Display labels share one definition across preferences, axes, tables and point details. */
 export const unitLabels = {
-  imperial: { velocity: 'ft/s', distance: 'ft', temperature: '°F' },
-  metric: { velocity: 'm/s', distance: 'm', temperature: '°C' },
+  imperial: { velocity: 'ft/s', distance: 'ft', temperature: '°F', targetLength: 'in' },
+  metric: { velocity: 'm/s', distance: 'm', temperature: '°C', targetLength: 'cm' },
 } as const;
 
 /**

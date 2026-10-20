@@ -1,5 +1,231 @@
 @layer reset, base, layout, components, responsive;
 
+@layer components {
+  .target-summary {
+    border-block: 1px solid var(--border);
+    padding: 18px 0;
+    margin-bottom: 22px;
+  }
+  .target-values {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .target-photo-picker,
+  .target-editor-toolbar,
+  .target-view-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 10px;
+  }
+  .target-photo-picker .field {
+    flex: 1;
+    margin: 0;
+  }
+  .target-editor.modal {
+    width: min(1500px, calc(100vw - 24px));
+    max-width: none;
+    padding: 22px;
+  }
+  .target-editor[open] {
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow: hidden;
+  }
+  .target-editor > .modal-heading,
+  .target-editor > .dialog-actions,
+  .target-editor-toolbar {
+    flex-shrink: 0;
+  }
+  .target-editor > .dialog-actions {
+    margin-top: 12px;
+  }
+  .target-editor-toolbar {
+    margin-bottom: 14px;
+    align-items: center;
+  }
+  .target-editor-toolbar .field {
+    margin: 0;
+    min-width: 155px;
+  }
+  .target-editor-toolbar .check-field {
+    margin: 0;
+  }
+  .target-editor-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 245px;
+    gap: 20px;
+    min-height: 0;
+    overflow: auto;
+    flex: 1;
+  }
+  .target-canvas-area {
+    min-width: 0;
+  }
+  .target-view-controls {
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .target-nudge {
+    display: flex;
+    gap: 3px;
+    margin-left: auto;
+  }
+  .target-nudge button {
+    min-width: 38px;
+    padding: 6px;
+  }
+  .target-canvas {
+    display: block;
+    width: 100%;
+    height: clamp(240px, calc(100dvh - 280px), 780px);
+    background: #293430;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    touch-action: none;
+    user-select: none;
+    cursor: crosshair;
+  }
+  .target-pan {
+    cursor: grab;
+  }
+  .target-pan:active {
+    cursor: grabbing;
+  }
+  .target-circle {
+    fill: #09ba9b12;
+    stroke: #00d6b1;
+    stroke-width: 2;
+    pointer-events: none;
+  }
+  .target-hit-ring {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 24;
+    cursor: nwse-resize;
+  }
+  .target-hit {
+    fill: transparent;
+    cursor: move;
+  }
+  .target-handle {
+    fill: #00b897;
+    stroke: #fff;
+    stroke-width: 2;
+    cursor: move;
+  }
+  .target-rectangle {
+    fill: #f2b63f09;
+    stroke: #edb83f;
+    stroke-dasharray: 5 4;
+    pointer-events: none;
+  }
+  .target-poa {
+    stroke: #ffca61;
+    stroke-width: 3;
+    cursor: move;
+  }
+  .target-poa-label {
+    fill: #ffca61;
+    stroke: #1c3024;
+    stroke-width: 2;
+    paint-order: stroke;
+    pointer-events: none;
+  }
+  .target-dimension-lines {
+    color: #f8cb69;
+    stroke: currentColor;
+  }
+  .target-dimension {
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    opacity: 0.96;
+    line-height: 1.2;
+  }
+  .target-dimension .field {
+    display: block;
+    font-size: 1em;
+    margin: 0;
+  }
+  .target-dimension input {
+    width: 100%;
+    padding: 0.2em 0.3em;
+    min-height: 0;
+    height: 1.9em;
+    font-size: 1.15em;
+    margin-top: 0.2em;
+  }
+  .target-editor-values {
+    padding: 14px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .target-editor-values .field {
+    margin-bottom: 14px;
+  }
+  .target-editor-values .muted,
+  .target-canvas-help {
+    font-size: 12px;
+  }
+  .target-editor-values small {
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .target-use-scale {
+    font-size: 11px;
+    margin: -8px 0 12px;
+  }
+  .target-canvas-help {
+    margin: 8px 0 0;
+  }
+}
+
+@layer responsive {
+  @media (max-width: 850px) {
+    .target-editor-body {
+      grid-template-columns: 1fr;
+    }
+    .target-editor-values {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .target-editor-values h3,
+    .target-editor-values > p {
+      grid-column: 1 / -1;
+      margin-bottom: 0;
+    }
+    .target-canvas {
+      height: 52vh;
+      min-height: 300px;
+    }
+    .target-dimension {
+      display: none;
+    }
+    .target-editor.modal {
+      padding: 14px;
+    }
+  }
+  @media (max-width: 520px) {
+    .target-values,
+    .target-editor-values {
+      grid-template-columns: 1fr;
+    }
+    .target-editor-toolbar .field {
+      flex: 1;
+      min-width: 130px;
+    }
+    .target-nudge {
+      margin-left: 0;
+    }
+  }
+}
+
 @layer reset {
   * {
     box-sizing: border-box;

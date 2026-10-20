@@ -143,3 +143,7 @@ For every normalized record, provider path, unit caveat and local read/write API
 Each calculated quantity has a separate module beside `customDistanceCurves.ts`. At the start of its definition function, declare the stable ID, English display name, description, unavailable-input text, axis key and conversion constants with comments. At the start of calculation/helper functions, declare the constants and working variables with their purpose and units. Keep assignments that require validated inputs after the guard, and update loop-dependent values inside the loop. Keep the common calculation shared; separate quantity files own their selection-specific metadata and adapters.
 
 The 0.11.0 catalog move preserves existing behavior and introduces no new model. See [decision 014](decisions/014-calculated-velocity-catalog.md).
+
+## Local target context (0.12.0)
+
+Custom callbacks can read `input.stringAnnotation?.target`. Its optional horizontal offset, vertical offset and group size are in canonical **mm**, independently of the profile; null means absent. Geometry uses original-image pixels and scale uses mm/pixel. The result belongs to the string, not an individual shot. It is a detached readonly annotation like other local fields; image bytes and blob URLs are not exposed. See [target measurements](TARGET_MEASUREMENTS.md) for the full contract.

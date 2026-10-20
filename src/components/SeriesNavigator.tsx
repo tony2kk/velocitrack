@@ -4,6 +4,7 @@ import type { Annotation, Tag, FieldDefinition, UnitSystem } from '../domain/mod
 import { fieldDisplay, fieldUnit } from '../domain/customFields';
 import { TagLabels } from './CustomizationManager';
 import type { Series, Shot } from '../domain/model';
+import { targetText, targetUnit } from '../domain/targetMeasurement';
 
 /** Select series only; shot selection lives in the table below the chart. */
 export function SeriesNavigator({
@@ -19,9 +20,11 @@ export function SeriesNavigator({
   onDetails,
   fields = [],
   unitSystem = 'imperial',
+  showGroupSize = false,
 }: {
   fields?: FieldDefinition[];
   unitSystem?: UnitSystem;
+  showGroupSize?: boolean;
   annotations?: Annotation[];
   tags?: Tag[];
   onDetails?: (id: string) => void;
@@ -49,6 +52,7 @@ export function SeriesNavigator({
       {series.map((item) => {
         const expanded = selected.includes(item.id);
         const records = grouped.get(item.id) ?? [];
+        const groupSize = annotations.find((a) => a.entityId === item.id)?.target?.values.groupSize;
         return (
           <section
             className={`series-group ${expanded ? 'selected' : ''}`}
@@ -104,6 +108,14 @@ export function SeriesNavigator({
               )}
             />
             <dl className="navigator-fields">
+              {showGroupSize && groupSize !== null && groupSize !== undefined && (
+                <div title="Saved string-level diameter of the manually placed target circle.">
+                  <dt>Group size</dt>
+                  <dd>
+                    {targetText(groupSize, unitSystem)} {targetUnit(unitSystem).label}
+                  </dd>
+                </div>
+              )}
               {fields
                 .filter((field) => field.showInNavigator)
                 .map((field) => {

@@ -67,7 +67,7 @@ Review candidate files, built assets and history before publishing. The owner au
 - [x] Local original photos and captions per series.
 - [x] Structured ZIP backup, validation preview and atomic full-workspace restore.
 - [x] Additive v2 migration, unit conversion and behavioral regression tests.
-- [ ] Future target/group analysis with calibration and per-photo result provenance.
+- [x] Target/group measurement with calibration and local photo provenance (0.12.0).
 
 See decision 007. No Pages deployment is implied.
 
@@ -142,4 +142,17 @@ See decision 013. Preserve existing sample-only helpers and unrelated local work
 - [x] Group and document constants, metadata and variable declarations at function starts.
 - [x] Prepare minor release 0.11.0 with regression verification.
 
-See decision 014. The next requested release will address target-image connection and processing; its implementation and detailed scope remain deferred.
+See decision 014. Target-image measurement follows in 0.12.0.
+
+## Target photo measurement — 2026-10-20
+
+- [x] Optional string H/V offsets and group size, canonical mm with cm/in display.
+- [x] Direct entry and manual circle/POA photo tools with uniform calibration.
+- [x] Editable dimensions, explicit recalibration, manual overrides and undo.
+- [x] Zoom/pan/Fit and click/tap/nudge alternatives for multi-target sheets.
+- [x] Atomic Save/Cancel, exact drawing restoration, independent per-string photo provenance.
+- [x] Shared chart/table/String info quantities and readonly custom-function access.
+- [x] Profile Display option for group size on string cards; cm/in unit labels.
+- [x] Backup compatibility, lifecycle tests and isolated synthetic browser verification.
+
+See decision 015 and TARGET_MEASUREMENTS.md. Automatic hole detection and perspective correction remain outside this release. Pages deployment is separate.

@@ -7,7 +7,7 @@ Open the profile icon at the top right. There is no separate VelociTrack account
 ## General
 
 - **Nickname:** a local display name.
-- **Units:** Imperial (ft/s, ft, °F) or Metric (m/s, m, °C). Select **Save profile**.
+- **Units:** Imperial (ft/s, ft, in, °F) or Metric (m/s, m, cm, °C). Target sizes and offsets use in/cm; recorded distances use ft/m. Select **Save profile**.
 - **Allow sign-in to be remembered on this device:** keep connected sessions between visits. Leave off on shared browser profiles. Passwords are never saved.
 - **Refresh all enabled sources after startup:** refresh signed-in sources when the app opens. File sources wait for files.
 
@@ -17,6 +17,7 @@ Units update charts, tooltips, tables, and applicable custom fields. Originals s
 
 - **Projectile weight:** append original mass, such as `Example projectile 150grs` or `Example projectile 2g`.
 - **Theme:** Light, Dark, or Auto to follow your operating system.
+- **Show group size on string cards:** display each string's saved target diameter in cm/in. Starts off; missing values stay hidden and zero is shown. See [Target measurements](targets.md).
 
 Choose **Save display**. These choices are saved and included in backups.
 

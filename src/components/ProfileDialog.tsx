@@ -26,6 +26,7 @@ export function ProfileDialog({
     profile.showProjectileWeight ?? false,
   );
   const [nickname, setNickname] = useState(profile.nickname);
+  const [showGroupSize, setShowGroupSize] = useState(profile.showGroupSize ?? false);
   const [remember, setRemember] = useState(profile.rememberSignIn);
   const [refresh, setRefresh] = useState(profile.refreshOnStart);
   const [unitSystem, setUnitSystem] = useState(profile.unitSystem ?? 'imperial');
@@ -61,7 +62,7 @@ export function ProfileDialog({
             setBusy(true);
             setError('');
             try {
-              await saveProfile({ theme, showProjectileWeight });
+              await saveProfile({ theme, showProjectileWeight, showGroupSize });
               onClose();
             } catch {
               setError('Display preferences could not be saved.');
@@ -95,6 +96,20 @@ export function ProfileDialog({
               <option value="light">Light</option>
               <option value="dark">Dark</option>
             </select>
+          </label>
+          <label className="check-field">
+            <input
+              type="checkbox"
+              checked={showGroupSize}
+              title="Show each string's saved group size in cm or inches. Strings without a value stay blank."
+              onChange={(event) => setShowGroupSize(event.target.checked)}
+            />
+            <span>
+              Show group size on string cards
+              <small>
+                Use the profile's units. Only strings with a saved value display a group size.
+              </small>
+            </span>
           </label>
           {error && (
             <p role="alert" className="error">
@@ -168,8 +183,8 @@ export function ProfileDialog({
               title="Choose display units across the app. Original measurements stay unchanged."
               onChange={(event) => setUnitSystem(event.target.value as typeof unitSystem)}
             >
-              <option value="imperial">Imperial — ft/s, ft, °F</option>
-              <option value="metric">Metric — m/s, m, °C</option>
+              <option value="imperial">Imperial — ft/s, ft, in, °F</option>
+              <option value="metric">Metric — m/s, m, cm, °C</option>
             </select>
             <small>Applies throughout the workspace. Original measurements stay unchanged.</small>
           </label>

@@ -13,6 +13,7 @@ import { addPhoto, removePhoto } from '../storage/attachments';
 import { db } from '../storage/database';
 import { Modal } from './Modal';
 import { TagLabels } from './CustomizationManager';
+import { TargetMeasurementPanel } from './TargetMeasurementPanel';
 
 /** Load one photo on demand and release its object URL when the card unmounts. */
 function PhotoCard({ photo, onError }: { photo: Attachment; onError: (message: string) => void }) {
@@ -131,6 +132,12 @@ export function SeriesDetails({
       <p className="muted">
         Series fields and tags apply to every shot. Refresh preserves these local details.
       </p>
+      <TargetMeasurementPanel
+        seriesId={series.id}
+        target={annotation?.target}
+        photos={photos}
+        units={editorUnits}
+      />
       <form
         onSubmit={async (event) => {
           event.preventDefault();

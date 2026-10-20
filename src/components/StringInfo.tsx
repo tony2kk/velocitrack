@@ -52,7 +52,12 @@ export function StringInfo({
     fields,
     annotations,
     profile.unitSystem,
-  ).filter((item) => item.id.startsWith('source:') || item.id === 'projectileWeight');
+  ).filter(
+    (item) =>
+      item.id.startsWith('source:') ||
+      item.id.startsWith('target:') ||
+      item.id === 'projectileWeight',
+  );
   return (
     <section className="string-info">
       <header className="chart-heading">

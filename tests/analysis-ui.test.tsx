@@ -334,12 +334,14 @@ describe('persistent analysis controls', () => {
     expect(screen.queryByLabelText('Shot detail')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Display' }));
     fireEvent.click(screen.getByRole('checkbox', { name: /Projectile weight/ }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /Show group size on string cards/ }));
     fireEvent.change(screen.getByLabelText('Theme'), { target: { value: 'dark' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save display' }));
     await waitFor(() => expect(close).toHaveBeenCalledOnce());
     expect((await loadWorkspace()).profile).toMatchObject({
       theme: 'dark',
       showProjectileWeight: true,
+      showGroupSize: true,
     });
     expect(await db.shots.get(original.id)).toEqual(original);
   });

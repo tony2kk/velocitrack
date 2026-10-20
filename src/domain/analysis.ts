@@ -14,6 +14,7 @@ import { finiteNumber, rawPath } from './providerData';
 import { distanceCurveRegistry, supportsDistanceCurve } from './distanceCurves/registry';
 import type { DisplayScale } from './chartViewport';
 import type { DistanceCurveData } from './distanceCurves/types';
+import { TARGET_FIELDS, TARGET_LABELS, targetUnit } from './targetMeasurement';
 export { finiteNumber, rawPath } from './providerData';
 
 export const QUANTITIES: ChartQuantity[] = ['velocity', 'g1', 'g7'];
@@ -47,6 +48,18 @@ export function availableQuantities(
       return value === null ? null : quantityDisplay(value, id, units);
     },
   }));
+  for (const field of TARGET_FIELDS) {
+    const unit = targetUnit(units);
+    definitions.push({
+      id: `target:${field}`,
+      label: `String ${TARGET_LABELS[field].toLowerCase()} (${unit.label})`,
+      displayScale: { factor: 1 / unit.mm, offset: 0 },
+      read: (shot) => {
+        const value = details.get(shot.seriesId)?.target?.values[field];
+        return typeof value === 'number' && Number.isFinite(value) ? value / unit.mm : null;
+      },
+    });
+  }
   definitions.push({
     id: 'projectileWeight',
     label: `Projectile weight (${units === 'metric' ? 'g' : 'grs'})`,

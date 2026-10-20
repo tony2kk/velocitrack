@@ -2,6 +2,7 @@ import type { Workspace } from './workspace';
 import { entityId } from '../domain/model';
 import { FIELD_TYPES, validFieldValue } from '../domain/customFields';
 import { MAX_FORECAST_DISTANCE } from '../domain/calculatedVelocity';
+import { validTargetMeasurement } from '../domain/targetMeasurement';
 
 /** Reject malformed archives before a write transaction begins. */
 function requireValid(condition: unknown): asserts condition {
@@ -183,6 +184,15 @@ export function validateBackup(value: unknown): asserts value is Workspace {
     );
   requireValid(new Set(w.tags.map((tag) => tag.name.toLowerCase())).size === w.tags.length);
   for (const item of w.annotations) {
+    if (item.target !== undefined) {
+      requireValid(series.has(item.entityId) && validTargetMeasurement(item.target));
+      if (item.target.photoId)
+        requireValid(
+          w.attachments.some(
+            (photo) => photo.id === item.target!.photoId && photo.seriesId === item.entityId,
+          ),
+        );
+    }
     requireValid(
       item.invalid === undefined || (shots.has(item.entityId) && typeof item.invalid === 'boolean'),
     );
@@ -240,6 +250,7 @@ export function validateBackup(value: unknown): asserts value is Workspace {
     'analysis',
     'theme',
     'showProjectileWeight',
+    'showGroupSize',
     'tableColumns',
     'tableSort',
     'infoSeriesId',
@@ -258,6 +269,7 @@ export function validateBackup(value: unknown): asserts value is Workspace {
   );
   requireValid(p.showTags === undefined || typeof p.showTags === 'boolean');
   requireValid(p.showProjectileWeight === undefined || typeof p.showProjectileWeight === 'boolean');
+  requireValid(p.showGroupSize === undefined || typeof p.showGroupSize === 'boolean');
   requireValid(p.theme === undefined || ['auto', 'light', 'dark'].includes(p.theme));
   requireValid(p.infoSeriesId === undefined || string(p.infoSeriesId));
   if (p.tableSort !== undefined) {

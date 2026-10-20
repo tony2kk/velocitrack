@@ -1,4 +1,5 @@
 import { db } from './database';
+import { TARGET_FIELDS } from '../domain/targetMeasurement';
 
 export const MAX_PHOTO_BYTES = 20 * 1024 * 1024;
 
@@ -47,12 +48,21 @@ export async function addPhoto(seriesId: string, file: File, database = db) {
   );
 }
 
-/** Delete image metadata and original bytes together so no orphaned photos consume quota. */
+/** Delete photo bytes/provenance together while preserving the string's last confirmed numeric values. */
 export async function removePhoto(id: string, database = db) {
   await database.transaction(
     'rw',
-    [database.attachments, database.attachmentContents],
+    [database.attachments, database.attachmentContents, database.annotations],
     async () => {
+      const photo = await database.attachments.get(id);
+      const annotation = photo ? await database.annotations.get(photo.seriesId) : undefined;
+      if (annotation?.target?.photoId === id) {
+        const values = annotation.target.values;
+        await database.annotations.put({
+          ...annotation,
+          target: { values, manual: TARGET_FIELDS.filter((field) => values[field] !== null) },
+        });
+      }
       await database.attachments.delete(id);
       await database.attachmentContents.delete(id);
     },

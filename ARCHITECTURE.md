@@ -90,3 +90,7 @@ Public ECharts zoom state updates canonical windows. A settled horizontal right 
 ## Calculated quantity catalog — v0.11
 
 G1/G7 definitions are explicit entries in `customDistanceCurves.ts`, with separate `calculatedVelocityG1.ts` and `calculatedVelocityG7.ts` modules. Both use the ordinary frozen-context/validated-output boundary. `velocityCalculation.ts` retains the existing common implementation; the old domain path is a compatibility export. The registry implicitly supplies only recorded Velocity. Stable calculated IDs, model tooltip metadata, limits and saved preferences remain compatible. Definition metadata, constants and working-variable declarations are grouped at function starts; assignments retain their original guard/loop order. See decision 014.
+
+## Target measurements
+
+Version 0.12.0 adds optional string `Annotation.target`: canonical-mm values, manual-override markers and original-image geometry/calibration with a local photo reference. The photo editor owns a detached draft and writes the complete result atomically on Save. Direct numeric edits merge touched fields. Image deletion removes provenance but retains numbers; imports preserve the annotation. Generic scalar analysis and readonly custom context expose the result. The optional local `Profile.showGroupSize` controls navigator display. See [target contract](docs/TARGET_MEASUREMENTS.md) and decision 015; no schema or backup-format migration is required.

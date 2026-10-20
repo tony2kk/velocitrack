@@ -240,3 +240,7 @@ Callbacks have no profile, source configuration, credentials, database handle or
 Preserve transactional writes, annotations separate from imports, source-scoped identities and the existing local origin. There is no application backend, global dataset or cross-origin workspace access. Do not put measurements, profile values or sessions in code, documentation examples, logs, tests or build configuration.
 
 [Curve extension guide](DISTANCE_CURVES.md) · [Architecture](../ARCHITECTURE.md) · [Import format](IMPORT_FORMAT.md)
+
+## Target measurements (0.12.0)
+
+String annotations may have `target`, with `values.horizontalOffset`, `values.verticalOffset` and `values.groupSize` in canonical **mm** (or null). Photo geometry is in original-image pixels and `mmPerPixel` is mm/pixel. The complete readonly result is also available through `input.stringAnnotation?.target`; photo bytes are not exposed to custom callbacks. Use `saveTargetValues` or `saveTargetMeasurement` in [targetMeasurement.ts](../src/storage/targetMeasurement.ts) for transactional edits, preserving unrelated annotation fields. Read the [target contract](TARGET_MEASUREMENTS.md) for ownership, calibration, lifecycle and backup invariants.

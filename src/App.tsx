@@ -340,6 +340,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
             tags={tags}
             fields={fieldDefinitions}
             unitSystem={profile.unitSystem}
+            showGroupSize={profile.showGroupSize}
             onDetails={setDetailId}
           />
           {!filtered.length && (

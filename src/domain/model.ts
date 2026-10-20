@@ -1,3 +1,5 @@
+import type { TargetMeasurement } from './targetMeasurement';
+
 /** Browser-owned domain records; provider fields are preserved separately as raw data. */
 export type CatalogKind = 'firearm' | 'projectile';
 export type SourceKind = 'velociradar-export' | 'caldwell';
@@ -109,6 +111,8 @@ export type CustomFieldValue =
 
 /** Local annotations are separate from replaceable imported records. */
 export interface Annotation {
+  /** String-only manual target dimensions and optional photo geometry; never provider data. */
+  target?: TargetMeasurement;
   /** Persistent local shot exclusion, independent of replaceable provider records. */
   invalid?: boolean;
   entityId: string;
@@ -178,6 +182,8 @@ export interface Profile {
   analysis?: AnalysisSettings;
   theme?: 'light' | 'dark' | 'auto';
   showProjectileWeight?: boolean;
+  /** Optional local target diameter on each string card; unset values stay hidden. */
+  showGroupSize?: boolean;
   visibleFieldIds?: string[];
   showTags?: boolean;
   id: 'local';
@@ -214,6 +220,7 @@ export function defaultProfile(): Profile {
     analysis: defaultAnalysis(),
     theme: 'auto',
     showProjectileWeight: false,
+    showGroupSize: false,
     filters: structuredClone(EMPTY_FILTERS),
   };
 }
