@@ -20,6 +20,7 @@ import { availableQuantities, rawPath } from '../domain/analysis';
 import { tableColumns, DEFAULT_COLUMNS } from '../domain/table';
 import { projectileName } from '../domain/projectiles';
 import { providerTime } from './StringInfo';
+import { ColumnLabel } from './ColumnLabel';
 
 /** Show selected records in display units and reveal a linked hovered shot without changing selection. */
 export function ShotTable({
@@ -137,7 +138,6 @@ export function ShotTable({
               {onToggleShot && (
                 <th>
                   <label className="column-heading">
-                    Analyze
                     <input
                       ref={selectAll}
                       type="checkbox"
@@ -152,12 +152,14 @@ export function ShotTable({
                         else for (const id of ids) onToggleShot(id, event.target.checked);
                       }}
                     />
+                    Analyze
                   </label>
                 </th>
               )}
               {columns.map((column) => (
                 <th
                   key={column.id}
+                  aria-label={column.label}
                   aria-sort={
                     (sort?.columnId ?? 'series') === column.id
                       ? sort?.direction === 'desc'
@@ -167,7 +169,7 @@ export function ShotTable({
                   }
                 >
                   <span className="column-heading">
-                    {column.label}
+                    <ColumnLabel column={column} />
                     {column.id !== 'shot' && onSort && (
                       <button
                         className="sort-button"

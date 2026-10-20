@@ -176,3 +176,12 @@ Version 0.12.1 refines decision 015. Physical mobile-device verification remains
 - [x] Document backup coverage, model assumptions and a proposed compact heading scheme.
 
 Release 0.13.0 implements decision 016. Compact headings remain a proposal.
+
+## Compact table headings — 2026-10-20
+
+- [x] Apply the accepted compact names, using plain G1/G7 and separate unit lines.
+- [x] Expose full meaning via hover/focus/tap without changing sorting, IDs or custom field names.
+- [x] Place the Analyze checkbox before its label and preserve selection behavior.
+
+Release 0.13.1 implements the accepted refinement in COLUMN_LABELS_PROPOSAL.md.
+This is presentation only; existing profile/backup contracts remain unchanged.

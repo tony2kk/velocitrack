@@ -113,5 +113,8 @@ feeding drop back into speed. Existing velocity results remain unchanged.
 See DROP_MODEL.md for the derivation, approximation and independent analytic tests.
 Chart IDs/forecast are backed up; derived points are recomputed after recovery.
 
-Shorter table labels are proposed in COLUMN_LABELS_PROPOSAL.md, not implemented.
-Do not rename domain IDs or user-defined fields when implementing presentation changes.
+Version 0.13.1 implements the approved compact headings in COLUMN_LABELS_PROPOSAL.md,
+with plain G1/G7 and a separate unit line. Quantity/column unit metadata is explicit,
+never parsed from labels. ColumnLabel provides a portal explanation on hover, focus
+or tap; sorting remains separate. The Analyze checkbox precedes its label.
+Domain IDs, custom field names, saved preferences and backups remain compatible.

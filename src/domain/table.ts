@@ -18,7 +18,13 @@ import { projectileName } from './projectiles';
 /** Stable column identity is separate from its translated/display-unit-dependent label. */
 export interface TableColumn {
   id: string;
+  /** Full picker/accessibility name; stored column identity never depends on this text. */
   label: string;
+  /** Compact visual heading, with the display unit on its own line. */
+  heading?: string;
+  unit?: string;
+  /** Meaning, scope or provenance shown by the heading's hover/focus/tap explanation. */
+  description?: string;
 }
 export const DEFAULT_COLUMNS = [
   'series',
@@ -31,6 +37,52 @@ export const DEFAULT_COLUMNS = [
   'status',
 ];
 
+/** Compact names are keyed by stable IDs so changing units never changes meaning or saved order. */
+const QUANTITY_HEADINGS: Readonly<Record<string, string>> = {
+  'target:horizontalOffset': 'Offset H',
+  'target:verticalOffset': 'Offset V',
+  'target:groupSize': 'Group size',
+  projectileWeight: 'Proj. mass',
+  'source:altitude': 'Altitude',
+  'source:distanceToChronograph': 'Chrono dist.',
+  'source:projectile.diameter': 'Proj. diameter',
+  'source:weatherData.temperature': 'Temp.',
+  'source:weatherData.temperatureMin': 'Temp. min',
+  'source:weatherData.temperatureMax': 'Temp. max',
+  'source:weatherData.feelsLikeTemperature': 'Feels like',
+  'source:weatherData.humidity': 'Humidity',
+  'source:weatherData.pressure': 'Pressure',
+  'source:weatherData.windSpeed': 'Wind speed',
+  'source:weatherData.windGust': 'Wind gust',
+  'source:weatherData.windDegrees': 'Wind direction',
+  'source:weatherData.visibility': 'Visibility',
+  'source:statistics.minimum': 'String min',
+  'source:statistics.maximum': 'String max',
+  'source:statistics.average': 'String mean',
+  'source:statistics.muzzleVelocity': 'String V₀',
+  'source:statistics.standardDeviation': 'String SD',
+  'source:statistics.spread': 'String ES',
+  'source:statistics.totalShots': 'String shots',
+  'source:statistics.ballisticCoefficientG1': 'String G1',
+  'source:statistics.ballisticCoefficientG7': 'String G7',
+};
+
+/** Distinguish string-level source summaries and local target values from individual shot readings. */
+function quantityDescription(quantity: Quantity): string {
+  if (quantity.id === 'target:horizontalOffset')
+    return 'Group-center horizontal offset from the point of aim. Positive to the right; shared by the string.';
+  if (quantity.id === 'target:verticalOffset')
+    return 'Group-center vertical offset from the point of aim. Positive upward; shared by the string.';
+  if (quantity.id === 'target:groupSize')
+    return "Diameter of the string's measured target group, entered manually or measured on a photo.";
+  if (quantity.id.startsWith('source:statistics.'))
+    return 'String summary reported by Caldwell, repeated for each shot. It is not recalculated from the current selection.';
+  return (
+    'Recorded string attribute, repeated for each shot.' +
+    (quantity.unit === 'source units' ? ' Source units are displayed unchanged.' : '')
+  );
+}
+
 /** Expose recorded scalar quantities, source notes/time, and every custom field to the column picker. */
 export function tableColumns(
   fields: FieldDefinition[],
@@ -38,27 +90,61 @@ export function tableColumns(
   units: UnitSystem,
 ): TableColumn[] {
   return [
-    { id: 'series', label: 'String' },
-    { id: 'shot', label: 'Shot' },
-    { id: 'velocity', label: `Muzzle velocity (${unitLabels[units].velocity})` },
-    { id: 'g1', label: 'G1 (Caldwell)' },
-    { id: 'g7', label: 'G7 (Caldwell)' },
-    { id: 'points', label: 'Points' },
-    { id: 'rawUnit', label: 'Source unit code' },
+    { id: 'series', label: 'String', description: 'The measurement string containing this shot.' },
+    { id: 'shot', label: 'Shot', description: 'Original shot number within its string.' },
+    {
+      id: 'velocity',
+      label: `Muzzle velocity (${unitLabels[units].velocity})`,
+      heading: 'V₀',
+      unit: unitLabels[units].velocity,
+      description: 'Recorded muzzle velocity for this shot.',
+    },
+    {
+      id: 'g1',
+      label: 'G1',
+      description: 'G1 ballistic coefficient reported by Caldwell for this shot; dimensionless.',
+    },
+    {
+      id: 'g7',
+      label: 'G7',
+      description: 'G7 ballistic coefficient reported by Caldwell for this shot; dimensionless.',
+    },
+    {
+      id: 'points',
+      label: 'Points',
+      description:
+        'Usable distance/velocity samples for this shot, excluding padding and invalid pairs.',
+    },
+    {
+      id: 'rawUnit',
+      label: 'Source unit code',
+      heading: 'Unit code',
+      description: 'Provider unit enum, preserved as metadata. It does not select display units.',
+    },
     { id: 'status', label: 'Status' },
     { id: 'tags', label: 'Tags' },
     { id: 'timestamp', label: 'Shot time' },
-    { id: 'shotNotes', label: 'Shot notes (Caldwell)' },
-    { id: 'seriesNotes', label: 'String notes (Caldwell)' },
+    { id: 'shotNotes', label: 'Shot notes (Caldwell)', heading: 'Shot notes' },
+    { id: 'seriesNotes', label: 'String notes (Caldwell)', heading: 'String notes' },
     { id: 'firearm', label: 'Firearm' },
     { id: 'projectile', label: 'Projectile' },
     ...quantities
       .filter((q) => !['velocity', 'g1', 'g7'].includes(q.id) && !q.id.startsWith('field:'))
-      .map((q) => ({ id: q.id, label: q.label })),
+      .map((q) => ({
+        id: q.id,
+        label: q.label,
+        heading: QUANTITY_HEADINGS[q.id] ?? q.label,
+        unit: q.unit,
+        description: quantityDescription(q),
+      })),
     ...fields.map((field) => ({
       id: `field:${field.id}`,
       label:
         field.name + (fieldUnit(field.type, units) ? ` (${fieldUnit(field.type, units)})` : ''),
+      heading: field.name,
+      unit: fieldUnit(field.type, units) || undefined,
+      description:
+        'Custom string field, repeated for each shot. Its name is defined in your local profile.',
     })),
   ];
 }

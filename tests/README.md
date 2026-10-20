@@ -40,3 +40,8 @@ Series-context coverage includes the additive v2 migration, custom field unit/va
   `calculated-drop.test.ts` verifies actual-model speed parity, availability, units, axes,
   tooltips and bounded contributor means. Backup round trips reproduce both drop curves
   from restored source measurements and retain chart choices/forecast distance.
+
+- `column-labels.test.tsx`: full header explanations through hover/focus/tap and
+  dismissal, unchanged sort identities, structured units, literal custom names,
+  fixed-unit fields, and distinct string/shot scope. Existing selection and backup
+  regressions cover compatibility of this presentation-only change.

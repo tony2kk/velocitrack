@@ -23,6 +23,8 @@ export const QUANTITIES: ChartQuantity[] = ['velocity', 'g1', 'g7'];
 export interface Quantity {
   id: string;
   label: string;
+  /** Display unit as structured metadata; table headings must not parse names or guess conversions. */
+  unit?: string;
   /** The view uses this transform to preserve physical axis ranges across unit changes. */
   displayScale?: DisplayScale;
   read: (shot: Partial<Shot> & Pick<Shot, 'seriesId'>) => number | null;
@@ -42,6 +44,7 @@ export function availableQuantities(
   const definitions: Quantity[] = QUANTITIES.map((id) => ({
     id,
     label: quantityLabel(id, units),
+    unit: id === 'velocity' ? unitLabels[units].velocity : undefined,
     displayScale: { factor: id === 'velocity' && units === 'metric' ? 0.3048 : 1, offset: 0 },
     read: (shot) => {
       const value = shotQuantity(shot, id);
@@ -53,6 +56,7 @@ export function availableQuantities(
     definitions.push({
       id: `target:${field}`,
       label: `String ${TARGET_LABELS[field].toLowerCase()} (${unit.label})`,
+      unit: unit.label,
       displayScale: { factor: 1 / unit.mm, offset: 0 },
       read: (shot) => {
         const value = details.get(shot.seriesId)?.target?.values[field];
@@ -63,6 +67,7 @@ export function availableQuantities(
   definitions.push({
     id: 'projectileWeight',
     label: `Projectile weight (${units === 'metric' ? 'g' : 'grs'})`,
+    unit: units === 'metric' ? 'g' : 'grs',
     displayScale: { factor: units === 'metric' ? 0.06479891 : 1, offset: 0 },
     read: (shot) => {
       const session = sessions.get(shot.seriesId);
@@ -93,10 +98,18 @@ export function availableQuantities(
       key.toLowerCase().includes('temperature'),
     ]),
   ] as [string, string, boolean][];
-  for (const [path, name, temperature] of sourceFields)
+  for (const [path, name, temperature] of sourceFields) {
+    const unit = temperature
+      ? unitLabels[units].temperature
+      : path.endsWith('humidity')
+        ? '%'
+        : path.endsWith('windDegrees')
+          ? '°'
+          : 'source units';
     definitions.push({
       id: `source:${path}`,
-      label: `${name} (${temperature ? unitLabels[units].temperature : path.endsWith('humidity') ? '%' : path.endsWith('windDegrees') ? '°' : 'source units'})`,
+      label: `${name} (${unit})`,
+      unit,
       displayScale:
         temperature && units === 'metric'
           ? { factor: 5 / 9, offset: (-32 * 5) / 9 }
@@ -110,6 +123,7 @@ export function availableQuantities(
           : null;
       },
     });
+  }
   for (const key of [
     'minimum',
     'maximum',
@@ -124,6 +138,16 @@ export function availableQuantities(
     definitions.push({
       id: `source:statistics.${key}`,
       label: `String ${key.replace(/([A-Z])/g, ' $1')} (Caldwell${['minimum', 'maximum', 'average', 'muzzleVelocity', 'standardDeviation', 'spread'].includes(key) ? `, ${unitLabels[units].velocity}` : ''})`,
+      unit: [
+        'minimum',
+        'maximum',
+        'average',
+        'muzzleVelocity',
+        'standardDeviation',
+        'spread',
+      ].includes(key)
+        ? unitLabels[units].velocity
+        : undefined,
       displayScale: {
         factor:
           units === 'metric' &&
@@ -161,6 +185,7 @@ export function availableQuantities(
       displayScale: { factor: fieldFactor(field.type, units), offset: 0 },
       label:
         field.name + (fieldUnit(field.type, units) ? ` (${fieldUnit(field.type, units)})` : ''),
+      unit: fieldUnit(field.type, units) || undefined,
       read: (shot) => {
         const value = details.get(shot.seriesId)?.values?.[field.id];
         return finiteNumber(value) ? value * fieldFactor(field.type, units) : null;

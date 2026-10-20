@@ -208,3 +208,21 @@ Full verification passed: TypeScript, ESLint, Prettier, **119 behavioral tests a
   profile inside the transaction; a regression test and repeated browser selection
   confirm that both choices survive. Screenshots remain ignored local artifacts.
 - Verification used desktop Chromium at 1265×712. No Pages deployment was triggered.
+
+## Compact table headings — 2026-10-20
+
+- Version `0.13.1` passed types, lint, formatting, **241 tests across 37 files**,
+  production/PWA build and the public-content guard. Six pre-existing local tests
+  and their unrelated implementation remain outside this batch; the clean checkout
+  contains 235 tests across 36 files.
+- Header tests cover full explanations on hover/focus/tap, Escape/outside dismissal,
+  scroll invalidation, unchanged sort IDs, separate display units, fixed custom-field
+  units, literal parentheses in user-defined names, and string/shot scope distinctions.
+  Existing preference, selection and ZIP round-trip checks also pass. There is no
+  change to stored records, profile fields or the archive format.
+- At the isolated synthetic-data browser origin, checked compact headers, the cm/m/s
+  unit lines, plain G1/G7, full tooltip meaning and the Analyze checkbox to the left
+  of its text. Escape dismissed help; Analyze still deselected/reselected the row.
+  No browser console warnings/errors were captured. The 1265×712 desktop screenshot
+  remains ignored locally. Physical mobile input was not separately verified.
+- No private records were accessed and no Pages deployment was triggered.

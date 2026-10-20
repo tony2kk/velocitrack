@@ -21,6 +21,12 @@ The mark is saved across reloads, imports, and workspace backups. The original m
 
 ## Sort and arrange
 
+Table headings use compact names such as **V₀** (muzzle velocity), **G1/G7**,
+**Offset H/V**, **Group size** and **String SD/ES**. Units appear below the name.
+Hover, focus or tap a heading to read its full meaning, scope and source; press
+Escape or tap elsewhere to close the explanation. The arrow beside it sorts.
+Your custom field names remain unchanged. Columns retains full names for lookup.
+
 - Select the arrow beside a column name to sort ascending, then descending. Missing values stay last.
 - The default is **String**, then Shot number. Shot alone has no sort button.
 - Open **Columns** to choose values. Checking or unchecking a column keeps its position in the list and table. Re-enabling it restores that position.
