@@ -63,18 +63,30 @@ export function tableColumns(
   ];
 }
 
-/** Preserve v0.4 column choices until the first explicit ordered-column edit. */
+/** Preserve legacy visibility choices and project them through the independent saved order. */
 export function visibleColumns(profile?: Profile): string[] {
-  return (
-    profile?.tableColumns ?? [
-      ...DEFAULT_COLUMNS,
-      ...(profile?.showTags ? ['tags'] : []),
-      ...(profile?.visibleFieldIds ?? []).map((id) => `field:${id}`),
-    ]
-  );
+  const selected = profile?.tableColumns ?? [
+    ...DEFAULT_COLUMNS,
+    ...(profile?.showTags ? ['tags'] : []),
+    ...(profile?.visibleFieldIds ?? []).map((id) => `field:${id}`),
+  ];
+  return profile?.tableColumnOrder
+    ? [...new Set([...profile.tableColumnOrder, ...selected])].filter((id) => selected.includes(id))
+    : selected;
 }
 
-/** Move one visible column to the target's position without duplicating or losing hidden IDs. */
+/** Seed old profiles from their visible order; append new definitions without moving saved columns. */
+export function columnOrder(available: TableColumn[], profile?: Profile): string[] {
+  return [
+    ...new Set([
+      ...(profile?.tableColumnOrder ?? []),
+      ...visibleColumns(profile),
+      ...available.map((item) => item.id),
+    ]),
+  ];
+}
+
+/** Move one column to the target's position without duplicating or losing hidden IDs. */
 export function moveColumn(ids: string[], from: string, to: string): string[] {
   if (from === to || !ids.includes(from) || !ids.includes(to)) return ids;
   const result = ids.filter((id) => id !== from);

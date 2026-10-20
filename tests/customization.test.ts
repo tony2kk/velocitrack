@@ -113,10 +113,18 @@ describe('custom field values and units', () => {
       'note',
       'mass',
     ]);
-    await saveProfile({ visibleFieldIds: ['mass', 'note'] }, database);
+    await saveProfile(
+      {
+        visibleFieldIds: ['mass', 'note'],
+        tableColumns: ['field:note'],
+        tableColumnOrder: ['field:mass', 'field:note'],
+      },
+      database,
+    );
     await removeField('mass', database);
     expect((await database.annotations.get(series.id))?.values).toEqual({ note: 'Updated' });
     expect((await loadWorkspace(database)).profile.visibleFieldIds).toEqual(['note']);
+    expect((await loadWorkspace(database)).profile.tableColumnOrder).toEqual(['field:note']);
   });
   it('combines tag alternatives with other filters and cleans assignments/filter on deletion', async () => {
     const { series } = await seed();

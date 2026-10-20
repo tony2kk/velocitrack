@@ -20,6 +20,7 @@ export interface DistanceCurve {
   readonly axisKey: string;
   readonly displayScale: (units: UnitSystem) => DisplayScale;
   readonly description: string;
+  readonly tooltipNote?: string;
   readonly unavailableReason?: string;
   readonly derived: boolean;
   readonly usesForecast: boolean;

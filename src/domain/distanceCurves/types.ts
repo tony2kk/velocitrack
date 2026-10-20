@@ -49,6 +49,8 @@ export interface CustomDistanceCurve {
   readonly axisKey: string;
   readonly displayScale: (units: UnitSystem) => DisplayScale;
   readonly description: string;
+  /** Short unit/sign/reference explanation shown with the hovered curve point. */
+  readonly tooltipNote?: string;
   readonly unavailableReason?: string;
   readonly usesForecast?: boolean;
   /** Optional legacy model identity for the existing G1/G7 tooltip and coefficient display. */

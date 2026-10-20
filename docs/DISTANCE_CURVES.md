@@ -147,3 +147,12 @@ The 0.11.0 catalog move preserves existing behavior and introduces no new model.
 ## Local target context (0.12.0)
 
 Custom callbacks can read `input.stringAnnotation?.target`. Its optional horizontal offset, vertical offset and group size are in canonical **mm**, independently of the profile; null means absent. Geometry uses original-image pixels and scale uses mm/pixel. The result belongs to the string, not an individual shot. It is a detached readonly annotation like other local fields; image bytes and blob URLs are not exposed. See [target measurements](TARGET_MEASUREMENTS.md) for the full contract.
+
+## Drop catalog entries (0.13.0)
+
+`calculatedDropG1.ts` and `calculatedDropG7.ts` register `curve:drop-g1` and
+`curve:drop-g7` with shared axis key `drop`: canonical mm, displayed cm/in.
+They use the shared standard-atmosphere speed kernel with small-deflection gravity.
+Optional `tooltipNote` adds a brief reference/sign explanation to single-shot and
+mean point tooltips. All callbacks still cross the same readonly context and output
+validation boundary. See [drop model](DROP_MODEL.md) for equations and tests.

@@ -58,6 +58,7 @@ export interface ChartPoint {
   contributors?: number;
   distance?: boolean;
   quantityTitle?: string;
+  quantityNote?: string;
   model?: DragModel;
   coefficient?: number;
   derived?: boolean;
@@ -154,6 +155,7 @@ export function formatPointTooltip(point: ChartPoint): string {
     point.quantity && point.quantity !== 'velocity'
       ? `${point.quantityTitle ?? quantityLabel(point.quantity, point.unitSystem)}: ${formatValue(point.value[1])}`
       : `Velocity: ${formatValue(point.value[1])} ${unitLabels[point.unitSystem].velocity}`,
+    ...(point.quantityNote ? [point.quantityNote] : []),
   ].join('\n');
 }
 
@@ -235,6 +237,7 @@ export function buildAnalysisTraces(
             : undefined,
           quantity,
           quantityTitle: curve!.label(units),
+          quantityNote: curve!.tooltipNote,
         };
       }
       if (kind === 'compare')
@@ -258,6 +261,7 @@ export function buildAnalysisTraces(
               derived: curve.derived,
               quantity,
               quantityTitle: curve.label(units),
+              quantityNote: curve.tooltipNote,
             })),
             members: members.flatMap(({ shot, points }) =>
               distanceSegments(points).map((segment) => ({

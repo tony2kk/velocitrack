@@ -8,7 +8,7 @@ import {
 } from '../src/domain/chart';
 import { defaultAnalysis, defaultProfile } from '../src/domain/model';
 import { projectileName, projectileWeight } from '../src/domain/projectiles';
-import { moveColumn, visibleColumns } from '../src/domain/table';
+import { columnOrder, moveColumn, visibleColumns } from '../src/domain/table';
 import { series, shot } from './fixtures/synthetic';
 
 describe('analysis quantities and grouping', () => {
@@ -175,5 +175,17 @@ describe('analysis quantities and grouping', () => {
     expect(moveColumn(original, 'velocity', 'shot')).toEqual(['series', 'velocity', 'shot', 'g1']);
     expect(original).toEqual(['series', 'shot', 'g1', 'velocity']);
     expect(visibleColumns({ ...defaultProfile(), tableColumns: [] })).toEqual([]);
+  });
+  it('preserves legacy choices, hidden positions and unavailable IDs when definitions change', () => {
+    const available = ['series', 'g1', 'velocity', 'new'].map((id) => ({ id, label: id }));
+    const legacy = { ...defaultProfile(), tableColumns: ['g1', 'series'] };
+    expect(columnOrder(available, legacy)).toEqual(['g1', 'series', 'velocity', 'new']);
+    const saved = { ...legacy, tableColumnOrder: ['series', 'g1', 'future', 'velocity'] };
+    expect(visibleColumns(saved)).toEqual(['series', 'g1']);
+    expect(columnOrder(available, saved)).toEqual(['series', 'g1', 'future', 'velocity', 'new']);
+    expect(visibleColumns({ ...saved, tableColumns: [] })).toEqual([]);
+    expect(
+      visibleColumns({ ...defaultProfile(), showTags: true, visibleFieldIds: ['custom'] }),
+    ).toContain('field:custom');
   });
 });

@@ -8,7 +8,8 @@ import { ColumnPicker } from '../src/components/ColumnPicker';
 import { StringInfo } from '../src/components/StringInfo';
 import { ShotTable } from '../src/components/ShotTable';
 import { useTheme } from '../src/hooks/useTheme';
-import { defaultProfile } from '../src/domain/model';
+import { defaultProfile, type Profile } from '../src/domain/model';
+import { columnOrder, visibleColumns } from '../src/domain/table';
 import { db } from '../src/storage/database';
 import { saveAnalysis } from '../src/storage/analysis';
 import { loadWorkspace, saveProfile } from '../src/storage/workspace';
@@ -20,6 +21,8 @@ vi.mock('../src/domain/distanceCurves/customDistanceCurves', async () => ({
   customDistanceCurves: [
     (await import('../src/domain/distanceCurves/calculatedVelocityG1')).calculatedVelocityG1Curve,
     (await import('../src/domain/distanceCurves/calculatedVelocityG7')).calculatedVelocityG7Curve,
+    (await import('../src/domain/distanceCurves/calculatedDropG1')).calculatedDropG1Curve,
+    (await import('../src/domain/distanceCurves/calculatedDropG7')).calculatedDropG7Curve,
     (await import('../src/domain/distanceCurves/template')).centeredSamplesCurve,
   ],
 }));
@@ -38,6 +41,36 @@ afterEach(async () => {
 });
 
 describe('persistent analysis controls', () => {
+  it('keeps both drop choices when controls change before the profile has rerendered', async () => {
+    const profile = defaultProfile();
+    profile.analysis!.mode = 'dual';
+    profile.analysis!.dual = { axis: 'distance', quantity: 'velocity', secondary: 'calculated:g1' };
+    await saveProfile(profile);
+    render(
+      <AnalysisPanel
+        series={[series()]}
+        shots={[
+          shot({ muzzleVelocity: 1000, ballisticCoefficientG1: 0.3, ballisticCoefficientG7: 0.2 }),
+        ]}
+        view="chart"
+        activeShotId={null}
+        onHoverShot={vi.fn()}
+        profile={profile}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText('Chart quantity'), {
+      target: { value: 'curve:drop-g1' },
+    });
+    fireEvent.change(screen.getByLabelText('Second chart quantity'), {
+      target: { value: 'curve:drop-g7' },
+    });
+    await waitFor(async () =>
+      expect((await loadWorkspace()).profile.analysis!.dual).toMatchObject({
+        quantity: 'curve:drop-g1',
+        secondary: 'curve:drop-g7',
+      }),
+    );
+  });
   it('discovers registered curves in both menus, renders their descriptions and restores the saved ID', async () => {
     const profile = defaultProfile();
     profile.analysis!.mode = 'dual';
@@ -221,6 +254,7 @@ describe('persistent analysis controls', () => {
           { id: 'g1', label: 'G1' },
         ]}
         selected={['series', 'shot', 'g1']}
+        order={['series', 'shot', 'g1']}
         onChange={change}
       />,
     );
@@ -248,7 +282,10 @@ describe('persistent analysis controls', () => {
         ?.getAttribute('data-column-id'),
     ).toBe('series');
     fireEvent.pointerUp(handle, { clientX: 20, clientY: 20 });
-    expect(change).toHaveBeenCalledWith(['g1', 'series', 'shot']);
+    expect(change).toHaveBeenCalledWith({
+      tableColumns: ['g1', 'series', 'shot'],
+      tableColumnOrder: ['g1', 'series', 'shot'],
+    });
     expect(screen.queryByRole('status')).toBeNull();
   });
   it('retains configured source columns when the selected string has no value', () => {
@@ -352,11 +389,12 @@ describe('persistent analysis controls', () => {
       { id: 'g1', label: 'G1' },
       { id: 'velocity', label: 'Velocity' },
     ];
-    const change = vi.fn(async (ids: string[]) => saveProfile({ tableColumns: ids }));
+    const change = vi.fn(async (patch: Partial<Profile>) => saveProfile(patch));
     const { rerender } = render(
       <ColumnPicker
         available={available}
         selected={['series', 'g1', 'velocity']}
+        order={['series', 'g1', 'velocity']}
         onChange={change}
       />,
     );
@@ -369,6 +407,7 @@ describe('persistent analysis controls', () => {
       <ColumnPicker
         available={available}
         selected={(await loadWorkspace()).profile.tableColumns!}
+        order={(await loadWorkspace()).profile.tableColumnOrder!}
         onChange={change}
       />,
     );
@@ -391,6 +430,76 @@ describe('persistent analysis controls', () => {
     fireEvent.click(checkbox);
     await waitFor(async () =>
       expect((await loadWorkspace()).profile.tableColumns).toEqual(['series', 'velocity']),
+    );
+  });
+  it('keeps hidden columns in place through re-enabling, manual moves and reopening', async () => {
+    const available = [
+      { id: 'series', label: 'String' },
+      { id: 'g1', label: 'G1' },
+      { id: 'field:custom', label: 'Custom field' },
+      { id: 'velocity', label: 'Velocity' },
+    ];
+    const original = ['series', 'g1', 'field:custom', 'velocity'];
+    await saveProfile({ tableColumns: original }); // Existing profiles have no complete order yet.
+    /** Render persisted preferences as the real workspace does after each IndexedDB update. */
+    function picker(profile: Profile) {
+      return (
+        <ColumnPicker
+          available={available}
+          order={columnOrder(available, profile)}
+          selected={visibleColumns(profile)}
+          onChange={(patch) => void saveProfile(patch)}
+        />
+      );
+    }
+    const view = render(picker((await loadWorkspace()).profile));
+    fireEvent.click(screen.getByText('Columns'));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'G1' }));
+    await waitFor(async () =>
+      expect((await loadWorkspace()).profile.tableColumns).toEqual([
+        'series',
+        'field:custom',
+        'velocity',
+      ]),
+    );
+    view.rerender(picker((await loadWorkspace()).profile));
+    expect(screen.getAllByRole('checkbox').map((item) => item.parentElement!.textContent)).toEqual([
+      'String',
+      'G1',
+      'Custom field',
+      'Velocity',
+    ]);
+    fireEvent.click(screen.getByRole('checkbox', { name: 'G1' }));
+    await waitFor(async () =>
+      expect(visibleColumns((await loadWorkspace()).profile)).toEqual(original),
+    );
+    view.rerender(picker((await loadWorkspace()).profile));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Custom field' }));
+    await waitFor(async () =>
+      expect((await loadWorkspace()).profile.tableColumns).toEqual(['series', 'g1', 'velocity']),
+    );
+    view.rerender(picker((await loadWorkspace()).profile));
+    fireEvent.click(screen.getByRole('button', { name: 'Move Custom field up' }));
+    await waitFor(async () =>
+      expect((await loadWorkspace()).profile.tableColumnOrder).toEqual([
+        'series',
+        'field:custom',
+        'g1',
+        'velocity',
+      ]),
+    );
+    expect(visibleColumns((await loadWorkspace()).profile)).toEqual(['series', 'g1', 'velocity']);
+    view.unmount();
+    render(picker((await loadWorkspace()).profile));
+    fireEvent.click(screen.getByText('Columns'));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Custom field' }));
+    await waitFor(async () =>
+      expect(visibleColumns((await loadWorkspace()).profile)).toEqual([
+        'series',
+        'field:custom',
+        'g1',
+        'velocity',
+      ]),
     );
   });
   it('shows context for a zero-shot string without requiring a plotted measurement', () => {

@@ -252,6 +252,7 @@ export function validateBackup(value: unknown): asserts value is Workspace {
     'showProjectileWeight',
     'showGroupSize',
     'tableColumns',
+    'tableColumnOrder',
     'tableSort',
     'infoSeriesId',
   ]);
@@ -285,16 +286,18 @@ export function validateBackup(value: unknown): asserts value is Workspace {
         ['asc', 'desc'].includes(p.tableSort.direction),
     );
   }
-  if (p.tableColumns !== undefined)
+  for (const ids of [p.tableColumns, p.tableColumnOrder]) {
+    if (ids === undefined) continue;
     requireValid(
-      strings(p.tableColumns) &&
-        p.tableColumns.every(
+      strings(ids) &&
+        ids.every(
           (id) =>
             id.length <= 200 &&
             /^[a-zA-Z0-9_.:-]+$/.test(id) &&
             (!id.startsWith('field:') || definitions.has(id.slice(6))),
         ),
     );
+  }
   if (p.analysis !== undefined) {
     requireValid(object(p.analysis));
     keys(p.analysis, ['mode', 'simple', 'dual', 'compare']);

@@ -2,16 +2,19 @@ import { useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowDown, ArrowUp, GripVertical } from 'lucide-react';
 import { insertColumn, moveColumn, type TableColumn } from '../domain/table';
+import type { Profile } from '../domain/model';
 
-/** Persist selection/order through one callback; buttons provide keyboard and touch alternatives to drag. */
+/** Keep visibility independent of order; persist both atomically on each explicit user edit. */
 export function ColumnPicker({
   available,
+  order,
   selected,
   onChange,
 }: {
   available: TableColumn[];
+  order: string[];
   selected: string[];
-  onChange: (ids: string[]) => void;
+  onChange: (patch: Pick<Profile, 'tableColumns' | 'tableColumnOrder'>) => void;
 }) {
   // Drag events can arrive in one browser frame; a ref avoids waiting for a render between them.
   const dragged = useRef<string | null>(null);
@@ -27,7 +30,7 @@ export function ColumnPicker({
   function gapAt(x: number, y: number): number | null {
     const rows = panel.current?.querySelectorAll<HTMLElement>('[data-column-id]') ?? [];
     for (const row of rows) {
-      const index = selected.indexOf(row.dataset.columnId!);
+      const index = order.indexOf(row.dataset.columnId!);
       const bounds = row.getBoundingClientRect();
       if (
         index >= 0 &&
@@ -40,11 +43,11 @@ export function ColumnPicker({
     }
     return null;
   }
-  /** End a drag without saving when the pointer is outside a selected row. */
+  /** End a drag without saving when the pointer is outside a column row. */
   function finish(x: number, y: number) {
     const source = dragged.current;
     const gap = gapAt(x, y);
-    if (source && gap !== null) onChange(insertColumn(selected, source, gap));
+    if (source && gap !== null) reorder(insertColumn(order, source, gap));
     dragged.current = null;
     setDrag(null);
   }
@@ -57,12 +60,16 @@ export function ColumnPicker({
       else if (y > bounds.bottom - 28) panel.current.scrollTop += 14;
     }
   }
-  const options = [
-    ...selected
-      .map((id) => available.find((item) => item.id === id))
-      .filter((item): item is TableColumn => !!item),
-    ...available.filter((item) => !selected.includes(item.id)),
-  ];
+  /** A move changes order only; hidden columns remain in place until explicitly moved. */
+  function reorder(nextOrder: string[]) {
+    onChange({
+      tableColumnOrder: nextOrder,
+      tableColumns: nextOrder.filter((id) => selected.includes(id)),
+    });
+  }
+  const options = order
+    .map((id) => available.find((item) => item.id === id))
+    .filter((item): item is TableColumn => !!item);
   return (
     <details
       className="column-picker"
@@ -90,16 +97,17 @@ export function ColumnPicker({
         }}
       >
         <p className="muted">
-          Select columns. Drag selected rows to reorder, or use the arrow buttons.
+          Show or hide columns without changing their order. Drag any row or use the arrows to move
+          it.
         </p>
-        {options.map((item) => {
-          const index = selected.indexOf(item.id);
+        {options.map((item, optionIndex) => {
+          const index = order.indexOf(item.id);
           return (
             <div
               key={item.id}
               className={`column-option ${drag?.id === item.id ? 'column-dragging' : ''}`}
               data-column-id={item.id}
-              draggable={index >= 0}
+              draggable
               onDragStart={(event) => {
                 event.dataTransfer.setData('text/plain', item.id);
                 event.dataTransfer.effectAllowed = 'move';
@@ -118,7 +126,7 @@ export function ColumnPicker({
               }}
               onDrop={(event) => {
                 event.preventDefault();
-                if (index >= 0) finish(event.clientX, event.clientY);
+                finish(event.clientX, event.clientY);
               }}
             >
               {drag?.gap === index && (
@@ -126,7 +134,7 @@ export function ColumnPicker({
                   Insert here
                 </span>
               )}
-              {index === selected.length - 1 && drag?.gap === selected.length && (
+              {optionIndex === options.length - 1 && drag?.gap === index + 1 && (
                 <span className="column-drop-marker after" aria-hidden="true">
                   Insert here
                 </span>
@@ -135,7 +143,6 @@ export function ColumnPicker({
               <button
                 type="button"
                 className="drag-handle"
-                disabled={index < 0}
                 tabIndex={-1}
                 aria-label={`Drag ${item.label} to reorder`}
                 title={`Drag to move ${item.label}, or use the up/down buttons.`}
@@ -170,39 +177,36 @@ export function ColumnPicker({
               >
                 <input
                   type="checkbox"
-                  checked={index >= 0}
+                  checked={selected.includes(item.id)}
                   onChange={(event) =>
-                    onChange(
-                      event.target.checked
-                        ? [...selected, item.id]
-                        : selected.filter((id) => id !== item.id),
-                    )
+                    onChange({
+                      tableColumnOrder: order,
+                      tableColumns: order.filter((id) =>
+                        id === item.id ? event.target.checked : selected.includes(id),
+                      ),
+                    })
                   }
                 />
                 {item.label}
               </label>
-              {index >= 0 && (
-                <>
-                  <button
-                    className="icon-button"
-                    aria-label={`Move ${item.label} up`}
-                    title={`Move ${item.label} one column to the left.`}
-                    disabled={index === 0}
-                    onClick={() => onChange(moveColumn(selected, item.id, selected[index - 1]!))}
-                  >
-                    <ArrowUp size={14} />
-                  </button>
-                  <button
-                    className="icon-button"
-                    aria-label={`Move ${item.label} down`}
-                    title={`Move ${item.label} one column to the right.`}
-                    disabled={index === selected.length - 1}
-                    onClick={() => onChange(moveColumn(selected, item.id, selected[index + 1]!))}
-                  >
-                    <ArrowDown size={14} />
-                  </button>
-                </>
-              )}
+              <button
+                className="icon-button"
+                aria-label={`Move ${item.label} up`}
+                title={`Move ${item.label} one column to the left.`}
+                disabled={optionIndex === 0}
+                onClick={() => reorder(moveColumn(order, item.id, options[optionIndex - 1]!.id))}
+              >
+                <ArrowUp size={14} />
+              </button>
+              <button
+                className="icon-button"
+                aria-label={`Move ${item.label} down`}
+                title={`Move ${item.label} one column to the right.`}
+                disabled={optionIndex === options.length - 1}
+                onClick={() => reorder(moveColumn(order, item.id, options[optionIndex + 1]!.id))}
+              >
+                <ArrowDown size={14} />
+              </button>
             </div>
           );
         })}

@@ -52,6 +52,7 @@ export async function removeField(id: string, database = db) {
       await database.profiles.toCollection().modify((p) => {
         p.visibleFieldIds = p.visibleFieldIds?.filter((value) => value !== id);
         p.tableColumns = p.tableColumns?.filter((value) => value !== `field:${id}`);
+        p.tableColumnOrder = p.tableColumnOrder?.filter((value) => value !== `field:${id}`);
         if (p.tableSort?.columnId === `field:${id}`) delete p.tableSort;
         if (p.analysis)
           for (const mode of ['simple', 'dual', 'compare'] as const) {

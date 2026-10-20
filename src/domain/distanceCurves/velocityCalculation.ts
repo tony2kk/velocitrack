@@ -15,6 +15,13 @@ type VelocityInput = Readonly<
   Partial<Pick<Shot, 'muzzleVelocity' | 'ballisticCoefficientG1' | 'ballisticCoefficientG7'>>
 >;
 
+/** Model output uses ft, ft/s and mm; drop is positive below the horizontal muzzle axis. */
+export interface FlightPoint {
+  distance: number;
+  velocity: number;
+  drop: number;
+}
+
 /** Linear interpolation of reference Cd, rejecting velocities outside the published Mach domain. */
 export function dragCoefficient(model: DragModel, mach: number): number | null {
   // Reference data and search/interpolation variables. Indexes are dimensionless.
@@ -64,16 +71,19 @@ export function predictionInputs(
 }
 
 /**
- * Predict still-air, straight-path speed from the muzzle under explicit standard atmosphere.
+ * Predict still-air speed and optionally first-order gravitational drop in standard atmosphere.
  * Integrate log(v) with RK4: d(log v)/dx = -rho*pi*Cd(v/a)/(8*BC_SI).
+ * Small-deflection drop uses d(slope)/dx = g/v² and d(drop)/dx = slope, initially both zero.
+ * Vertical drag cancels in the slope derivative; drop never feeds back into the original speed model.
  * Internal steps are <=1 m and <=0.02 estimated log-speed change; output has at most 201 points.
- * This is a constant-BC drag-only estimate, not an atmospheric/trajectory reconstruction or accuracy claim.
+ * This constant-BC approximation does not reconstruct local weather or large-deflection flight.
  */
-export function calculatedVelocity(
+export function calculatedFlight(
   shot: VelocityInput,
   model: DragModel,
   distanceFeet = DEFAULT_FORECAST_DISTANCE,
-): { distance: number; velocity: number }[] {
+  includeDrop = false,
+): FlightPoint[] {
   // Existing constants, conversion factors and work limits; numerical values are unchanged.
   const feetToMeters = 0.3048; // Stored distance/speed to the existing internal units.
   const coefficientToSI = 0.45359237 / 0.0254 ** 2; // Conventional lb/in² to kg/m².
@@ -85,8 +95,10 @@ export function calculatedVelocity(
   const maximumStep = 1; // m.
   const maximumLogChange = 0.02; // Existing step-size bound in logarithmic speed space.
   const minimumOutputVelocity = 1e-6; // ft/s; existing termination threshold.
+  const gravity = 9.80665; // m/s², conventional standard gravity (NIST); no local adjustment.
+  const metersToMillimeters = 1000; // Canonical drop output; display converts to cm/in.
   const input = predictionInputs(shot, model);
-  const result: { distance: number; velocity: number }[] = []; // ft and ft/s.
+  const result: FlightPoint[] = []; // ft, ft/s and mm.
 
   // Working variables are assigned only after validation, or at the start of each existing step.
   let end: number; // Requested endpoint in m.
@@ -102,6 +114,12 @@ export function calculatedVelocity(
   let k3: number; // Third existing RK4 derivative sample.
   let k4: number; // Fourth existing RK4 derivative sample.
   let velocity: number; // Current output speed in ft/s.
+  let slope = 0; // Downward displacement derivative, m/m; horizontal initial direction.
+  let drop = 0; // Downward displacement from the muzzle plane, m.
+  let curvature1: number; // First RK4 slope derivative, 1/m.
+  let curvature2: number; // Second RK4 slope derivative, 1/m.
+  let curvature3: number; // Third RK4 slope derivative, 1/m.
+  let curvature4: number; // Fourth RK4 slope derivative, 1/m.
 
   /** Evaluate the existing derivative without changing its reference-domain roundoff clamp. */
   function derivative(currentLogSpeed: number): number {
@@ -121,7 +139,7 @@ export function calculatedVelocity(
   end = distanceFeet * feetToMeters;
   factor = (density * Math.PI) / (8 * input.bc * coefficientToSI);
   logSpeed = Math.log(input.velocity);
-  result.push({ distance: 0, velocity: input.velocity / feetToMeters });
+  result.push({ distance: 0, velocity: input.velocity / feetToMeters, drop: 0 });
   for (index = 1; index <= outputIntervals; index++) {
     target = (end * index) / outputIntervals;
     while (distance < target) {
@@ -131,14 +149,35 @@ export function calculatedVelocity(
       k2 = derivative(logSpeed + (step * k1) / 2);
       k3 = derivative(logSpeed + (step * k2) / 2);
       k4 = derivative(logSpeed + step * k3);
+      if (includeDrop) {
+        // Evaluate drop at the same RK4 speed stages, not from sparsely sampled chart points.
+        curvature1 = gravity * Math.exp(-2 * logSpeed);
+        curvature2 = gravity * Math.exp(-2 * (logSpeed + (step * k1) / 2));
+        curvature3 = gravity * Math.exp(-2 * (logSpeed + (step * k2) / 2));
+        curvature4 = gravity * Math.exp(-2 * (logSpeed + step * k3));
+        drop += step * slope + (step ** 2 * (curvature1 + curvature2 + curvature3)) / 6;
+        slope += (step * (curvature1 + 2 * curvature2 + 2 * curvature3 + curvature4)) / 6;
+        if (!Number.isFinite(drop * metersToMillimeters) || !Number.isFinite(slope)) return result;
+      }
       logSpeed += (step * (k1 + 2 * k2 + 2 * k3 + k4)) / 6;
       distance += step;
     }
     velocity = Math.exp(logSpeed) / feetToMeters;
     if (!Number.isFinite(velocity) || velocity <= minimumOutputVelocity) return result;
-    result.push({ distance: target / feetToMeters, velocity });
+    result.push({ distance: target / feetToMeters, velocity, drop: drop * metersToMillimeters });
   }
   return result;
+}
+
+/** Preserve the public speed-only contract and original numerical path for existing velocity curves. */
+export function calculatedVelocity(
+  shot: VelocityInput,
+  model: DragModel,
+  distanceFeet = DEFAULT_FORECAST_DISTANCE,
+): { distance: number; velocity: number }[] {
+  const points = calculatedFlight(shot, model, distanceFeet); // Drop work is skipped for speed-only curves.
+
+  return points.map(({ distance, velocity }) => ({ distance, velocity }));
 }
 
 /** Resolve only explicitly supported model quantities; recorded Velocity remains a separate choice. */

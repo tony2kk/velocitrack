@@ -32,3 +32,11 @@ Series-context coverage includes the additive v2 migration, custom field unit/va
 - `target-editor.test.tsx`: draw/calibrate/move/resize/undo/save/reopen, pointer cancellation, viewport retention across tool changes, Ctrl-drag/wheel, two-finger pan/pinch and remaining-finger suppression, unchanged saved geometry after navigation, fixed numeric inputs, Cancel without writes, explicit calibration on a different photo, untouched input precision, direct values without photos, inherited table columns and optional group size on string cards.
 - `target-viewport.test.ts`: screen/image mapping through letterboxing, cursor-anchored zoom, translated touch midpoint, zoom/pan bounds and complete fit.
 - Display preference coverage also saves `showGroupSize`; backup validation accepts its absence for older workspaces and includes it in new archives. DOM image dimensions/pointer APIs are mocked; real SVG geometry and image loading are checked separately in an isolated browser origin.
+
+- Column regressions preserve positions through hide/show, explicit hidden-column moves,
+  reopening, unavailable/new definitions and custom-field deletion. Backup tests cover
+  complete hidden-column order, old profiles without it, invalid references and duplicates.
+- `drop-integration.test.ts` checks independent vacuum and constant-Cd analytic solutions.
+  `calculated-drop.test.ts` verifies actual-model speed parity, availability, units, axes,
+  tooltips and bounded contributor means. Backup round trips reproduce both drop curves
+  from restored source measurements and retain chart choices/forecast distance.

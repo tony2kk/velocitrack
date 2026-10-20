@@ -54,3 +54,10 @@ Summary cards always describe included valid recorded muzzle velocities, regardl
 **Related:** [Select and sort shots](shots.md) · [Units and display](profile.md)
 
 For code-defined functions, see the contributor [Over distance extension guide](../docs/DISTANCE_CURVES.md).
+
+## Calculated drop
+
+G1/G7 drop is now available over distance with vertical units **cm/in** and the same
+standard atmosphere as calculated velocity. It is positive downward from the
+horizontal muzzle axis and uses a small-deflection gravity approximation. See
+[Calculated drop](drop.md) for the reference, controls and limitations.

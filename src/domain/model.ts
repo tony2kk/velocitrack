@@ -177,7 +177,10 @@ export interface Filters {
 /** Singleton local preferences, independent of any connected provider account. */
 export interface Profile {
   tableSort?: { columnId: string; direction: 'asc' | 'desc' };
+  /** Visible identities; their order is inherited from tableColumnOrder when present. */
   tableColumns?: string[];
+  /** Complete column order, including hidden identities; visibility never changes it. */
+  tableColumnOrder?: string[];
   infoSeriesId?: string;
   analysis?: AnalysisSettings;
   theme?: 'light' | 'dark' | 'auto';

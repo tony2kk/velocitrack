@@ -8,6 +8,8 @@ import { saveField, saveSeriesDetails, saveTag } from '../src/storage/customizat
 import { syntheticExport } from './fixtures/synthetic';
 import { defaultAnalysis } from '../src/domain/model';
 import { parseVelociRadarExport } from '../src/sources/velociradar';
+import { columnOrder, visibleColumns } from '../src/domain/table';
+import { dispatchDistanceCurve } from '../src/domain/distanceCurves/registry';
 
 let database: WorkspaceDatabase;
 beforeEach(() => {
@@ -40,6 +42,7 @@ async function seed() {
       theme: 'dark',
       showProjectileWeight: true,
       tableColumns: ['g1', 'velocity', 'field:weight'],
+      tableColumnOrder: ['g1', 'g7', 'velocity', 'field:weight'],
       tableSort: { columnId: 'field:weight', direction: 'desc' },
       analysis: {
         ...defaultAnalysis(),
@@ -117,6 +120,58 @@ describe('structured ZIP backup and atomic restore', () => {
     ).rejects.toThrow('not supported');
     expect(await loadWorkspace(database)).toEqual(before);
   });
+  it('restores new column order and drop choices, and accepts older profiles without a complete order', async () => {
+    await seed();
+    await saveProfile(
+      {
+        analysis: {
+          ...defaultAnalysis(),
+          mode: 'dual',
+          dual: {
+            axis: 'distance',
+            quantity: 'curve:drop-g1',
+            secondary: 'curve:drop-g7',
+            forecastDistance: 100,
+          },
+        },
+      },
+      database,
+    );
+    const archive = await createBackup(database);
+    const before = await loadWorkspace(database);
+    await restoreBackup(await prepareBackup(archive), database);
+    const after = await loadWorkspace(database);
+    expect(after.profile.tableColumnOrder).toEqual(['g1', 'g7', 'velocity', 'field:weight']);
+    expect(visibleColumns(after.profile)).toEqual(['g1', 'velocity', 'field:weight']);
+    for (const id of ['curve:drop-g1', 'curve:drop-g7']) {
+      expect(dispatchDistanceCurve(id, after.shots[0]!, 100)).toEqual(
+        dispatchDistanceCurve(id, before.shots[0]!, 100),
+      );
+    }
+    expect(after.profile.analysis).toEqual(before.profile.analysis);
+    const older = await prepareBackup(archive);
+    delete older.workspace.profile.tableColumnOrder;
+    await restoreBackup(older, database);
+    const legacy = (await loadWorkspace(database)).profile;
+    expect(visibleColumns(legacy)).toEqual(['g1', 'velocity', 'field:weight']);
+    expect(columnOrder([{ id: 'g7', label: 'G7' }], legacy)).toEqual([
+      'g1',
+      'velocity',
+      'field:weight',
+      'g7',
+    ]);
+  });
+  it.each([['field:missing'], ['g1', 'g1'], ['invalid/name']])(
+    'rejects malformed or dangling column order before replacing the workspace: %s',
+    async (...ids) => {
+      await seed();
+      const before = await loadWorkspace(database);
+      const prepared = await prepareBackup(await createBackup(database));
+      prepared.workspace.profile.tableColumnOrder = ids;
+      await expect(restoreBackup(prepared, database)).rejects.toThrow('invalid records');
+      expect(await loadWorkspace(database)).toEqual(before);
+    },
+  );
   it('rejects invalid references and typed values even after archive validation', async () => {
     await seed();
     const archive = await createBackup(database);

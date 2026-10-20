@@ -166,3 +166,13 @@ See decision 015 and TARGET_MEASUREMENTS.md. Automatic hole detection and perspe
 - [x] Gesture transition, cursor anchoring and viewport bound regressions.
 
 Version 0.12.1 refines decision 015. Physical mobile-device verification remains separate.
+
+## Stable column order and calculated drop — 2026-10-20
+
+- [x] Persist complete column order independently from visibility, including hidden-column moves.
+- [x] Retain legacy preferences and extend field-deletion cleanup and backup validation/round trips.
+- [x] Add independent G1/G7 drop catalog entries in cm/in, using the existing standard atmosphere.
+- [x] Verify the small-deflection calculation analytically and preserve existing velocity results.
+- [x] Document backup coverage, model assumptions and a proposed compact heading scheme.
+
+Release 0.13.0 implements decision 016. Compact headings remain a proposal.

@@ -23,7 +23,8 @@ The mark is saved across reloads, imports, and workspace backups. The original m
 
 - Select the arrow beside a column name to sort ascending, then descending. Missing values stay last.
 - The default is **String**, then Shot number. Shot alone has no sort button.
-- Open **Columns** to choose values. Drag a selected column by its grip; a floating card and **Insert here** marker show the result. Up/Down buttons also work with the keyboard.
+- Open **Columns** to choose values. Checking or unchecking a column keeps its position in the list and table. Re-enabling it restores that position.
+- Drag any column, including a hidden one, by its grip; a floating card and **Insert here** marker show the result. Up/Down buttons also work with the keyboard. Only these moves change the order.
 
 Sorting, column selection, and column order are saved and backed up. Simple/Dual By shot follow table order. String compare keeps that relative order within each string. Distance charts keep physical distance coordinates.
 

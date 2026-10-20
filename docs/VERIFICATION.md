@@ -183,3 +183,28 @@ Full verification passed: TypeScript, ESLint, Prettier, **119 behavioral tests a
 - Working-directory checks include **223 tests across 34 files**. Six pre-existing local tests and their unrelated implementation remain outside this batch; the clean checkout contains 217 tests across 33 files. New regression coverage includes Ctrl-drag, Ctrl-wheel event consumption, unchanged saved geometry/calibration after navigation, the transition from one touch to two, pinch plus centroid translation, suppression of drawing by the remaining finger, cancellation, cursor anchoring through letterboxing, zoom bounds and Fit.
 - In the isolated synthetic-data browser origin, reopened an existing calibrated drawing, zoomed to 225%, dragged with the hand tool, fitted the photo and focused different numeric fields. Values stayed unchanged; connectors followed the matching arrows and updated after navigation. The field panel scrolls independently on desktop, so focusing a field does not scroll the image. The toolbar's eight buttons occupied one row. No browser console errors were captured.
 - The real browser check used a 1265×712 desktop viewport and an invented six-target image. Ctrl and two-finger input were verified by automated event tests; physical mobile devices, narrow-device rendering and maximum-size photo performance remain unverified. No private photos or cloud accounts were used, and no Pages deployment was triggered.
+
+## Stable columns and calculated drop — 2026-10-20
+
+- Version `0.13.0` passed types, lint, formatting, **238 tests across 36 files**,
+  production/PWA build and the public-content guard. Six pre-existing local tests
+  and their unrelated implementation remain outside this batch; the clean checkout
+  contains 232 tests across 35 files.
+- Column regressions cover hide/show without reordering, moving hidden columns,
+  reopening, old profiles, new/unavailable definitions and custom-field deletion.
+  ZIP tests include complete order, both drop choices, curve reproduction after
+  recovery, old profiles without order, malformed IDs, duplicates and missing fields.
+- Independent analytic drop tests cover vacuum and constant-Cd solutions. Actual
+  G1/G7 tests preserve velocity output, matching coefficients, cm/in conversion,
+  zero origin, finite increasing drop, axes, tooltip reference and bounded means.
+  These are numerical checks of the documented approximation, not field accuracy validation.
+- At the isolated synthetic browser origin, hid G1, reloaded, then enabled it again:
+  it returned between muzzle velocity and G7, and stayed in place in Columns.
+  Rendered G1/G7 drop on a shared cm axis and velocity/drop on independent axes.
+  No console warnings or errors were captured. No owner records or cloud account
+  were accessed; existing synthetic fixtures were extended with invented BCs.
+- Browser testing exposed stale chart settings when two controls changed before a
+  live-query render. The edit now resolves dependent choices against the latest
+  profile inside the transaction; a regression test and repeated browser selection
+  confirm that both choices survive. Screenshots remain ignored local artifacts.
+- Verification used desktop Chromium at 1265×712. No Pages deployment was triggered.

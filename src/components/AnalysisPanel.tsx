@@ -25,7 +25,7 @@ import {
 import { DEFAULT_FORECAST_DISTANCE, MAX_FORECAST_DISTANCE } from '../domain/calculatedVelocity';
 import { saveAnalysis } from '../storage/analysis';
 import { ColumnPicker } from './ColumnPicker';
-import { sortShots, tableColumns, visibleColumns } from '../domain/table';
+import { columnOrder, sortShots, tableColumns, visibleColumns } from '../domain/table';
 import { StringInfo } from './StringInfo';
 import { ShotTable } from './ShotTable';
 import { displayValue, formatValue, unitLabels } from '../domain/units';
@@ -138,6 +138,7 @@ export function AnalysisPanel({
       ),
     [allShots, series, fields, annotations, unitSystem],
   );
+  const availableColumns = tableColumns(fields, tableQuantities, unitSystem);
   const infoSeries = series.find((item) => item.id === profile?.infoSeriesId) ?? series[0];
   const sortedRows = useMemo(
     () =>
@@ -169,15 +170,18 @@ export function AnalysisPanel({
   }, [sortedRows, shots]);
   /** Persist explicit control edits; missing readings alone never overwrite a saved quantity. */
   async function changeChart(patch: Partial<ChartSettings>) {
-    const next = normalizeChart({ ...settings, ...patch });
-    const available =
-      next.axis === 'shot' ? quantities : distanceQuantities(shots, unitSystem, curveData);
-    if (patch.axis && available.length && !available.some((q) => q.id === next.quantity))
-      next.quantity = available[0]!.id;
-    if (!available.some((q) => q.id === next.secondary && q.id !== next.quantity))
-      next.secondary = available.find((q) => q.id !== next.quantity)?.id ?? next.quantity;
     try {
-      await saveAnalysis(chartKind, next);
+      // Rapid edits can precede a live-query render. Resolve dependent choices inside the transaction.
+      await saveAnalysis(chartKind, (current) => {
+        const next = normalizeChart({ ...current, ...patch });
+        const available =
+          next.axis === 'shot' ? quantities : distanceQuantities(shots, unitSystem, curveData);
+        if (patch.axis && available.length && !available.some((q) => q.id === next.quantity))
+          next.quantity = available[0]!.id;
+        if (!available.some((q) => q.id === next.secondary && q.id !== next.quantity))
+          next.secondary = available.find((q) => q.id !== next.quantity)?.id ?? next.quantity;
+        return next;
+      });
       setColumnError('');
     } catch {
       setColumnError('Analysis settings could not be saved.');
@@ -564,9 +568,10 @@ export function AnalysisPanel({
               </p>
             </div>
             <ColumnPicker
-              available={tableColumns(fields, tableQuantities, unitSystem)}
+              available={availableColumns}
+              order={columnOrder(availableColumns, profile)}
               selected={visibleColumns(profile)}
-              onChange={(tableColumns) => void columns({ tableColumns })}
+              onChange={(patch) => void columns(patch)}
             />
           </header>
           {columnError && (

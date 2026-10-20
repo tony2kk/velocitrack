@@ -97,3 +97,21 @@ cancels a provisional drawing and suppresses further drawing until both fingers 
 Target inputs now exist only in the fixed panel; hover/focus connectors follow the
 photo transform. Read the updated target guide and navigation tests before modifying
 pointer handling. The data contract and existing saved drawings remain unchanged.
+
+## Column visibility and calculated drop (0.13.0)
+
+Read decision 016. `Profile.tableColumnOrder` retains hidden positions independently
+of `tableColumns`. The picker saves both atomically; only explicit moves reorder
+columns. Legacy profiles retain their visible order, new definitions append, and
+custom-field removal clears both lists. Backup validation accepts the optional
+property and rejects malformed IDs, duplicates and dangling custom fields.
+
+The catalog now includes `curve:drop-g1` and `curve:drop-g7`, each in its own file.
+Canonical drop is mm, displayed cm/in, positive downward below a horizontal muzzle
+axis. The shared speed kernel optionally integrates first-order gravity without
+feeding drop back into speed. Existing velocity results remain unchanged.
+See DROP_MODEL.md for the derivation, approximation and independent analytic tests.
+Chart IDs/forecast are backed up; derived points are recomputed after recovery.
+
+Shorter table labels are proposed in COLUMN_LABELS_PROPOSAL.md, not implemented.
+Do not rename domain IDs or user-defined fields when implementing presentation changes.
