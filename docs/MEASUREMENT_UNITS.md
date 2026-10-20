@@ -28,6 +28,16 @@ The adapter preserves imported values. Imperial/Metric profile preferences affec
 
 The tables document known paths, not a whitelist of exposed attributes. Both full `shot.raw` and `string.raw` are available in the custom-function context, including future imported keys. Validate their types and missing values before use. Missing is not zero.
 
+## Derived string atmosphere
+
+`input.string?.airDensity` is **kg/m³**; `input.string?.soundSpeed` is **m/s**.
+Both are optional estimates computed together on import/reimport from confirmed
+°F, % RH, sea-level hPa and ft inputs. Null/absent values mean unavailable, not zero.
+Metric display uses kg/m³ and m/s; Imperial uses lb/ft³ (multiply by
+`0.3048³ / 0.45359237`) and ft/s (divide by `0.3048`).
+See [atmosphere contract](ATMOSPHERE.md) for Magnus coefficients, pressure reduction,
+ideal-mixture sound speed, bounds and backup semantics.
+
 ## Local custom fields and annotations
 
 Field definitions are in `input.fields`; values are in `input.shotAnnotation` and `input.stringAnnotation`. Imported metadata and local values are kept separate.

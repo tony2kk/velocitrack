@@ -131,6 +131,12 @@ export function validateBackup(value: unknown): asserts value is Workspace {
           (string(item.startedAt) && Number.isFinite(Date.parse(item.startedAt)))) &&
         catalogs.get(item.firearmId)?.kind === 'firearm' &&
         catalogs.get(item.projectileId)?.kind === 'projectile' &&
+        (item.airDensity === undefined ||
+          item.airDensity === null ||
+          (number(item.airDensity) && item.airDensity > 0)) &&
+        (item.soundSpeed === undefined ||
+          item.soundSpeed === null ||
+          (number(item.soundSpeed) && item.soundSpeed > 0)) &&
         object(item.raw),
     );
   for (const item of w.shots) {

@@ -45,3 +45,11 @@ Series-context coverage includes the additive v2 migration, custom field unit/va
   dismissal, unchanged sort identities, structured units, literal custom names,
   fixed-unit fields, and distinct string/shot scope. Existing selection and backup
   regressions cover compatibility of this presentation-only change.
+
+- `atmosphere.test.ts`: Magnus reference values, dry/humid ideal-gas behavior,
+  independent mass-weighted acoustic heat capacities, sea-level pressure reduction,
+  required inputs, supported ranges, unit conversion and source preservation.
+- `atmosphere-storage.test.ts`: both source types, recalculation/clearing on reimport,
+  rollback, annotations, legacy records, validated backup round trips and readonly context.
+- `atmosphere-ui.test.tsx`: density/sound-speed table and scalar charts, profile units,
+  pressure/elevation units and unavailable/present String info values.

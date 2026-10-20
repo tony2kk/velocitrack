@@ -25,6 +25,8 @@ export interface Quantity {
   label: string;
   /** Display unit as structured metadata; table headings must not parse names or guess conversions. */
   unit?: string;
+  /** Explain derived quantities separately from recorded source fields. */
+  description?: string;
   /** The view uses this transform to preserve physical axis ranges across unit changes. */
   displayScale?: DisplayScale;
   read: (shot: Partial<Shot> & Pick<Shot, 'seriesId'>) => number | null;
@@ -64,6 +66,34 @@ export function availableQuantities(
       },
     });
   }
+  const densityUnit = units === 'metric' ? 'kg/m³' : 'lb/ft³';
+  // Canonical kg/m³ to lb/ft³, using the exact international foot and avoirdupois pound.
+  const densityFactor = units === 'metric' ? 1 : 0.3048 ** 3 / 0.45359237;
+  definitions.push({
+    id: 'airDensity',
+    label: `Air density (${densityUnit})`,
+    unit: densityUnit,
+    description:
+      'Estimated string air density using Magnus and ideal gases. Sea-level pressure is adjusted for altitude. Requires source temperature, humidity, pressure and altitude; refresh or reimport older strings.',
+    displayScale: { factor: densityFactor, offset: 0 },
+    read: (shot) => {
+      const value = sessions.get(shot.seriesId)?.airDensity;
+      return finiteNumber(value) && value > 0 ? value * densityFactor : null;
+    },
+  });
+  const soundSpeedFactor = units === 'metric' ? 1 : 1 / 0.3048; // Canonical m/s to ft/s.
+  definitions.push({
+    id: 'soundSpeed',
+    label: `Sound speed (${unitLabels[units].velocity})`,
+    unit: unitLabels[units].velocity,
+    description:
+      'Estimated string sound speed in moist air with constant ideal-gas heat capacities. Requires source temperature, humidity, pressure and altitude; refresh or reimport older strings.',
+    displayScale: { factor: soundSpeedFactor, offset: 0 },
+    read: (shot) => {
+      const value = sessions.get(shot.seriesId)?.soundSpeed;
+      return finiteNumber(value) && value > 0 ? value * soundSpeedFactor : null;
+    },
+  });
   definitions.push({
     id: 'projectileWeight',
     label: `Projectile weight (${units === 'metric' ? 'g' : 'grs'})`,
@@ -101,11 +131,15 @@ export function availableQuantities(
   for (const [path, name, temperature] of sourceFields) {
     const unit = temperature
       ? unitLabels[units].temperature
-      : path.endsWith('humidity')
-        ? '%'
-        : path.endsWith('windDegrees')
-          ? '°'
-          : 'source units';
+      : path === 'altitude'
+        ? unitLabels[units].distance
+        : path === 'weatherData.pressure'
+          ? 'hPa'
+          : path.endsWith('humidity')
+            ? '%'
+            : path.endsWith('windDegrees')
+              ? '°'
+              : 'source units';
     definitions.push({
       id: `source:${path}`,
       label: `${name} (${unit})`,
@@ -113,13 +147,17 @@ export function availableQuantities(
       displayScale:
         temperature && units === 'metric'
           ? { factor: 5 / 9, offset: (-32 * 5) / 9 }
-          : { factor: 1, offset: 0 },
+          : path === 'altitude' && units === 'metric'
+            ? { factor: 0.3048, offset: 0 }
+            : { factor: 1, offset: 0 },
       read: (shot) => {
         const value = rawPath(sessions.get(shot.seriesId)?.raw, path);
         return finiteNumber(value)
           ? temperature
             ? displayValue(value, 'temperature', units)
-            : value
+            : path === 'altitude'
+              ? displayValue(value, 'distance', units)
+              : value
           : null;
       },
     });

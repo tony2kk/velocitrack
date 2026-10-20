@@ -28,6 +28,11 @@ Older backups remain supported. If they contain no separate hidden-column order,
 the saved visible order is retained and other columns follow it. Use the current
 application version when restoring a backup made by a newer release.
 
+Derived string **Air density** and **Sound speed** are backed up with their source
+weather. Restore preserves their values; it does not recalculate them. Older
+archives may lack them. Refresh/reimport to calculate them from complete weather
+inputs; see [atmosphere attributes](atmosphere.md).
+
 Archives are limited to 256 MiB. If storage is full, keep both backups and use a browser profile with enough space. Avoid clearing current site data to troubleshoot.
 
 ## Offline is not a backup

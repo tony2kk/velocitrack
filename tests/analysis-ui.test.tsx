@@ -298,7 +298,7 @@ describe('persistent analysis controls', () => {
         columnIds={['source:weatherData.pressure']}
       />,
     );
-    expect(screen.getByRole('columnheader', { name: 'Pressure (source units)' })).toBeTruthy();
+    expect(screen.getByRole('columnheader', { name: 'Pressure (hPa)' })).toBeTruthy();
     expect(screen.getByRole('cell', { name: '—' })).toBeTruthy();
   });
   it('offers measured distance velocity even without a separate muzzle reading', () => {

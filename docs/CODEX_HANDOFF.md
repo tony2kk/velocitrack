@@ -124,3 +124,17 @@ bound to zero, so positive drop runs downward from the top. Velocity axes are
 unchanged, including mixed Dual charts. Canonical zoom memory remains increasing
 and survives model/unit changes; reset fits again from zero. This is presentation
 only and requires no backup or schema migration. See DROP_MODEL.md.
+
+## String atmosphere — 0.14.0
+
+Read decision 017 and ATMOSPHERE.md. The discarded Energy retention experiment is
+removed. `domain/atmosphere.ts` now accepts explicit station pressure or sea-level
+pressure with elevation and returns Magnus/ideal-mixture density and sound speed.
+`sources/atmosphere.ts` converts the supported raw weather units and maps missing
+or invalid inputs to null. `importBundle` calculates both attributes together on
+every upsert without changing raw metadata or local annotations. No ISA fallback.
+
+`Series.airDensity` is canonical kg/m³; `Series.soundSpeed` is canonical m/s.
+Display, scalar analysis and readonly custom context expose both. Older records
+need refresh/reimport; ZIP restore preserves values and validates optional positive
+finite numbers. No schema migration or changes to G1/G7 numerical models are included.

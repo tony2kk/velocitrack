@@ -52,11 +52,15 @@ export function StringInfo({
     fields,
     annotations,
     profile.unitSystem,
+    true,
   ).filter(
     (item) =>
-      item.id.startsWith('source:') ||
-      item.id.startsWith('target:') ||
-      item.id === 'projectileWeight',
+      item.id === 'airDensity' ||
+      item.id === 'soundSpeed' ||
+      ((item.id.startsWith('source:') ||
+        item.id.startsWith('target:') ||
+        item.id === 'projectileWeight') &&
+        item.read(context) !== null),
   );
   return (
     <section className="string-info">
@@ -112,7 +116,7 @@ export function StringInfo({
         ))}
         {quantities.map((item) => (
           <div className="info-entry" key={item.id}>
-            <dt>{item.label}</dt>
+            <dt title={item.description}>{item.label}</dt>
             <dd>{formatValue(item.read(context))}</dd>
           </div>
         ))}

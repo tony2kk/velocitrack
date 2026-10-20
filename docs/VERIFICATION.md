@@ -240,3 +240,23 @@ Full verification passed: TypeScript, ESLint, Prettier, **119 behavioral tests a
 - This batch was verified through automated component/axis-option tests, without
   a new interactive browser check. Calculations, saved records and backups are
   unchanged. No Pages deployment was triggered.
+
+## Derived string atmosphere — 2026-10-21
+
+- Version `0.14.0` passed full verification: types, lint, formatting, **277 tests
+  across 39 files**, production/PWA build and the public-content guard. The removed
+  Energy retention experiment has no remaining code/test references.
+- New synthetic checks cover dry-air references, humid density and sound speed,
+  independent mass-weighted heat capacities, pressure/temperature dependence,
+  estimated station pressure, negative/zero elevation, invalid/absent weather and
+  exact source-unit conversions. Magnus remains the over-water convention.
+- Both source kinds use the tested atomic import path. Reimport updates or clears
+  both attributes, preserves raw fields/annotations and rolls back on a catalog
+  error. ZIP round trips retain canonical values/preferences; old archives remain
+  valid and malformed derived values fail before any restore write.
+- Component tests cover density/sound-speed columns and scalar charts in both
+  display systems, confirmed pressure/elevation units and missing/present String
+  info values. Custom context exposes detached readonly values.
+- No new live account import or interactive browser check was performed. Source
+  sensor accuracy and the provider's original sea-level pressure reduction remain
+  unverified. Existing G1/G7 calculations are unchanged. No Pages deployment.

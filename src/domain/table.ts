@@ -39,6 +39,8 @@ export const DEFAULT_COLUMNS = [
 
 /** Compact names are keyed by stable IDs so changing units never changes meaning or saved order. */
 const QUANTITY_HEADINGS: Readonly<Record<string, string>> = {
+  airDensity: 'Air density',
+  soundSpeed: 'Sound speed',
   'target:horizontalOffset': 'Offset H',
   'target:verticalOffset': 'Offset V',
   'target:groupSize': 'Group size',
@@ -69,6 +71,9 @@ const QUANTITY_HEADINGS: Readonly<Record<string, string>> = {
 
 /** Distinguish string-level source summaries and local target values from individual shot readings. */
 function quantityDescription(quantity: Quantity): string {
+  if (quantity.description) return quantity.description;
+  if (quantity.id === 'source:weatherData.pressure')
+    return 'Recorded pressure reduced to sea level, in hPa. This is not local station pressure.';
   if (quantity.id === 'target:horizontalOffset')
     return 'Group-center horizontal offset from the point of aim. Positive to the right; shared by the string.';
   if (quantity.id === 'target:verticalOffset')

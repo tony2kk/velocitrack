@@ -4,7 +4,7 @@ import { calculatedVelocityG7Curve } from './calculatedVelocityG7';
 import { calculatedDropG1Curve } from './calculatedDropG1';
 import { calculatedDropG7Curve } from './calculatedDropG7';
 
-/** Add imported definitions here, in the desired Quantity/Second quantity menu order. */
+/** Ordered list shown in Quantity and Second quantity after built-in curves. */
 export const customDistanceCurves: readonly CustomDistanceCurve[] = [
   calculatedVelocityG1Curve,
   calculatedVelocityG7Curve,

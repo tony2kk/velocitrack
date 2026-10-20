@@ -192,3 +192,13 @@ This is presentation only; existing profile/backup contracts remain unchanged.
 - [x] Preserve normal velocity axes in Dual and retained drop zoom across model/unit changes.
 
 Release 0.13.2 is presentation only; calculated values and backup contracts stay unchanged.
+
+## String atmosphere — 2026-10-21
+
+- [x] Remove the discarded Energy retention experiment.
+- [x] Review Magnus/ideal-gas calculations and make sea-level pressure reduction explicit.
+- [x] Compute optional string air density and sound speed on atomic import/reimport.
+- [x] Expose units, estimated provenance, table/scalar charts and custom-function access.
+- [x] Preserve legacy records/archives and validate backup round trips.
+
+Release 0.14.0 implements decision 017. Existing G1/G7 calculations remain unchanged.

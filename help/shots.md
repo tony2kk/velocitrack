@@ -40,4 +40,4 @@ Point at a row or focus it with the keyboard to highlight its plotted values. Po
 
 Tables show 100 rows per page. Following a chart point can reveal a later page automatically.
 
-**Related:** [Charts and calculated velocity](analysis.md) · [Backup](backup.md)
+**Related:** [Charts and calculated velocity](analysis.md) · [Air density and sound speed](atmosphere.md) · [Backup](backup.md)

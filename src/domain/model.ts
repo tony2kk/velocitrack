@@ -74,6 +74,10 @@ export interface CatalogItem {
 
 /** Imported measurement session with local catalog references and its original provider row. */
 export interface Series {
+  /** Derived ideal-gas air density in kg/m³. Null means unavailable; absent in older records. */
+  airDensity?: number | null;
+  /** Derived ideal-mixture sound speed in m/s, with the same availability as airDensity. */
+  soundSpeed?: number | null;
   id: string;
   sourceId: string;
   remoteId: string;

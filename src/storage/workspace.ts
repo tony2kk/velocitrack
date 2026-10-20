@@ -10,6 +10,7 @@ import {
   type SourceKind,
 } from '../domain/model';
 import type { ImportBundle, ImportedReference } from '../sources/velociradar';
+import { importedAtmosphere } from '../sources/atmosphere';
 import { db, type WorkspaceDatabase } from './database';
 
 /** Read a consistent snapshot so the UI never mixes tables from different import transactions. */
@@ -137,6 +138,7 @@ export async function importBundle(
           name: imported.name,
           startedAt: imported.startedAt,
           raw: imported.raw,
+          ...importedAtmosphere(imported.raw),
           firearmId: await resolveCatalog(imported.firearm, 'firearm', source, catalog, database),
           projectileId: await resolveCatalog(
             imported.projectile,
