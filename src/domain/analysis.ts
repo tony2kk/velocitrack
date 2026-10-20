@@ -13,6 +13,7 @@ import { projectileWeight } from './projectiles';
 import { finiteNumber, rawPath } from './providerData';
 import { inspectPoints } from './measurements';
 import { predictionInputs, velocityModel } from './calculatedVelocity';
+import type { DisplayScale } from './chartViewport';
 export { finiteNumber, rawPath } from './providerData';
 
 export const QUANTITIES: ChartQuantity[] = ['velocity', 'g1', 'g7'];
@@ -21,6 +22,8 @@ export const QUANTITIES: ChartQuantity[] = ['velocity', 'g1', 'g7'];
 export interface Quantity {
   id: string;
   label: string;
+  /** The view uses this transform to preserve physical axis ranges across unit changes. */
+  displayScale?: DisplayScale;
   read: (shot: Partial<Shot> & Pick<Shot, 'seriesId'>) => number | null;
 }
 
@@ -38,6 +41,7 @@ export function availableQuantities(
   const definitions: Quantity[] = QUANTITIES.map((id) => ({
     id,
     label: quantityLabel(id, units),
+    displayScale: { factor: id === 'velocity' && units === 'metric' ? 0.3048 : 1, offset: 0 },
     read: (shot) => {
       const value = shotQuantity(shot, id);
       return value === null ? null : quantityDisplay(value, id, units);
@@ -46,6 +50,7 @@ export function availableQuantities(
   definitions.push({
     id: 'projectileWeight',
     label: `Projectile weight (${units === 'metric' ? 'g' : 'grs'})`,
+    displayScale: { factor: units === 'metric' ? 0.06479891 : 1, offset: 0 },
     read: (shot) => {
       const session = sessions.get(shot.seriesId);
       const weight = session ? projectileWeight(session) : null;
@@ -79,6 +84,10 @@ export function availableQuantities(
     definitions.push({
       id: `source:${path}`,
       label: `${name} (${temperature ? unitLabels[units].temperature : path.endsWith('humidity') ? '%' : path.endsWith('windDegrees') ? '°' : 'source units'})`,
+      displayScale:
+        temperature && units === 'metric'
+          ? { factor: 5 / 9, offset: (-32 * 5) / 9 }
+          : { factor: 1, offset: 0 },
       read: (shot) => {
         const value = rawPath(sessions.get(shot.seriesId)?.raw, path);
         return finiteNumber(value)
@@ -102,6 +111,21 @@ export function availableQuantities(
     definitions.push({
       id: `source:statistics.${key}`,
       label: `String ${key.replace(/([A-Z])/g, ' $1')} (Caldwell${['minimum', 'maximum', 'average', 'muzzleVelocity', 'standardDeviation', 'spread'].includes(key) ? `, ${unitLabels[units].velocity}` : ''})`,
+      displayScale: {
+        factor:
+          units === 'metric' &&
+          [
+            'minimum',
+            'maximum',
+            'average',
+            'muzzleVelocity',
+            'standardDeviation',
+            'spread',
+          ].includes(key)
+            ? 0.3048
+            : 1,
+        offset: 0,
+      },
       read: (shot) => {
         const value = rawPath(sessions.get(shot.seriesId)?.raw, `statistics.${key}`);
         return finiteNumber(value)
@@ -121,6 +145,7 @@ export function availableQuantities(
   for (const field of fields.filter((field) => !['short-text', 'note'].includes(field.type)))
     definitions.push({
       id: `field:${field.id}`,
+      displayScale: { factor: fieldFactor(field.type, units), offset: 0 },
       label:
         field.name + (fieldUnit(field.type, units) ? ` (${fieldUnit(field.type, units)})` : ''),
       read: (shot) => {

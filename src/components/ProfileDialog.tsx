@@ -35,7 +35,12 @@ export function ProfileDialog({
     <Modal title="Your local profile" onClose={onClose} wide>
       <div className="segmented profile-tabs" aria-label="Profile sections">
         {(['general', 'display', 'fields', 'tags'] as const).map((value) => (
-          <button key={value} aria-pressed={tab === value} onClick={() => setTab(value)}>
+          <button
+            key={value}
+            title={`Open ${value} preferences stored in this browser.`}
+            aria-pressed={tab === value}
+            onClick={() => setTab(value)}
+          >
             {value === 'general'
               ? 'General'
               : value === 'display'
@@ -83,6 +88,7 @@ export function ProfileDialog({
             Theme
             <select
               value={theme}
+              title="Use a light or dark appearance, or follow the operating system."
               onChange={(event) => setTheme(event.target.value as typeof theme)}
             >
               <option value="auto">Auto — follow system</option>
@@ -159,6 +165,7 @@ export function ProfileDialog({
             Units
             <select
               value={unitSystem}
+              title="Choose display units across the app. Original measurements stay unchanged."
               onChange={(event) => setUnitSystem(event.target.value as typeof unitSystem)}
             >
               <option value="imperial">Imperial — ft/s, ft, °F</option>
@@ -170,6 +177,7 @@ export function ProfileDialog({
             <input
               type="checkbox"
               checked={remember}
+              title="Keep connected-source sessions between visits on this browser profile. Passwords are never saved."
               onChange={(event) => setRemember(event.target.checked)}
             />
             <span>
@@ -185,6 +193,7 @@ export function ProfileDialog({
             <input
               type="checkbox"
               checked={refresh}
+              title="Refresh every enabled source when the app opens; sources needing sign-in or files wait for your input."
               onChange={(event) => setRefresh(event.target.checked)}
             />
             <span>

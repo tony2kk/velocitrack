@@ -105,3 +105,13 @@ See decision 009. Verification is recorded in VERIFICATION.md.
 - [x] Replace the long help document with a task-oriented linked hub and separate technical references.
 
 See decision 010 and VELOCITY_RESEARCH.md. Pages deployment remains separate.
+
+## Chart navigation and control help — 2026-10-20
+
+- [x] Retain numerical chart ranges through parameter, data, ordering and theme changes.
+- [x] Keep compatible scales shared, with independent memory for unrelated axes and quantities.
+- [x] Add bottom-right reset to fit currently plotted data.
+- [x] Link the existing forecast field and horizontal right edge in both directions.
+- [x] Add explanatory hover titles to meaningful workspace controls.
+
+See decision 011. Numerical models and atmosphere handling are unchanged; Pages deployment remains separate.

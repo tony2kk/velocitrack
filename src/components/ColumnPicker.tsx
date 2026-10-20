@@ -73,7 +73,9 @@ export function ColumnPicker({
         }
       }}
     >
-      <summary>Columns</summary>
+      <summary title="Show, hide and reorder shot-table columns. Changes are saved in your local profile.">
+        Columns
+      </summary>
       <div
         className="column-options"
         ref={panel}
@@ -136,6 +138,7 @@ export function ColumnPicker({
                 disabled={index < 0}
                 tabIndex={-1}
                 aria-label={`Drag ${item.label} to reorder`}
+                title={`Drag to move ${item.label}, or use the up/down buttons.`}
                 onPointerDown={(event) => {
                   event.preventDefault();
                   dragged.current = item.id;
@@ -161,7 +164,10 @@ export function ColumnPicker({
               >
                 <GripVertical size={15} aria-hidden="true" />
               </button>
-              <label className="check-field compact">
+              <label
+                className="check-field compact"
+                title={`Show or hide the ${item.label} column.`}
+              >
                 <input
                   type="checkbox"
                   checked={index >= 0}
@@ -180,6 +186,7 @@ export function ColumnPicker({
                   <button
                     className="icon-button"
                     aria-label={`Move ${item.label} up`}
+                    title={`Move ${item.label} one column to the left.`}
                     disabled={index === 0}
                     onClick={() => onChange(moveColumn(selected, item.id, selected[index - 1]!))}
                   >
@@ -188,6 +195,7 @@ export function ColumnPicker({
                   <button
                     className="icon-button"
                     aria-label={`Move ${item.label} down`}
+                    title={`Move ${item.label} one column to the right.`}
                     disabled={index === selected.length - 1}
                     onClick={() => onChange(moveColumn(selected, item.id, selected[index + 1]!))}
                   >

@@ -30,6 +30,35 @@ afterEach(async () => {
 });
 
 describe('persistent analysis controls', () => {
+  it('does not round the saved viewport when an untouched formatted distance field loses focus', async () => {
+    const analysis = {
+      ...defaultProfile().analysis!,
+      mode: 'dual' as const,
+      dual: {
+        axis: 'distance' as const,
+        quantity: 'velocity',
+        secondary: 'calculated:g1',
+        forecastDistance: 100.123456,
+      },
+    };
+    await saveProfile({ analysis });
+    render(
+      <AnalysisPanel
+        series={[series()]}
+        shots={[shot({ muzzleVelocity: 1000, ballisticCoefficientG1: 0.2 })]}
+        view="chart"
+        activeShotId={null}
+        onHoverShot={vi.fn()}
+        unitSystem="metric"
+        profile={(await loadWorkspace()).profile}
+      />,
+    );
+    const input = screen.getByLabelText('Forecast distance') as HTMLInputElement;
+    expect(input.value).toBe('30.518');
+    fireEvent.blur(input);
+    expect((await loadWorkspace()).profile.analysis?.dual.forecastDistance).toBe(100.123456);
+  });
+
   it('persists calculated distance choices and the display-unit forecast horizon independently', async () => {
     const profile = {
       ...defaultProfile(),

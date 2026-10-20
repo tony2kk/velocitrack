@@ -37,7 +37,13 @@ export function Modal({
     >
       <header className="modal-heading">
         <h2 id={heading}>{title}</h2>
-        <button type="button" className="icon-button" aria-label="Close dialog" onClick={onClose}>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="Close dialog"
+          title="Close this dialog (Escape)."
+          onClick={onClose}
+        >
           <X size={20} />
         </button>
       </header>

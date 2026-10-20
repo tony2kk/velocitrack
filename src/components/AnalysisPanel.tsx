@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { ArrowUpRight, ChartNoAxesCombined } from 'lucide-react';
 import type {
   Series,
@@ -34,6 +34,7 @@ import { sortShots, tableColumns, visibleColumns } from '../domain/table';
 import { StringInfo } from './StringInfo';
 import { ShotTable } from './ShotTable';
 import { displayValue, formatValue, unitLabels } from '../domain/units';
+import type { ViewportMemory } from '../domain/chartViewport';
 
 // Keep the chart library out of the initial workspace load until a selection needs it.
 const MeasurementChart = lazy(() => import('./MeasurementChart'));
@@ -89,6 +90,8 @@ export function AnalysisPanel({
   colorOrder?: string[];
 }) {
   const [columnError, setColumnError] = useState('');
+  // Keep viewports through temporary empty selections and String info without persisting user gestures.
+  const [viewportMemory] = useState<ViewportMemory>(() => new Map());
   /** Persist column choices without changing annotations or the active shot selection. */
   async function columns(patch: Partial<Profile>) {
     try {
@@ -100,6 +103,19 @@ export function AnalysisPanel({
   }
   const kind = profile?.analysis?.mode ?? 'simple';
   const chartKind = kind === 'info' ? 'simple' : kind;
+  /** Save only the changed right edge, preserving simultaneous quantity and other profile edits. */
+  const changeForecastDistance = useCallback(
+    async (distance: number) => {
+      if (!Number.isFinite(distance) || distance <= 0 || distance > MAX_FORECAST_DISTANCE) return;
+      try {
+        await saveAnalysis(chartKind, { forecastDistance: distance });
+        setColumnError('');
+      } catch {
+        setColumnError('The chart distance could not be saved.');
+      }
+    },
+    [chartKind],
+  );
   const settings = useMemo(
     () => normalizeChart(profile?.analysis?.[chartKind] ?? defaultAnalysis()[chartKind]),
     [profile?.analysis, chartKind],
@@ -189,6 +205,10 @@ export function AnalysisPanel({
     mode === 'distance' &&
     (!!velocityModel(settings.quantity) ||
       (kind === 'dual' && !!velocityModel(settings.secondary)));
+  const forecastInput = formatValue(
+    displayValue(settings.forecastDistance ?? DEFAULT_FORECAST_DISTANCE, 'distance', unitSystem),
+    3,
+  );
   const secondaryChoices = choices.filter((item) => item.id !== settings.quantity);
   if (!series.length)
     return (
@@ -232,7 +252,19 @@ export function AnalysisPanel({
           ['Sample SD', displayValue(summary.sd, 'velocity', unitSystem)],
           ['Extreme spread', displayValue(summary.spread, 'velocity', unitSystem)],
         ].map(([label, value]) => (
-          <div className="stat" key={label}>
+          <div
+            className="stat"
+            key={label}
+            title={
+              label === 'Included shots'
+                ? 'Selected, valid, non-excluded shots with a usable recorded muzzle velocity.'
+                : label === 'Mean velocity'
+                  ? 'Arithmetic mean of included recorded muzzle velocities.'
+                  : label === 'Sample SD'
+                    ? 'Sample standard deviation of recorded muzzle velocities; requires at least two readings.'
+                    : 'Highest minus lowest included recorded muzzle velocity.'
+            }
+          >
             <span>{label}</span>
             <strong>{formatValue(value as number | null, 2)}</strong>
             <small>
@@ -306,6 +338,7 @@ export function AnalysisPanel({
                   Horizontal axis
                   <select
                     aria-label="Chart type"
+                    title="Plot readings over measured distance or in the current shot-table order. Each axis keeps its own zoom."
                     value={mode}
                     onChange={(event) =>
                       void changeChart({ axis: event.target.value as typeof mode })
@@ -319,6 +352,7 @@ export function AnalysisPanel({
                   Quantity
                   <select
                     aria-label="Chart quantity"
+                    title="Choose the primary plotted quantity. Compatible quantities retain the current scale."
                     value={settings.quantity}
                     onChange={(event) => void changeChart({ quantity: event.target.value })}
                   >
@@ -339,6 +373,7 @@ export function AnalysisPanel({
                     Second quantity
                     <select
                       aria-label="Second chart quantity"
+                      title="Choose a second quantity. Distance velocities share one scale; By shot can use a separate right axis."
                       disabled={!secondaryChoices.length}
                       value={secondaryChoices.length ? settings.secondary : ''}
                       onChange={(event) => void changeChart({ secondary: event.target.value })}
@@ -365,33 +400,21 @@ export function AnalysisPanel({
                     Forecast distance ({unitLabels[unitSystem].distance})
                     <input
                       aria-label="Forecast distance"
+                      title="Right edge of the visible distance axis. Dragging horizontal zoom updates this value. Press Enter or leave the field to apply an edit."
                       type="number"
                       key={`${settings.forecastDistance}:${unitSystem}`}
                       min="0.01"
                       max={displayValue(MAX_FORECAST_DISTANCE, 'distance', unitSystem)!}
                       step="any"
-                      defaultValue={Number(
-                        displayValue(
-                          settings.forecastDistance ?? DEFAULT_FORECAST_DISTANCE,
-                          'distance',
-                          unitSystem,
-                        )!.toPrecision(12),
-                      )}
+                      defaultValue={forecastInput}
                       onBlur={(event) => {
+                        // Display rounded slider values without quantizing an untouched saved range.
+                        if (event.target.value === forecastInput) return;
                         const value =
                           Number(event.target.value) / (unitSystem === 'metric' ? 0.3048 : 1);
                         if (Number.isFinite(value) && value > 0 && value <= MAX_FORECAST_DISTANCE)
-                          void changeChart({ forecastDistance: value });
-                        else
-                          event.target.value = String(
-                            Number(
-                              displayValue(
-                                settings.forecastDistance ?? DEFAULT_FORECAST_DISTANCE,
-                                'distance',
-                                unitSystem,
-                              )!.toPrecision(12),
-                            ),
-                          );
+                          void changeForecastDistance(value);
+                        else event.target.value = forecastInput;
                       }}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter') event.currentTarget.blur();
@@ -431,6 +454,11 @@ export function AnalysisPanel({
                   onHoverShots={onHoverShots}
                   onHoverShot={onHoverShot}
                   unitSystem={unitSystem}
+                  viewportMemory={viewportMemory}
+                  forecastDistance={
+                    forecast ? (settings.forecastDistance ?? DEFAULT_FORECAST_DISTANCE) : undefined
+                  }
+                  onForecastDistanceChange={changeForecastDistance}
                 />
               </Suspense>
               <div className="chart-legend">
@@ -446,7 +474,7 @@ export function AnalysisPanel({
                         quantities.find((q) => q.id === id)?.label ?? quantityLabel(id, unitSystem),
                     )
                 ).map((label, index) => (
-                  <span key={index}>
+                  <span key={index} title={label}>
                     <i
                       style={{
                         background: chartStyle(

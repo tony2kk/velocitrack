@@ -418,6 +418,16 @@
   .chart-frame {
     position: relative;
   }
+  .chart-reset {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    width: 32px;
+    height: 32px;
+    background: var(--surface);
+    color: var(--muted);
+  }
   .point-tooltip {
     position: absolute;
     z-index: 1;

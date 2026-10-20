@@ -17,7 +17,9 @@ function MultiFilter({
 }) {
   return (
     <details className="filter-popover" name="workspace-filter">
-      <summary>
+      <summary
+        title={`Filter by ${label.toLowerCase()}. Choose any matching entries; an empty selection includes all.`}
+      >
         {label}
         {selected.length > 0 && <span className="count-badge">{selected.length}</span>}
         <ChevronDown size={14} />
@@ -25,12 +27,17 @@ function MultiFilter({
       <div className="popover-content">
         <div className="popover-heading">
           <strong>{label}</strong>
-          <button className="text-button" disabled={!selected.length} onClick={() => onChange([])}>
+          <button
+            title={`Clear the ${label.toLowerCase()} filter to include all entries.`}
+            className="text-button"
+            disabled={!selected.length}
+            onClick={() => onChange([])}
+          >
             Clear
           </button>
         </div>
         {options.map((option) => (
-          <label className="check-field compact" key={option.id}>
+          <label className="check-field compact" key={option.id} title={option.name}>
             <input
               type="checkbox"
               checked={selected.includes(option.id)}
@@ -102,7 +109,7 @@ export function FilterBar({
           onChange={(projectileIds) => onChange({ ...filters, projectileIds })}
         />
         <details className="filter-popover date-filter" name="workspace-filter">
-          <summary>
+          <summary title="Filter strings by a date range or the most recent weeks or months.">
             <CalendarDays size={15} />
             {dateLabel}
             <ChevronDown size={14} />
@@ -111,6 +118,7 @@ export function FilterBar({
             <label className="field">
               Date window
               <select
+                title="Choose all dates, a fixed range or a relative period."
                 value={filters.dateMode}
                 onChange={(event) =>
                   onChange({ ...filters, dateMode: event.target.value as Filters['dateMode'] })
@@ -171,6 +179,7 @@ export function FilterBar({
           <button
             className="icon-button"
             aria-label="Reset filters"
+            title="Clear every filter and show all available strings."
             onClick={() => onChange(structuredClone(EMPTY_FILTERS))}
           >
             <RotateCcw size={16} />

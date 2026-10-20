@@ -60,6 +60,7 @@ export function SeriesNavigator({
                 type="checkbox"
                 checked={expanded}
                 aria-label={`Select series ${item.name}`}
+                title="Include or remove this string from the current workspace selection."
                 onChange={(event) => onToggleSeries(item.id, event.target.checked)}
               />
               <div className="series-card-content">

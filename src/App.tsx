@@ -192,6 +192,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           <button
             className="profile-button"
             aria-label="Open local profile"
+            title="Manage your local profile, units, display, tags and custom fields."
             onClick={() => setDialog('profile')}
           >
             <span>{profile.nickname || 'Local profile'}</span>
@@ -203,6 +204,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Help on GitHub (opens in a new tab)"
+            title="Open VelociTrack help on GitHub in a new tab."
           >
             <CircleHelp size={20} />
           </a>
@@ -221,12 +223,16 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
         <div className="toolbar-group">
           <span className="group-label">DATA</span>
           <div className="group-controls">
-            <button onClick={() => setDialog('sources')}>
+            <button
+              title="Add, edit or connect data sources stored in this browser."
+              onClick={() => setDialog('sources')}
+            >
               <Database size={16} />
               Sources
             </button>
             <button
               disabled={refreshingAll || refreshing.length > 0}
+              title="Refresh all enabled sources, regardless of the current filters."
               onClick={async () => {
                 setRefreshingAll(true);
                 try {
@@ -246,7 +252,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
             <button
               className="icon-button"
               aria-label="Manage local catalogs"
-              title="Local catalogs"
+              title="Manage the shared local firearm and projectile catalogs."
               onClick={() => setDialog('catalog')}
             >
               <Library size={18} />
@@ -267,6 +273,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           <select
             id="analysis-mode"
             aria-label="Analysis"
+            title="Choose a single chart, a dual chart, string comparison or recorded string information."
             value={profile.analysis?.mode ?? 'simple'}
             onChange={(event) =>
               void saveAnalysis(event.target.value as AnalysisMode).catch(() =>
@@ -283,7 +290,12 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
         <div className="toolbar-group tools-group">
           <span className="group-label">TOOLS</span>
           <div className="group-controls">
-            <button onClick={() => setDialog('backup')}>Backup / Restore</button>
+            <button
+              title="Download a local workspace backup or preview a ZIP archive before restoring it."
+              onClick={() => setDialog('backup')}
+            >
+              Backup / Restore
+            </button>
           </div>
         </div>
       </nav>

@@ -142,6 +142,7 @@ export function ShotTable({
                       ref={selectAll}
                       type="checkbox"
                       aria-label="Analyze all shots"
+                      title="Select or deselect all eligible shots across every table page. Invalid and source-excluded shots remain omitted."
                       aria-checked={selectedCount > 0 && !allSelected ? 'mixed' : allSelected}
                       checked={allSelected}
                       disabled={!eligible.length}
@@ -222,6 +223,7 @@ export function ShotTable({
                     <input
                       type="checkbox"
                       aria-label={`Select shot ${shot.number} in ${names.get(shot.seriesId)}`}
+                      title="Include this shot in charts and summary statistics for this session."
                       checked={!hiddenShots.has(shot.id) && !invalidShots.has(shot.id)}
                       disabled={invalidShots.has(shot.id)}
                       onChange={(event) => onToggleShot(shot.id, event.target.checked)}
@@ -346,6 +348,7 @@ export function ShotTable({
         <div className="pagination">
           <button
             disabled={currentPage === 0}
+            title="Show the previous 100 shot records without changing analysis selection."
             onClick={() => {
               onHoverShot(null);
               setPage(currentPage - 1);
@@ -358,6 +361,7 @@ export function ShotTable({
           </span>
           <button
             disabled={(currentPage + 1) * 100 >= shots.length}
+            title="Show the next 100 shot records without changing analysis selection."
             onClick={() => {
               onHoverShot(null);
               setPage(currentPage + 1);
