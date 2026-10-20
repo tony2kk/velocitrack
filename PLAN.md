@@ -134,3 +134,12 @@ See decision 012. Existing numerical models are unchanged; no Pages deployment i
 - [x] Document canonical units, owner-confirmed altitude/pressure/projectile units and unresolved metadata units.
 
 See decision 013. Preserve existing sample-only helpers and unrelated local work.
+
+## Calculated velocity catalog — 2026-10-20
+
+- [x] Register existing G1/G7 quantities through the ordinary custom list.
+- [x] Give each quantity its own file, preserving saved IDs and behavior.
+- [x] Group and document constants, metadata and variable declarations at function starts.
+- [x] Prepare minor release 0.11.0 with regression verification.
+
+See decision 014. The next requested release will address target-image connection and processing; its implementation and detailed scope remain deferred.

@@ -7,6 +7,7 @@ import {
   supportsDistanceCurve,
 } from '../src/domain/distanceCurves/registry';
 import { centeredSamplesCurve } from '../src/domain/distanceCurves/template';
+import { calculatedVelocityG7Curve } from '../src/domain/distanceCurves/calculatedVelocityG7';
 import type {
   CustomDistanceCurve,
   DistanceCurveInput,
@@ -121,7 +122,7 @@ describe('distance curve dispatch', () => {
 
 describe('generic distance traces', () => {
   it('uses a separate axis for a different canonical meaning, converts once and preserves identity', () => {
-    const registry = createDistanceCurveRegistry([centeredSamplesCurve]);
+    const registry = createDistanceCurveRegistry([calculatedVelocityG7Curve, centeredSamplesCurve]);
     const input = shot({ distances: [0, 10, 20], velocities: [100, 95, 90] });
     const traces = buildAnalysisTraces(
       [input],

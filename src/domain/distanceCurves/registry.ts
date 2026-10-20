@@ -2,10 +2,8 @@ import type { Shot, UnitSystem } from '../model';
 import type { DisplayScale } from '../chartViewport';
 import { inspectPoints } from '../measurements';
 import {
-  calculatedVelocity,
   DEFAULT_FORECAST_DISTANCE,
   MAX_FORECAST_DISTANCE,
-  predictionInputs,
   type DragModel,
 } from '../calculatedVelocity';
 import { customDistanceCurves } from './customDistanceCurves';
@@ -51,7 +49,7 @@ function velocityScale(units: UnitSystem): DisplayScale {
   return { factor: units === 'metric' ? 0.3048 : 1, offset: 0 };
 }
 
-/** Existing quantities keep their IDs and numerical implementation behind small adapters. */
+/** Recorded measurements are the only built-in; every calculated quantity comes from the catalog. */
 function builtInCurves(): DistanceCurve[] {
   return [
     {
@@ -70,25 +68,6 @@ function builtInCurves(): DistanceCurve[] {
           sampleIndex: point.index,
         })),
     },
-    ...(['g1', 'g7'] as const).map<DistanceCurve>((model) => ({
-      id: `calculated:${model}`,
-      label: (units) =>
-        `Calculated velocity (${model.toUpperCase()}) (${units === 'metric' ? 'm/s' : 'ft/s'})`,
-      axisKey: 'velocity',
-      displayScale: velocityScale,
-      description:
-        'Model prediction from muzzle velocity and the matching Caldwell BC. Standard atmosphere: 15 °C, 1013.25 hPa, dry air, no wind. Constant BC and straight path; no gravity or weather correction. Dashed curves include extrapolation and are estimates, not measured readings.',
-      unavailableReason: 'missing or unsupported muzzle velocity / BC.',
-      derived: true,
-      usesForecast: true,
-      model,
-      available: (shot) => !!predictionInputs(shot, model),
-      calculate: (shot, maxDistance) =>
-        calculatedVelocity(shot, model, maxDistance).map((point) => ({
-          distance: point.distance,
-          value: point.velocity,
-        })),
-    })),
   ];
 }
 
@@ -100,7 +79,9 @@ export function createDistanceCurveRegistry(
   const ids = new Set(definitions.map((definition) => definition.id));
   for (const definition of custom) {
     if (
-      !/^curve:[a-zA-Z0-9_-]+$/.test(definition.id) ||
+      (!/^curve:[a-zA-Z0-9_-]+$/.test(definition.id) &&
+        definition.id !== 'calculated:g1' &&
+        definition.id !== 'calculated:g7') ||
       definition.id.length > 200 ||
       ids.has(definition.id)
     )

@@ -18,6 +18,11 @@ code. Keep comments accurate when behavior changes; avoid comments that only rep
 syntax. Inline React callbacks need explanations where the behavior is non-obvious,
 not boilerplate on every handler.
 
+For code-defined calculated curves, keep each quantity in its own module and register
+it in customDistanceCurves.ts. Group metadata, constants and working-variable declarations
+at the start of their respective functions, with English purpose/unit comments.
+Keep guard-dependent assignments after validation and loop-dependent assignments in the loop.
+
 The footer displays the package version and build-time Git revision. Update the
 package version and lockfile together for a release. Build after committing when
 handing off a clean preview; uncommitted work is intentionally marked `-dirty`.

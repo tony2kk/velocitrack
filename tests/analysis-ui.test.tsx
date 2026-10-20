@@ -18,6 +18,8 @@ import { centeredSamplesCurve } from '../src/domain/distanceCurves/template';
 vi.mock('../src/components/MeasurementChart', () => ({ default: () => <div>Chart canvas</div> }));
 vi.mock('../src/domain/distanceCurves/customDistanceCurves', async () => ({
   customDistanceCurves: [
+    (await import('../src/domain/distanceCurves/calculatedVelocityG1')).calculatedVelocityG1Curve,
+    (await import('../src/domain/distanceCurves/calculatedVelocityG7')).calculatedVelocityG7Curve,
     (await import('../src/domain/distanceCurves/template')).centeredSamplesCurve,
   ],
 }));

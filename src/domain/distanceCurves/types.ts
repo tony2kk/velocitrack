@@ -1,5 +1,6 @@
 import type { DisplayScale } from '../chartViewport';
 import type { Annotation, FieldDefinition, Series, Shot, Tag, UnitSystem } from '../model';
+import type { DragModel } from './velocityCalculation';
 
 /** Canonical X is feet; Y uses the definition's own canonical unit. Null breaks a line. */
 export interface DistanceSample {
@@ -41,8 +42,8 @@ export interface DistanceCurveContext extends DistanceCurveInput {
 
 /** A compile-time extension; callbacks are synchronous and must be pure and bounded. */
 export interface CustomDistanceCurve {
-  /** Stable persisted identity; custom IDs use curve:<name>. */
-  readonly id: `curve:${string}`;
+  /** New IDs use curve:<name>; the two existing calculated IDs remain compatible with saved data. */
+  readonly id: `curve:${string}` | 'calculated:g1' | 'calculated:g7';
   readonly label: (units: UnitSystem) => string;
   /** Share a key only when canonical units and physical meaning really agree. */
   readonly axisKey: string;
@@ -50,6 +51,8 @@ export interface CustomDistanceCurve {
   readonly description: string;
   readonly unavailableReason?: string;
   readonly usesForecast?: boolean;
+  /** Optional legacy model identity for the existing G1/G7 tooltip and coefficient display. */
+  readonly model?: DragModel;
   /** Cheap input check; this must not perform the full calculation. */
   readonly available: (input: DistanceCurveContext) => boolean;
   /** Return ascending distinct distances, <=5,000 points, finite Y or null; zero/negative Y are valid. */
