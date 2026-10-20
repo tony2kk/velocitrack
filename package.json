@@ -1,6 +1,6 @@
 {
   "name": "velocitrack",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "private": true,
   "description": "A private, local workspace for recorded VelociRadar measurements",
   "license": "MIT",

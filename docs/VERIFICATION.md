@@ -140,3 +140,10 @@ Full verification passed: TypeScript, ESLint, Prettier, **119 behavioral tests a
 - In an isolated production-preview origin with invented data, dragged horizontal and vertical sliders independently, switched the secondary quantity, edited the forecast field and reset the chart. The selected numerical ranges survived quantity changes; a horizontal gesture changed the field, a vertical gesture did not, and a field edit preserved the left edge and vertical window. The larger navigable distance domain remained available for zooming back out.
 - On the final build, Reset changed a 60 ft right edge to the available 100 ft extent and fitted both axes after the linked data update. Visually checked the bottom-right reset control and native hover help on chart, profile, filter, toolbar and table controls. The existing update flow activated the new build.
 - The chart bridge tests mock ECharts; the actual canvas checks above supplement them. No account sign-in, private measurement access, numerical-model modification or atmospheric correction was performed. No Pages deployment is included. Physical touch devices and maximum-size performance remain unverified.
+
+## Continuous chart zoom — 2026-10-20
+
+- Version `0.8.1` restores live rendering for both ECharts slider controls. The separate 180 ms forecast-preference debounce and canonical range retention remain unchanged.
+- Full verification passed: types, lint, formatting, **169 tests across 26 files**, production/PWA build and public-content guard. No additional implementation-mirroring tests were added for the two library-option corrections.
+- On an isolated synthetic-data preview, dragged the horizontal handle and observed the range and linked field change together. Then dragged the vertical handle, narrowing the vertical scale while the horizontal field stayed unchanged. These checks verify the completed gestures; frame-by-frame timing during a held pointer and physical touch remain unverified.
+- Updated chart help. No numerical model, atmospheric correction, measurement, authentication, schema or backup change is included. No Pages deployment was triggered.

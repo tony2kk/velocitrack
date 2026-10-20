@@ -52,3 +52,5 @@ Version 0.7.0 persists reversible local shot invalidation in annotations, with a
 ## Chart navigation and hover help
 
 Version 0.8.0 keeps canonical numerical axis windows in session memory while updating one ECharts instance. Compatible velocity curves share their scale; unrelated quantities and horizontal-axis meanings keep their own ranges. Unit switches convert retained bounds. The bottom-right reset fits current plotted data. The existing forecast field and horizontal right edge synchronize without discarding the larger navigable domain; vertical zoom leaves the field unchanged. Native English hover titles explain meaningful controls. Read decision 011. No numerical model, atmospheric correction, schema or cloud change is included.
+
+Version 0.8.1 restores continuous ECharts rendering while either slider is dragged. Canonical viewport capture and the debounced forecast-preference write remain separate from that visual feedback.
