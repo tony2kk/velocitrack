@@ -88,6 +88,11 @@ export function AnalysisPanel({
   const [columnError, setColumnError] = useState('');
   // Keep viewports through temporary empty selections and String info without persisting user gestures.
   const [viewportMemory] = useState<ViewportMemory>(() => new Map());
+  // Availability, omission notices and calculation must observe the same current local records.
+  const curveData = useMemo(
+    () => ({ series, annotations, fields, tags }),
+    [series, annotations, fields, tags],
+  );
   /** Persist column choices without changing annotations or the active shot selection. */
   async function columns(patch: Partial<Profile>) {
     try {
@@ -165,7 +170,8 @@ export function AnalysisPanel({
   /** Persist explicit control edits; missing readings alone never overwrite a saved quantity. */
   async function changeChart(patch: Partial<ChartSettings>) {
     const next = normalizeChart({ ...settings, ...patch });
-    const available = next.axis === 'shot' ? quantities : distanceQuantities(shots, unitSystem);
+    const available =
+      next.axis === 'shot' ? quantities : distanceQuantities(shots, unitSystem, curveData);
     if (patch.axis && available.length && !available.some((q) => q.id === next.quantity))
       next.quantity = available[0]!.id;
     if (!available.some((q) => q.id === next.secondary && q.id !== next.quantity))
@@ -196,7 +202,8 @@ export function AnalysisPanel({
   );
   const compatible = chartGroupsCompatible(shots);
   // Distance velocity is usable even when the provider supplied no separate muzzle scalar.
-  const choices = mode === 'distance' ? distanceQuantities(shots, unitSystem) : quantities;
+  const choices =
+    mode === 'distance' ? distanceQuantities(shots, unitSystem, curveData) : quantities;
   const activeCurves =
     mode === 'distance'
       ? [...new Set([settings.quantity, ...(kind === 'dual' ? [settings.secondary] : [])])].flatMap(
@@ -458,6 +465,7 @@ export function AnalysisPanel({
                   onHoverShot={onHoverShot}
                   unitSystem={unitSystem}
                   viewportMemory={viewportMemory}
+                  curveData={curveData}
                   forecastDistance={
                     forecast ? (settings.forecastDistance ?? DEFAULT_FORECAST_DISTANCE) : undefined
                   }
@@ -515,7 +523,7 @@ export function AnalysisPanel({
                 .filter((curve) => curve.derived)
                 .map((curve) => {
                   const omitted = shots.filter(
-                    (shot) => !shot.excluded && !supportsDistanceCurve(curve, shot),
+                    (shot) => !shot.excluded && !supportsDistanceCurve(curve, shot, curveData),
                   ).length;
                   return omitted ? (
                     <p className="muted" key={curve.id}>

@@ -9,7 +9,8 @@ import {
   type DragModel,
 } from '../calculatedVelocity';
 import { customDistanceCurves } from './customDistanceCurves';
-import type { CustomDistanceCurve, DistanceCurveInput, DistanceSample } from './types';
+import type { CustomDistanceCurve, DistanceCurveData, DistanceSample } from './types';
+import { createDistanceCurveContext } from './context';
 
 export const MAX_CURVE_POINTS = 5000;
 export const MAX_DERIVED_SHOTS = 100;
@@ -25,8 +26,12 @@ export interface DistanceCurve {
   readonly derived: boolean;
   readonly usesForecast: boolean;
   readonly model?: DragModel;
-  readonly available: (shot: Shot) => boolean;
-  readonly calculate: (shot: Shot, maxDistance: number) => readonly DistanceSample[];
+  readonly available: (shot: Shot, data?: DistanceCurveData) => boolean;
+  readonly calculate: (
+    shot: Shot,
+    maxDistance: number,
+    data?: DistanceCurveData,
+  ) => readonly DistanceSample[];
 }
 
 /** Dispatch failures are categories, never arbitrary exception text containing imported data. */
@@ -39,22 +44,6 @@ export interface CurveResult {
 export interface DistanceCurveRegistry {
   readonly definitions: readonly DistanceCurve[];
   readonly get: (id: string) => DistanceCurve | undefined;
-}
-
-/** Freeze only detached input; no callback receives mutable imported records or browser state. */
-function curveInput(shot: Shot, maxDistance: number): DistanceCurveInput {
-  return Object.freeze({
-    samples: Object.freeze(
-      inspectPoints(shot).points.map((point) =>
-        Object.freeze({
-          distance: point.distance,
-          value: point.velocity,
-          sampleIndex: point.index,
-        }),
-      ),
-    ),
-    maxDistance,
-  });
 }
 
 /** Preserve the existing canonical ft/s velocity axis and conversion. */
@@ -121,8 +110,10 @@ export function createDistanceCurveRegistry(
       ...definition,
       derived: true,
       usesForecast: definition.usesForecast ?? false,
-      available: (shot) => definition.available(curveInput(shot, DEFAULT_FORECAST_DISTANCE)),
-      calculate: (shot, maxDistance) => definition.calculate(curveInput(shot, maxDistance)),
+      available: (shot, data) =>
+        definition.available(createDistanceCurveContext(shot, DEFAULT_FORECAST_DISTANCE, data)),
+      calculate: (shot, maxDistance, data) =>
+        definition.calculate(createDistanceCurveContext(shot, maxDistance, data)),
     });
   }
   for (const units of ['imperial', 'metric'] as const) {
@@ -153,9 +144,13 @@ export function createDistanceCurveRegistry(
 export const distanceCurveRegistry = createDistanceCurveRegistry(customDistanceCurves);
 
 /** Availability is input-only and exception-safe, so a broken optional function cannot crash menus. */
-export function supportsDistanceCurve(curve: DistanceCurve, shot: Shot): boolean {
+export function supportsDistanceCurve(
+  curve: DistanceCurve,
+  shot: Shot,
+  data?: DistanceCurveData,
+): boolean {
   try {
-    return !shot.excluded && curve.available(shot);
+    return !shot.excluded && curve.available(shot, data);
   } catch {
     return false;
   }
@@ -167,14 +162,15 @@ export function dispatchDistanceCurve(
   shot: Shot,
   maxDistance = DEFAULT_FORECAST_DISTANCE,
   registry = distanceCurveRegistry,
+  data?: DistanceCurveData,
 ): CurveResult {
   const curve = registry.get(id);
   if (!curve) return { points: [], issue: 'unknown' };
-  if (!supportsDistanceCurve(curve, shot)) return { points: [], issue: 'unavailable' };
+  if (!supportsDistanceCurve(curve, shot, data)) return { points: [], issue: 'unavailable' };
   if (!Number.isFinite(maxDistance) || maxDistance <= 0 || maxDistance > MAX_FORECAST_DISTANCE)
     return { points: [], issue: 'invalid-output' };
   try {
-    const points = curve.calculate(shot, maxDistance);
+    const points = curve.calculate(shot, maxDistance, data);
     // Original measurements retain their historical order/size. Extension output has a strict contract.
     if (
       curve.derived &&

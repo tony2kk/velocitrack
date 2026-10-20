@@ -13,6 +13,7 @@ import { projectileWeight } from './projectiles';
 import { finiteNumber, rawPath } from './providerData';
 import { distanceCurveRegistry, supportsDistanceCurve } from './distanceCurves/registry';
 import type { DisplayScale } from './chartViewport';
+import type { DistanceCurveData } from './distanceCurves/types';
 export { finiteNumber, rawPath } from './providerData';
 
 export const QUANTITIES: ChartQuantity[] = ['velocity', 'g1', 'g7'];
@@ -183,9 +184,10 @@ export function axisQuantities(axis: ChartSettings['axis']): ChartQuantity[] {
 export function distanceQuantities(
   shots: Shot[],
   units: UnitSystem,
+  data?: DistanceCurveData,
 ): { id: string; label: string }[] {
   return distanceCurveRegistry.definitions
-    .filter((curve) => shots.some((shot) => supportsDistanceCurve(curve, shot)))
+    .filter((curve) => shots.some((shot) => supportsDistanceCurve(curve, shot, data)))
     .map((curve) => ({ id: curve.id, label: curve.label(units) }));
 }
 

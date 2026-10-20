@@ -8,6 +8,7 @@ import type { AnalysisMode, ChartSettings, Series, Shot, UnitSystem } from '../d
 import { quantityLabel, type Quantity } from '../domain/analysis';
 import { formatValue, unitLabels } from '../domain/units';
 import { distanceCurveRegistry, distanceAxisIndex } from '../domain/distanceCurves/registry';
+import type { DistanceCurveData } from '../domain/distanceCurves/types';
 import {
   alignExtent,
   applyZoom,
@@ -48,6 +49,7 @@ export default function MeasurementChart({
   dark = false,
   quantities,
   colorOrder,
+  curveData,
   viewportMemory,
   forecastDistance,
   onForecastDistanceChange,
@@ -65,6 +67,7 @@ export default function MeasurementChart({
   dark?: boolean;
   quantities?: Quantity[];
   colorOrder?: string[];
+  curveData?: Omit<DistanceCurveData, 'series'>;
   viewportMemory?: ViewportMemory;
   /** Existing forecast field, in canonical feet; this component only coordinates the viewport. */
   forecastDistance?: number;
@@ -98,9 +101,11 @@ export default function MeasurementChart({
             dark,
             quantities,
             colorOrder,
+            distanceCurveRegistry,
+            curveData,
           )
         : buildChartTraces(shots, series, mode, unitSystem),
-    [shots, series, mode, unitSystem, settings, kind, dark, quantities, colorOrder],
+    [shots, series, mode, unitSystem, settings, kind, dark, quantities, colorOrder, curveData],
   );
   /** Commit a settled horizontal gesture once; vertical changes never rewrite the distance field. */
   const commitDistance = useEffectEvent(() => {

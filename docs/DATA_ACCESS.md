@@ -182,11 +182,12 @@ const rawKeys = Object.keys(string.raw); // Names only; do not log private value
 | `notes` | Provider string notes, separate from local notes. |
 | `firearm`, `projectile` | Original catalog snapshots; names/IDs are normalized separately. Other supplied nested properties remain raw. |
 | `projectile.weight`, `projectile.weightUnit` | Use `projectileWeight(series)`: supported numeric code **0 = grains**, **1 = grams**; supported textual labels are handled too. Unknown codes remain unresolved. The helper also returns canonical grains when known. |
-| `projectile.diameter` | Displayed in source units; no established conversion contract. |
-| `altitude`, `distanceToChronograph` | Preserved/displayed source-unit numbers; units/origin remain unvalidated. |
+| `projectile.diameter`, `projectile.diameterUnit` | Owner-confirmed unit codes: **0 = inches**, **1 = mm**. Read value and code together; unknown codes remain unresolved. |
+| `altitude` | **ft**, confirmed by the owner on 2026-10-20. |
+| `distanceToChronograph` | Source units and distance origin remain unvalidated. |
 | `weatherData.temperature`, `temperatureMin`, `temperatureMax`, `feelsLikeTemperature` | These are paths under `weatherData`; supported raw temperature is °F. Use display conversion, never rewrite raw data. |
 | `weatherData.humidity` | Displayed as percent; full provider environmental semantics are not independently validated. |
-| `weatherData.pressure` | Source units; do not assume station pressure, sea-level pressure, Pa or hPa. |
+| `weatherData.pressure` | **hPa, reduced to sea level**, confirmed by the owner on 2026-10-20. 1 hPa = 100 Pa; this field is not station pressure. |
 | `weatherData.windSpeed`, `windGust`, `visibility` | Source units remain unvalidated. |
 | `weatherData.windDegrees` | Displayed in degrees; reference/direction semantics remain unvalidated. |
 | `weatherData.cityName`, `weatherDescription`, `windSpeedDirection` | Text under `weatherData`, shown when present. Not numerical inputs. |
@@ -221,9 +222,9 @@ Not everything visible is a stored record:
 
 ## Access inside a custom distance function
 
-The generic callback currently receives only `DistanceCurveInput`: frozen detached usable measured samples and `maxDistance`. It does **not** receive all the Workspace tables listed above. Callbacks remain pure synchronous sample transformations; read application data outside rendering through the appropriate domain/storage layers.
+Custom callbacks receive `DistanceCurveContext`, extending the sample/horizon contract with full readonly `shot` and matching `string` records, including every imported `raw` key. `string` is null if no local ID/source ID match exists. `shotAnnotation` and `stringAnnotation` expose separate local notes, typed values and tag IDs; `fields` contains local field definitions and `tags` contains definitions assigned to those entities. All data are detached before their containers are recursively frozen. Availability, omission notices and calculations receive the same current workspace inputs.
 
-See [DISTANCE_CURVES.md](DISTANCE_CURVES.md) for the exact input/output contract and template. Domain-specific built-ins have private adapters; registering a generic sample function does not implicitly make raw provider fields part of its input.
+Callbacks have no profile, source configuration, credentials, database handle or photo bytes. Unknown raw values still need type checks. They remain synchronous, pure and bounded; never perform an independent storage/network read inside a callback. Existing sample-only helpers can continue accepting `DistanceCurveInput`. See [DISTANCE_CURVES.md](DISTANCE_CURVES.md) for adapter call examples and [MEASUREMENT_UNITS.md](MEASUREMENT_UNITS.md) for every known unit and unresolved metadata unit.
 
 ## Write through existing operations
 

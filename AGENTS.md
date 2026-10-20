@@ -61,7 +61,11 @@ fields in the standard file and rejects extra fields. Do not add a credential pr
 The owner confirmed that the supported Caldwell/VelociRadar raw measurements use
 ft/s, ft and °F (decision 006). Preserve these values in storage and convert only for
 display using the local profile's Imperial/Metric preference. Provider unit enum codes
-remain metadata, not conversion instructions; other atmosphere fields remain unvalidated.
+remain metadata, not conversion instructions. The owner confirmed altitude in ft,
+weatherData.pressure in hPa reduced to sea level, and projectile.diameterUnit
+0 = inches / 1 = mm (decision 013). Projectile weightUnit is independently
+0 = grains / 1 = grams. Other unresolved metadata units remain unvalidated;
+see docs/MEASUREMENT_UNITS.md.
 A zero distance alone is not padding; paired `[0, 0]` handling needs explicit tests.
 Do not add weapon configuration or ammunition optimization features.
 

@@ -1,6 +1,9 @@
 import type { CustomDistanceCurve, DistanceCurveInput, DistanceSample } from './types';
 
-/** Example transformation: center observed values on the first measured reading, without extrapolation. */
+/**
+ * Example transformation using only samples; accept DistanceCurveContext instead when reading records.
+ * Center observed values on the first measured reading, without extrapolation.
+ */
 export function calculateCenteredSamples(input: DistanceCurveInput): DistanceSample[] {
   const first = input.samples.find((point) => point.value !== null)?.value;
   if (first === undefined || first === null) return [];

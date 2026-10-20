@@ -58,14 +58,48 @@ selected, valid shot records in table order
   -> generic ECharts renderer
 ```
 
-`DistanceCurveInput` contains:
+`DistanceCurveContext` extends the minimal `DistanceCurveInput` sample contract:
 
 - `samples`: detached readonly measured pairs, with `distance` in **ft**, `value` in **ft/s**, and the original optional `sampleIndex`. Input has already omitted paired `[0, 0]` padding, invalid pairs and unmatched tails. A zero-distance sample with positive recorded velocity remains valid. Original order and duplicate distances are retained.
-- `maxDistance`: the current requested horizon in **ft**, default 1,000 ft, with the existing maximum of 1 km. `available` receives the default horizon and must decide availability from samples, independently of the horizon. `calculate` receives the selected horizon.
+- `maxDistance`: the current requested horizon in **ft**, default 1,000 ft, with the existing maximum of 1 km. `available` receives the default horizon and must decide availability from samples/record attributes, independently of the horizon. `calculate` receives the selected horizon.
 
-Custom functions receive this generic sample contract, not mutable Shot/Series objects, raw provider metadata, profile records or a database handle. The built-in adapters privately read their existing domain inputs. Extend domain adapters deliberately when a new, validated contract is required; do not make the renderer inspect raw fields.
+The context additionally contains:
 
-The function runs separately for each eligible shot. The framework attaches shot/string identities after dispatch, so the implementation does not generate UI IDs or chart-series objects. Input objects and arrays are frozen; outputs are copied. Selection, measurements and annotations are never written by dispatch.
+- `shot`: the full normalized Shot record, including every `raw` attribute and the original arrays, padding and metadata.
+- `string`: the full matching Series record and its `raw` object, or `null`. The adapter matches both `shot.seriesId === string.id` and `shot.sourceId === string.sourceId`.
+- `shotAnnotation`, `stringAnnotation`: the corresponding local annotation or `null`, with notes, legacy fields, typed values, tag IDs and any saved invalidation flag. These never overwrite imported attributes.
+- `fields`: local custom-field definitions, keyed by the IDs used in annotation `values`.
+- `tags`: definitions for tags assigned to either annotation; unrelated tags are omitted.
+
+Use `DistanceCurveContext` to type a callback that reads these attributes. Existing sample-only helpers can keep accepting `DistanceCurveInput`. Both `available` and `calculate` receive full context in the application, including Simple, Dual and Compare. No profile, source configuration, authentication state, database handle or photo bytes are supplied.
+
+Inside a callback, for example:
+
+```ts
+const stringName = input.string?.name;
+const sourceNote = input.shot.raw.notes; // unknown: validate before using it
+const localNote = input.shotAnnotation?.notes;
+const definition = input.fields.find((field) => field.id === 'review-score');
+const value = input.stringAnnotation?.values?.[definition?.id ?? ''];
+// Zero is a valid assigned number; undefined means no value.
+```
+
+Use original values in their documented units. In particular, `input.string?.raw.weatherData` remains an unknown nested object; use `rawPath` and type checks before reading its properties. Pressure is **hPa** (owner-confirmed), temperature **°F**, and measured distance/velocity **ft / ft/s**. Unit conversion is not implicit. See the complete [measurement-unit reference](MEASUREMENT_UNITS.md), including custom-field units and unresolved provider metadata.
+
+For a direct domain call outside the chart, supply the same local records:
+
+```ts
+const result = dispatchDistanceCurve(id, shot, undefined, undefined, {
+  series: workspace.series,
+  annotations: workspace.annotations,
+  fields: workspace.fieldDefinitions,
+  tags: workspace.tags,
+});
+```
+
+The optional fifth argument is `DistanceCurveData`; the fourth remains the registry. `supportsDistanceCurve(curve, shot, data)` and `distanceQuantities(shots, units, data)` accept the same data. `buildAnalysisTraces` gets its strings from its existing second argument and optional local annotation/definition data in its tenth argument. React passes that context automatically. A direct call without data still supplies the complete shot, but string/annotations are null and definition arrays empty. Functions requiring that context should reject its absence in `available`.
+
+The function runs separately for each eligible shot. The framework attaches shot/string identities after dispatch, so the implementation does not generate UI IDs or chart-series objects. Each callback receives a new detached copy; its input containers and arrays are recursively frozen, and outputs are copied. Original JSON-like raw metadata remains readonly without a whitelist; the source objects themselves are never frozen. Selection, measurements and annotations are never written by dispatch.
 
 This is trusted application code, not a plugin sandbox. Keep callbacks deterministic, bounded and free of side effects. Do not read browser storage, fetch data, mutate imported values, or return a Promise. A synchronous infinite loop cannot be interrupted by the dispatcher. Load external input through the ordinary validated import flow.
 

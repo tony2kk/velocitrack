@@ -125,3 +125,12 @@ See decision 011. Numerical models and atmosphere handling are unchanged; Pages 
 - [x] Extension documentation and synthetic behavior checks.
 
 See decision 012. Existing numerical models are unchanged; no Pages deployment is implied.
+
+## Full custom-function context — 2026-10-20
+
+- [x] Expose detached readonly Shot/Series records, including all raw attributes.
+- [x] Pass matching local annotations, field definitions and assigned tag definitions.
+- [x] Use the same context in availability, omission messages and every distance chart mode.
+- [x] Document canonical units, owner-confirmed altitude/pressure/projectile units and unresolved metadata units.
+
+See decision 013. Preserve existing sample-only helpers and unrelated local work.

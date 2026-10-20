@@ -23,4 +23,7 @@ Series-context coverage includes the additive v2 migration, custom field unit/va
 
 - `chart-viewport.test.ts` and `chart-interaction.test.tsx`: retain canonical numerical ranges across data, quantity, theme and unit changes; align independent vertical axes; handle empty/constant data; reset active ranges; coordinate the horizontal right edge with the forecast field without vertical-write or shrinking-domain feedback. Remount and reset-follow-up tests exercise session memory and asynchronously supplied data.
 - `analysis-ui.test.tsx` also verifies that displaying a rounded forecast value does not overwrite its stored precision on an untouched blur.
+
+- `distance-context.test.ts`: full record/raw preservation, detached readonly nested values, source-scoped parent joins, explicit missing data, separate annotations and field/tag definitions, callback consistency, failed mutations and all three distance trace modes.
+- `distance-context-ui.test.tsx`: context-based availability in both menus, omission notices and actual chart dispatch through the analysis panel; local annotation edits update results without changing imported records. ECharts rendering is mocked.
 - `distance-curves.test.ts`: generic registration/dispatch, frozen detached inputs, canonical transforms, malformed outputs/failures, independent axes, bounded callbacks and null-segment contributor linkage. UI/chart bridge tests register the example only in their test modules and verify saved choices, descriptions and separate distance axes.

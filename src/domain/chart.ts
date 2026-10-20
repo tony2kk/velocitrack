@@ -11,7 +11,7 @@ import {
   supportsDistanceCurve,
   type DistanceCurveRegistry,
 } from './distanceCurves/registry';
-import type { DistanceSample } from './distanceCurves/types';
+import type { DistanceCurveData, DistanceSample } from './distanceCurves/types';
 import type { DisplayScale } from './chartViewport';
 
 export type ChartMode = 'distance' | 'shot';
@@ -168,7 +168,9 @@ export function buildAnalysisTraces(
   definitions?: Quantity[],
   colorOrder?: string[],
   registry: DistanceCurveRegistry = distanceCurveRegistry,
+  localData?: Omit<DistanceCurveData, 'series'>,
 ): ChartTrace[] {
+  const curveData: DistanceCurveData = { ...localData, series };
   const included = shots.filter((shot) => !shot.excluded);
   const names = new Map(series.map((item) => [item.id, item.name]));
   const groups = [...series].sort((a, b) => a.id.localeCompare(b.id));
@@ -196,13 +198,13 @@ export function buildAnalysisTraces(
           : included.slice(0, 100);
       if (curve.derived) {
         for (const shot of included) {
-          if (supportsDistanceCurve(curve, shot)) candidates.push(shot);
+          if (supportsDistanceCurve(curve, shot, curveData)) candidates.push(shot);
           if (candidates.length === MAX_DERIVED_SHOTS) break;
         }
       }
       const results = candidates.map((shot) => ({
         shot,
-        ...dispatchDistanceCurve(quantity, shot, settings.forecastDistance, registry),
+        ...dispatchDistanceCurve(quantity, shot, settings.forecastDistance, registry, curveData),
       }));
       const rows = results.map(({ shot, points }) => ({ shot, points }));
       const failures = results.filter(
