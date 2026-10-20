@@ -2,12 +2,17 @@ import type { AnalysisMode, ChartQuantity, ChartSettings, Series, Shot, UnitSyst
 import { quantityDisplay, quantityLabel, shotQuantity, type Quantity } from './analysis';
 import { inspectPoints } from './measurements';
 import { displayValue, formatValue, unitLabels } from './units';
+import type { DragModel } from './calculatedVelocity';
 import {
-  calculatedVelocity,
-  predictionInputs,
-  velocityModel,
-  type DragModel,
-} from './calculatedVelocity';
+  dispatchDistanceCurve,
+  distanceCurveRegistry,
+  distanceAxisIndex,
+  MAX_DERIVED_SHOTS,
+  supportsDistanceCurve,
+  type DistanceCurveRegistry,
+} from './distanceCurves/registry';
+import type { DistanceSample } from './distanceCurves/types';
+import type { DisplayScale } from './chartViewport';
 
 export type ChartMode = 'distance' | 'shot';
 // Alternating hue families separate neighboring traces; shape and dash also encode identity.
@@ -55,6 +60,7 @@ export interface ChartPoint {
   quantityTitle?: string;
   model?: DragModel;
   coefficient?: number;
+  derived?: boolean;
 }
 
 /** Distance traces own one shot; muzzle traces contain independently identifiable shots. */
@@ -67,6 +73,7 @@ export interface ChartTrace {
   yAxisIndex?: number;
   symbol?: string;
   dash?: 'solid' | 'dashed' | 'dotted';
+  issue?: string;
   /** Measured coverage links averaged distance points without storing shots × grid identities. */
   members?: { shotId: string; from: number; to: number }[];
 }
@@ -134,7 +141,7 @@ export function formatPointTooltip(point: ChartPoint): string {
   return [
     point.seriesName,
     point.contributors
-      ? `${point.model ? 'Mean prediction' : 'Mean'} of ${point.contributors} shots`
+      ? `${point.model ? 'Mean prediction' : point.derived ? 'Mean derived curve' : 'Mean'} of ${point.contributors} shots`
       : `Shot ${point.shotNumber}${point.sampleIndex !== undefined ? ` · Sample ${point.sampleIndex + 1}` : ''}`,
     ...(distance
       ? [`Distance: ${formatValue(point.value[0])} ${unitLabels[point.unitSystem].distance}`]
@@ -160,6 +167,7 @@ export function buildAnalysisTraces(
   dark = false,
   definitions?: Quantity[],
   colorOrder?: string[],
+  registry: DistanceCurveRegistry = distanceCurveRegistry,
 ): ChartTrace[] {
   const included = shots.filter((shot) => !shot.excluded);
   const names = new Map(series.map((item) => [item.id, item.name]));
@@ -174,72 +182,99 @@ export function buildAnalysisTraces(
       : [settings.quantity];
   if (settings.axis === 'distance') {
     return quantities.flatMap<ChartTrace>((quantity, quantityIndex) => {
-      const model = velocityModel(quantity);
-      // Bound model work before integration, including comparison; never compute every selected forecast.
-      const candidates = model
-        ? included.filter((shot) => predictionInputs(shot, model)).slice(0, 100)
+      const curve = registry.get(quantity);
+      if (!curve) return [];
+      const model = curve.model;
+      const scale = curve.displayScale(units);
+      const yAxisIndex =
+        quantityIndex === 0 ? 0 : distanceAxisIndex(settings.quantity, quantity, registry);
+      // Apply the same limit before calling every derived implementation, including comparison means.
+      const candidates = curve.derived
+        ? []
         : kind === 'compare'
           ? included
           : included.slice(0, 100);
-      const rows = model
-        ? candidates.map((shot) => {
-            const points = calculatedVelocity(shot, model, settings.forecastDistance);
-            return {
-              ...shot,
-              distances: points.map((point) => point.distance),
-              velocities: points.map((point) => point.velocity),
-            };
-          })
-        : candidates;
+      if (curve.derived) {
+        for (const shot of included) {
+          if (supportsDistanceCurve(curve, shot)) candidates.push(shot);
+          if (candidates.length === MAX_DERIVED_SHOTS) break;
+        }
+      }
+      const results = candidates.map((shot) => ({
+        shot,
+        ...dispatchDistanceCurve(quantity, shot, settings.forecastDistance, registry),
+      }));
+      const rows = results.map(({ shot, points }) => ({ shot, points }));
+      const failures = results.filter(
+        (result) => result.issue && result.issue !== 'unavailable',
+      ).length;
+      const issue = failures
+        ? `${curve.label(units)}: ${failures} curve(s) could not be calculated. Check the implementation and its output contract.`
+        : undefined;
+      /** All implementations cross the same identity/unit boundary before the renderer sees them. */
+      function point(shot: Shot, sample: DistanceSample): ChartPoint {
+        return {
+          value: [
+            displayValue(sample.distance, 'distance', units)!,
+            sample.value === null ? null : sample.value * scale.factor + scale.offset,
+          ],
+          shotId: shot.id,
+          shotNumber: shot.number,
+          seriesName: names.get(shot.seriesId) ?? 'Series',
+          rawUnit: shot.rawUnit,
+          unitSystem: units,
+          sampleIndex: curve!.derived ? undefined : sample.sampleIndex,
+          distance: true,
+          model,
+          derived: curve!.derived,
+          coefficient: model
+            ? ((model === 'g1' ? shot.ballisticCoefficientG1 : shot.ballisticCoefficientG7) ??
+              undefined)
+            : undefined,
+          quantity,
+          quantityTitle: curve!.label(units),
+        };
+      }
       if (kind === 'compare')
         return groups.map((item, index) => {
-          const members = rows.filter((shot) => shot.seriesId === item.id);
+          const members = rows.filter(({ shot }) => shot.seriesId === item.id);
           return {
             id: item.id,
             name: item.name,
             ...style(item.id, index),
-            ...(model ? { dash: 'dashed' as const } : {}),
-            data: meanDistancePoints(members, item.name, units).map((point) => ({
+            ...(curve.derived ? { dash: 'dashed' as const } : {}),
+            yAxisIndex,
+            issue,
+            data: meanDistancePoints(
+              members.flatMap(({ points }) => distanceSegments(points)),
+              item.name,
+              units,
+              scale,
+            ).map((point) => ({
               ...point,
-              model: model ?? undefined,
+              model,
+              derived: curve.derived,
               quantity,
-              quantityTitle: quantityLabel(quantity, units),
+              quantityTitle: curve.label(units),
             })),
-            members: members.flatMap((shot) => {
-              const distances = inspectPoints(shot).points.map((point) =>
-                displayValue(point.distance, 'distance', units)!,
-              );
-              return distances.length
-                ? [
-                    {
-                      shotId: shot.id,
-                      from: distances.reduce((a, b) => Math.min(a, b)),
-                      to: distances.reduce((a, b) => Math.max(a, b)),
-                    },
-                  ]
-                : [];
-            }),
+            members: members.flatMap(({ shot, points }) =>
+              distanceSegments(points).map((segment) => ({
+                shotId: shot.id,
+                from: displayValue(segment[0]![0], 'distance', units)!,
+                to: displayValue(segment.at(-1)![0], 'distance', units)!,
+              })),
+            ),
           };
         });
-      return buildChartTraces(rows, series, 'distance', units).map((trace) => ({
-        ...trace,
-        id: `${quantity}:${trace.id}`,
+      return rows.map(({ shot, points }) => ({
+        id: `${quantity}:${shot.id}`,
+        shotId: shot.id,
+        name: `${names.get(shot.seriesId)} · shot ${shot.number}`,
         ...chartStyle(quantityIndex, dark),
-        ...(model ? { dash: 'dashed' as const } : {}),
-        data: trace.data.map((point) => ({
-          ...point,
-          sampleIndex: model ? undefined : point.sampleIndex,
-          distance: true,
-          model: model ?? undefined,
-          coefficient: model
-            ? ((model === 'g1'
-                ? candidates.find((shot) => shot.id === point.shotId)?.ballisticCoefficientG1
-                : candidates.find((shot) => shot.id === point.shotId)?.ballisticCoefficientG7) ??
-              undefined)
-            : undefined,
-          quantity,
-          quantityTitle: quantityLabel(quantity, units),
-        })),
+        ...(curve.derived ? { dash: 'dashed' as const } : {}),
+        yAxisIndex,
+        issue,
+        data: points.map((sample) => point(shot, sample)),
       }));
     });
   }
@@ -296,12 +331,12 @@ function fallbackQuantity(shot: Shot, quantity: string, units: UnitSystem): numb
  * Difference arrays accumulate linear contributions in O(samples log grid), avoiding shots × grid work.
  * Duplicate distances use the last sample; trace coverage resolves the aggregate's contributors lazily.
  */
-function meanDistancePoints(shots: Shot[], name: string, units: UnitSystem): ChartPoint[] {
-  const rows = shots.map((shot) =>
-    [...new Map(inspectPoints(shot).points.map((p) => [p.distance, p.velocity]))].sort(
-      (a, b) => a[0] - b[0],
-    ),
-  );
+function meanDistancePoints(
+  rows: [number, number][][],
+  name: string,
+  units: UnitSystem,
+  scale: DisplayScale,
+): ChartPoint[] {
   const observed = [...new Set(rows.flatMap((row) => row.map(([x]) => x!)))].sort((a, b) => a - b);
   const grid =
     observed.length <= 5000
@@ -354,7 +389,7 @@ function meanDistancePoints(shots: Shot[], name: string, units: UnitSystem): Cha
           {
             value: [
               displayValue(x, 'distance', units)!,
-              displayValue((m * x + b) / count, 'velocity', units)!,
+              ((m * x + b) / count) * scale.factor + scale.offset,
             ] as [number, number],
             shotId: '',
             shotNumber: 0,
@@ -397,15 +432,30 @@ function meanDistancePoints(shots: Shot[], name: string, units: UnitSystem): Cha
   });
 }
 
+/** Split null gaps before interpolation; keep last duplicate X in each observed segment. */
+function distanceSegments(points: readonly DistanceSample[]): [number, number][][] {
+  const segments: [number, number][][] = [];
+  let current = new Map<number, number>();
+  for (const point of points) {
+    if (point.value === null) {
+      if (current.size) segments.push([...current].sort(([a], [b]) => a - b));
+      current = new Map();
+    } else current.set(point.distance, point.value);
+  }
+  if (current.size) segments.push([...current].sort(([a], [b]) => a - b));
+  return segments;
+}
+
 /** Resolve full distance traces or individual muzzle points for linked highlighting. */
 export function findShotTargets(traces: ChartTrace[], shotId: string) {
   return traces.flatMap<{ seriesIndex: number; dataIndex?: number }>((trace, seriesIndex) => {
     if (trace.shotId === shotId && trace.data.length)
       return [{ seriesIndex, dataIndex: undefined }];
-    const member = trace.members?.find((item) => item.shotId === shotId);
-    if (member)
+    const members = trace.members?.filter((item) => item.shotId === shotId);
+    if (members?.length)
       return trace.data.flatMap((point, dataIndex) =>
-        point.value[1] !== null && point.value[0] >= member.from && point.value[0] <= member.to
+        point.value[1] !== null &&
+        members.some((member) => point.value[0] >= member.from && point.value[0] <= member.to)
           ? [{ seriesIndex, dataIndex }]
           : [],
       );
@@ -420,9 +470,11 @@ export function findShotTargets(traces: ChartTrace[], shotId: string) {
 export function pointShotIds(trace: ChartTrace, point?: ChartPoint): string[] {
   if (!point || point.value[1] === null) return [];
   if (trace.shotId || point.shotId) return [trace.shotId || point.shotId];
-  return (
-    trace.members
-      ?.filter((member) => point.value[0] >= member.from && point.value[0] <= member.to)
-      .map((member) => member.shotId) ?? []
-  );
+  return [
+    ...new Set(
+      trace.members
+        ?.filter((member) => point.value[0] >= member.from && point.value[0] <= member.to)
+        .map((member) => member.shotId) ?? [],
+    ),
+  ];
 }

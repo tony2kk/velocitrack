@@ -11,8 +11,7 @@ import { displayValue, unitLabels } from './units';
 import { fieldUnit, fieldFactor } from './customFields';
 import { projectileWeight } from './projectiles';
 import { finiteNumber, rawPath } from './providerData';
-import { inspectPoints } from './measurements';
-import { predictionInputs, velocityModel } from './calculatedVelocity';
+import { distanceCurveRegistry, supportsDistanceCurve } from './distanceCurves/registry';
 import type { DisplayScale } from './chartViewport';
 export { finiteNumber, rawPath } from './providerData';
 
@@ -175,7 +174,9 @@ export function shotQuantity(shot: Partial<Shot>, quantity: ChartQuantity): numb
 
 /** Distance supports recorded/model velocity; coefficient scalars remain per-shot quantities. */
 export function axisQuantities(axis: ChartSettings['axis']): ChartQuantity[] {
-  return axis === 'distance' ? ['velocity', 'calculated:g1', 'calculated:g7'] : QUANTITIES;
+  return axis === 'distance'
+    ? distanceCurveRegistry.definitions.map((curve) => curve.id)
+    : QUANTITIES;
 }
 
 /** Offer only distance quantities supported by selected measurements or valid model inputs. */
@@ -183,29 +184,21 @@ export function distanceQuantities(
   shots: Shot[],
   units: UnitSystem,
 ): { id: string; label: string }[] {
-  return axisQuantities('distance')
-    .filter((id) =>
-      shots.some(
-        (shot) =>
-          !shot.excluded &&
-          (id === 'velocity'
-            ? inspectPoints(shot).points.length > 0
-            : !!predictionInputs(shot, velocityModel(id)!)),
-      ),
-    )
-    .map((id) => ({ id, label: quantityLabel(id, units) }));
+  return distanceCurveRegistry.definitions
+    .filter((curve) => shots.some((shot) => supportsDistanceCurve(curve, shot)))
+    .map((curve) => ({ id: curve.id, label: curve.label(units) }));
 }
 
 /** Changing axes fixes structurally invalid choices, independently of temporary missing data. */
 export function normalizeChart(settings: ChartSettings): ChartSettings {
   const available = axisQuantities(settings.axis);
   const quantity =
-    (settings.axis === 'shot' && !velocityModel(settings.quantity)) ||
+    (settings.axis === 'shot' && !isDistanceOnly(settings.quantity)) ||
     available.includes(settings.quantity)
       ? settings.quantity
       : available[0]!;
   const secondary =
-    ((settings.axis === 'shot' && !velocityModel(settings.secondary)) ||
+    ((settings.axis === 'shot' && !isDistanceOnly(settings.secondary)) ||
       available.includes(settings.secondary)) &&
     settings.secondary !== quantity
       ? settings.secondary
@@ -217,13 +210,23 @@ export function normalizeChart(settings: ChartSettings): ChartSettings {
 
 /** Label units only for physical quantities; G1/G7 remain dimensionless. */
 export function quantityLabel(quantity: ChartQuantity, units: UnitSystem): string {
-  const model = velocityModel(quantity);
-  if (model) return `Calculated velocity (${model.toUpperCase()}) (${unitLabels[units].velocity})`;
+  const curve = distanceCurveRegistry.get(quantity);
+  if (curve) return curve.label(units);
   return quantity === 'velocity'
     ? `Velocity (${unitLabels[units].velocity})`
     : quantity === 'g1' || quantity === 'g7'
       ? `${quantity.toUpperCase()} (Caldwell)`
       : quantity;
+}
+
+/** Removed curve IDs remain recognizable when switching an old saved choice back to By shot. */
+function isDistanceOnly(quantity: string): boolean {
+  return (
+    quantity !== 'velocity' &&
+    (!!distanceCurveRegistry.get(quantity) ||
+      quantity.startsWith('curve:') ||
+      quantity.startsWith('calculated:'))
+  );
 }
 
 /** Apply profile conversion only to velocity, never to coefficients. */

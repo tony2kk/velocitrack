@@ -115,3 +115,13 @@ See decision 010 and VELOCITY_RESEARCH.md. Pages deployment remains separate.
 - [x] Add explanatory hover titles to meaningful workspace controls.
 
 See decision 011. Numerical models and atmosphere handling are unchanged; Pages deployment remains separate.
+
+## Code-defined distance functions — 2026-10-20
+
+- [x] Shared registry and generic dispatch for Over distance Quantity/Second quantity.
+- [x] Compile-time function template and ordered custom registration list.
+- [x] Per-function descriptions below the chart, canonical units and compatible/independent axes.
+- [x] Null/zero/negative outputs, bounded callbacks and contributor-aware comparison.
+- [x] Extension documentation and synthetic behavior checks.
+
+See decision 012. Existing numerical models are unchanged; no Pages deployment is implied.

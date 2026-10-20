@@ -22,12 +22,7 @@ import {
   normalizeChart,
   quantityLabel,
 } from '../domain/analysis';
-import {
-  DEFAULT_FORECAST_DISTANCE,
-  MAX_FORECAST_DISTANCE,
-  predictionInputs,
-  velocityModel,
-} from '../domain/calculatedVelocity';
+import { DEFAULT_FORECAST_DISTANCE, MAX_FORECAST_DISTANCE } from '../domain/calculatedVelocity';
 import { saveAnalysis } from '../storage/analysis';
 import { ColumnPicker } from './ColumnPicker';
 import { sortShots, tableColumns, visibleColumns } from '../domain/table';
@@ -35,6 +30,7 @@ import { StringInfo } from './StringInfo';
 import { ShotTable } from './ShotTable';
 import { displayValue, formatValue, unitLabels } from '../domain/units';
 import type { ViewportMemory } from '../domain/chartViewport';
+import { distanceCurveRegistry, supportsDistanceCurve } from '../domain/distanceCurves/registry';
 
 // Keep the chart library out of the initial workspace load until a selection needs it.
 const MeasurementChart = lazy(() => import('./MeasurementChart'));
@@ -201,10 +197,17 @@ export function AnalysisPanel({
   const compatible = chartGroupsCompatible(shots);
   // Distance velocity is usable even when the provider supplied no separate muzzle scalar.
   const choices = mode === 'distance' ? distanceQuantities(shots, unitSystem) : quantities;
-  const forecast =
-    mode === 'distance' &&
-    (!!velocityModel(settings.quantity) ||
-      (kind === 'dual' && !!velocityModel(settings.secondary)));
+  const activeCurves =
+    mode === 'distance'
+      ? [...new Set([settings.quantity, ...(kind === 'dual' ? [settings.secondary] : [])])].flatMap(
+          (id) => {
+            const curve = distanceCurveRegistry.get(id);
+            return curve ? [curve] : [];
+          },
+        )
+      : [];
+  const forecast = activeCurves.some((curve) => curve.usesForecast);
+  const derived = activeCurves.some((curve) => curve.derived);
   const forecastInput = formatValue(
     displayValue(settings.forecastDistance ?? DEFAULT_FORECAST_DISTANCE, 'distance', unitSystem),
     3,
@@ -242,7 +245,7 @@ export function AnalysisPanel({
         </div>
         <span className="outline-badge">
           <ArrowUpRight size={14} />
-          {forecast ? 'Recorded + model estimates' : 'Recorded data'}
+          {derived ? 'Recorded + derived curves' : 'Recorded data'}
         </span>
       </div>
       <div className="statistics">
@@ -323,8 +326,8 @@ export function AnalysisPanel({
                       : 'Simple chart'}
               </h3>
               <p className="muted">
-                {forecast
-                  ? 'Model velocity predictions · standard atmosphere'
+                {derived
+                  ? 'Derived curves · see descriptions below'
                   : mode === 'distance' && kind === 'compare'
                     ? 'Mean of measured traces · linear interpolation within measured ranges'
                     : mode === 'shot' && kind !== 'compare'
@@ -373,7 +376,7 @@ export function AnalysisPanel({
                     Second quantity
                     <select
                       aria-label="Second chart quantity"
-                      title="Choose a second quantity. Distance velocities share one scale; By shot can use a separate right axis."
+                      title="Choose a second quantity. Compatible quantities share a scale; other quantities use the right axis."
                       disabled={!secondaryChoices.length}
                       value={secondaryChoices.length ? settings.secondary : ''}
                       onChange={(event) => void changeChart({ secondary: event.target.value })}
@@ -494,41 +497,33 @@ export function AnalysisPanel({
                   </span>
                 ))}
               </div>
-              {forecast && (
-                <p className="notice">
-                  Model prediction from muzzle velocity and the matching Caldwell BC. Standard
-                  atmosphere: 15 °C, 1013.25 hPa, dry air, no wind. Constant BC and straight path;
-                  no gravity or weather correction. Dashed curves include extrapolation and are
-                  estimates, not measured readings.
+              {activeCurves.map((curve) => (
+                <p className="notice" key={curve.id}>
+                  <strong>{curve.label(unitSystem)}</strong>
+                  {' · '}
+                  {curve.description}
                 </p>
-              )}
-              {forecast && shots.filter((shot) => !shot.excluded).length > 100 && (
+              ))}
+              {derived && shots.filter((shot) => !shot.excluded).length > 100 && (
                 <p className="notice">
-                  Each calculated quantity uses at most the first 100 shots with supported inputs in
+                  Each derived quantity uses at most the first 100 shots with supported inputs in
                   table order, including String compare means. Narrow the selection to include other
                   shots.
                 </p>
               )}
-              {forecast &&
-                [
-                  settings.quantity,
-                  ...(kind === 'dual' && settings.secondary !== settings.quantity
-                    ? [settings.secondary]
-                    : []),
-                ]
-                  .filter((id) => velocityModel(id))
-                  .map((id) => {
-                    const model = velocityModel(id)!;
-                    const omitted = shots.filter(
-                      (shot) => !shot.excluded && !predictionInputs(shot, model),
-                    ).length;
-                    return omitted ? (
-                      <p className="muted" key={id}>
-                        {omitted} shot(s) omitted from {model.toUpperCase()} predictions: missing or
-                        unsupported muzzle velocity / BC.
-                      </p>
-                    ) : null;
-                  })}
+              {activeCurves
+                .filter((curve) => curve.derived)
+                .map((curve) => {
+                  const omitted = shots.filter(
+                    (shot) => !shot.excluded && !supportsDistanceCurve(curve, shot),
+                  ).length;
+                  return omitted ? (
+                    <p className="muted" key={curve.id}>
+                      {omitted} shot(s) omitted from {curve.label(unitSystem)}:{' '}
+                      {curve.unavailableReason ?? 'inputs unavailable.'}
+                    </p>
+                  ) : null;
+                })}
               {mode === 'distance' &&
                 kind !== 'compare' &&
                 shots.filter((shot) => !shot.excluded).length > 100 && (
@@ -537,7 +532,7 @@ export function AnalysisPanel({
                     others.
                   </p>
                 )}
-              {mode === 'distance' && !quality.points && !forecast && (
+              {mode === 'distance' && !quality.points && !derived && (
                 <p className="notice">
                   No usable distance/velocity pairs. Choose By shot to inspect recorded scalars.
                 </p>

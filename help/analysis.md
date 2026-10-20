@@ -15,7 +15,7 @@ Choose a view in **Analysis**, between Filters and Tools.
 
 **By shot** shows one reading per shot: velocity, Caldwell G1/G7, recorded conditions, known projectile mass, or a numeric custom field. Only supported choices are offered.
 
-**Over distance** shows recorded velocity samples or a calculated G1/G7 velocity curve when inputs exist. Simple/Dual recorded views show the first 100 selected shot traces. String compare averages measured traces within their measured ranges without extrapolation.
+**Over distance** shows recorded velocity samples or a calculated G1/G7 velocity curve when inputs exist. A custom application build can also register additional curves. Each selected function has its own description below the chart; Dual shows both. Simple/Dual recorded views show the first 100 selected shot traces. String compare averages traces within their non-null returned ranges.
 
 Each view remembers its axis and quantities. Changing to an incompatible axis selects a suitable quantity. A saved quantity temporarily missing from selected data stays saved with a no-readings label.
 
@@ -39,7 +39,7 @@ Original Caldwell G1/G7 values remain unchanged. VelociTrack does not claim a mo
 
 Hover or tap a point for its value and identity. Recorded traces identify the original sample; calculated tooltips identify the model. Mean tooltips show contributor counts. Hovering a mean highlights contributor rows; hovering a row highlights the mean values it contributes to.
 
-Use the bottom slider to zoom distance/shot order and the right slider for the vertical axis. The chart updates continuously while dragging either slider. Zoom changes the view, not selection. Dual By shot uses separate labeled vertical axes; distance velocities share one velocity scale.
+Use the bottom slider to zoom distance/shot order and the right slider for the vertical axis. The chart updates continuously while dragging either slider. Zoom changes the view, not selection. Compatible quantities share a scale; unrelated quantities use separate labeled vertical axes in Dual, including Over distance. Recorded and calculated velocities still share one velocity scale.
 
 Chart ranges stay in place when changing quantities, selection, table order or theme. Recorded and calculated velocities share a remembered numerical scale. Unrelated quantities have their own ranges; switching back restores the earlier view. Changing display units converts the retained bounds. These viewports last for the current page session; the existing forecast-distance preference is saved locally.
 
@@ -52,3 +52,5 @@ Hover over chart controls, summary cards, the reset button and other workspace c
 Summary cards always describe included valid recorded muzzle velocities, regardless of chart quantity. G1/G7 are not recalculated and predictions never replace stored measurements.
 
 **Related:** [Select and sort shots](shots.md) · [Units and display](profile.md)
+
+For code-defined functions, see the contributor [Over distance extension guide](../docs/DISTANCE_CURVES.md).

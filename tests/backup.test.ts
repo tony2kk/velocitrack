@@ -50,6 +50,11 @@ async function seed() {
           secondary: 'calculated:g1',
           forecastDistance: 500,
         },
+        compare: {
+          axis: 'distance',
+          quantity: 'curve:centered-samples',
+          secondary: 'velocity',
+        },
       },
     },
     database,

@@ -13,8 +13,14 @@ import { db } from '../src/storage/database';
 import { saveAnalysis } from '../src/storage/analysis';
 import { loadWorkspace, saveProfile } from '../src/storage/workspace';
 import { series, shot } from './fixtures/synthetic';
+import { centeredSamplesCurve } from '../src/domain/distanceCurves/template';
 
 vi.mock('../src/components/MeasurementChart', () => ({ default: () => <div>Chart canvas</div> }));
+vi.mock('../src/domain/distanceCurves/customDistanceCurves', async () => ({
+  customDistanceCurves: [
+    (await import('../src/domain/distanceCurves/template')).centeredSamplesCurve,
+  ],
+}));
 beforeEach(async () => {
   await db.open();
   HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
@@ -30,6 +36,50 @@ afterEach(async () => {
 });
 
 describe('persistent analysis controls', () => {
+  it('discovers registered curves in both menus, renders their descriptions and restores the saved ID', async () => {
+    const profile = defaultProfile();
+    profile.analysis!.mode = 'dual';
+    profile.analysis!.dual = { axis: 'distance', quantity: 'velocity', secondary: 'velocity' };
+    await saveProfile({ analysis: profile.analysis });
+    const props = {
+      series: [series()],
+      shots: [shot({ distances: [0, 10], velocities: [100, 95] })],
+      view: 'chart' as const,
+      activeShotId: null,
+      onHoverShot: vi.fn(),
+    };
+    const view = render(<AnalysisPanel {...props} profile={profile} />);
+    const label = centeredSamplesCurve.label('imperial');
+    expect(screen.getByLabelText('Chart quantity').textContent).toContain(label);
+    expect(screen.getByLabelText('Second chart quantity').textContent).toContain(label);
+    fireEvent.change(screen.getByLabelText('Second chart quantity'), {
+      target: { value: centeredSamplesCurve.id },
+    });
+    await waitFor(async () =>
+      expect((await loadWorkspace()).profile.analysis?.dual.secondary).toBe(
+        centeredSamplesCurve.id,
+      ),
+    );
+    view.unmount();
+    render(<AnalysisPanel {...props} profile={(await loadWorkspace()).profile} />);
+    expect((screen.getByLabelText('Second chart quantity') as HTMLSelectElement).value).toBe(
+      centeredSamplesCurve.id,
+    );
+    expect(
+      screen.getByText(
+        new RegExp(centeredSamplesCurve.description.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText(/Recorded distance\/velocity samples/)).toBeTruthy();
+    expect(screen.queryByText(/Standard atmosphere: 15/)).toBeNull();
+    fireEvent.change(screen.getByLabelText('Chart type'), { target: { value: 'shot' } });
+    await waitFor(async () =>
+      expect((await loadWorkspace()).profile.analysis?.dual.secondary).not.toBe(
+        centeredSamplesCurve.id,
+      ),
+    );
+  });
+
   it('does not round the saved viewport when an untouched formatted distance field loses focus', async () => {
     const analysis = {
       ...defaultProfile().analysis!,

@@ -4,6 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MeasurementChart from '../src/components/MeasurementChart';
 import { series, shot } from './fixtures/synthetic';
 import { defaultAnalysis } from '../src/domain/model';
+import { centeredSamplesCurve } from '../src/domain/distanceCurves/template';
+
+vi.mock('../src/domain/distanceCurves/customDistanceCurves', async () => ({
+  customDistanceCurves: [
+    (await import('../src/domain/distanceCurves/template')).centeredSamplesCurve,
+  ],
+}));
 
 const chart = vi.hoisted(() => ({
   setOption: vi.fn(),
@@ -63,6 +70,31 @@ function zoomChart(horizontal: [number, number], vertical: [number, number]) {
 }
 
 describe('chart viewport', () => {
+  it('renders a registered distance quantity on its own axis while retaining continuous zoom on both axes', () => {
+    render(
+      <MeasurementChart
+        shots={[shot({ distances: [0, 10], velocities: [100, 95] })]}
+        series={[series()]}
+        mode="distance"
+        kind="dual"
+        settings={{ axis: 'distance', quantity: 'velocity', secondary: centeredSamplesCurve.id }}
+        activeShotId={null}
+        onHoverShot={vi.fn()}
+        unitSystem="metric"
+      />,
+    );
+    const option = chart.setOption.mock.calls.at(-1)![0];
+    expect(option.yAxis.map((axis: { name: string }) => axis.name)).toEqual([
+      'Velocity (m/s)',
+      centeredSamplesCurve.label('metric'),
+    ]);
+    expect(option.series.map((trace: { yAxisIndex: number }) => trace.yAxisIndex)).toEqual([0, 1]);
+    expect(option.yAxis[1].min).toBeLessThan(-1.524);
+    expect(option.yAxis[1].max).toBeGreaterThan(0);
+    expect(option.dataZoom[1].realtime).toBe(true);
+    expect(option.dataZoom[2]).toMatchObject({ yAxisIndex: [0, 1], realtime: true });
+  });
+
   it('finishes fitting newly supplied data after reset updates a linked right edge', () => {
     const changed = vi.fn();
     const props = {

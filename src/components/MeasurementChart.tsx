@@ -7,6 +7,7 @@ import { CanvasRenderer } from 'echarts/renderers';
 import type { AnalysisMode, ChartSettings, Series, Shot, UnitSystem } from '../domain/model';
 import { quantityLabel, type Quantity } from '../domain/analysis';
 import { formatValue, unitLabels } from '../domain/units';
+import { distanceCurveRegistry, distanceAxisIndex } from '../domain/distanceCurves/registry';
 import {
   alignExtent,
   applyZoom,
@@ -192,20 +193,26 @@ export default function MeasurementChart({
     lastForecast.current = { kind, distance: forecastDistance };
 
     const yQuantities =
-      settings && kind === 'dual' && mode === 'shot' && settings.quantity !== settings.secondary
+      settings &&
+      kind === 'dual' &&
+      settings.quantity !== settings.secondary &&
+      (mode === 'shot' || distanceAxisIndex(settings.quantity, settings.secondary) === 1)
         ? [settings.quantity, settings.secondary]
         : [settings?.quantity ?? 'velocity'];
     const scales: DisplayScale[] = yQuantities.map((quantity) =>
-      quantity === 'velocity' || quantity.startsWith('calculated:')
-        ? { factor: unitSystem === 'metric' ? 0.3048 : 1, offset: 0 }
-        : (quantities?.find((item) => item.id === quantity)?.displayScale ?? {
-            factor: 1,
-            offset: 0,
-          }),
+      mode === 'distance' && distanceCurveRegistry.get(quantity)
+        ? distanceCurveRegistry.get(quantity)!.displayScale(unitSystem)
+        : quantity === 'velocity'
+          ? { factor: unitSystem === 'metric' ? 0.3048 : 1, offset: 0 }
+          : (quantities?.find((item) => item.id === quantity)?.displayScale ?? {
+              factor: 1,
+              offset: 0,
+            }),
     );
     const y = yQuantities.map((quantity, index) => {
       // Recorded and calculated velocities have the same dimension and share one numerical scale.
-      const key = quantity.startsWith('calculated:') ? 'velocity' : quantity;
+      const key =
+        mode === 'distance' ? (distanceCurveRegistry.get(quantity)?.axisKey ?? quantity) : quantity;
       const scale = scales[index]!;
       return retainViewport(
         memory,
@@ -303,13 +310,7 @@ export default function MeasurementChart({
             id: 'velocity-zoom',
             type: 'slider',
             orient: 'vertical',
-            yAxisIndex:
-              settings &&
-              kind === 'dual' &&
-              mode === 'shot' &&
-              settings.quantity !== settings.secondary
-                ? [0, 1]
-                : [0],
+            yAxisIndex: yQuantities.map((_, index) => index),
             // Zoom clips the viewport without deleting samples or changing linked shot identities.
             filterMode: 'none',
             start: yStart,
@@ -326,7 +327,7 @@ export default function MeasurementChart({
         series: traces.map((trace) => ({
           ...trace,
           type: 'line',
-          showSymbol: !trace.data[0]?.model,
+          showSymbol: !trace.data[0]?.derived && !trace.data[0]?.model,
           symbol: trace.symbol ?? 'circle',
           symbolSize: mode === 'distance' ? 6 : 8,
           triggerEvent: 'line',
@@ -457,6 +458,11 @@ export default function MeasurementChart({
       >
         <RotateCcw size={17} aria-hidden="true" />
       </button>
+      {[...new Set(traces.flatMap((trace) => (trace.issue ? [trace.issue] : [])))].map((issue) => (
+        <p className="error" role="alert" key={issue}>
+          {issue}
+        </p>
+      ))}
       {details?.traces === traces && (
         <div
           className="point-tooltip"

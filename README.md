@@ -56,6 +56,10 @@ Development and preview share the fixed URL `http://127.0.0.1:4180/velocitrack/`
 
 TypeScript 6 is pinned because the selected ESLint TypeScript integration does not support TypeScript 7 yet. Do not bypass peer checks to upgrade it.
 
+To add a code-defined Over distance function, use the [curve registry and template guide](docs/DISTANCE_CURVES.md). One definition supplies the calculation, availability, units, axis identity and description for both quantity menus.
+
+The [workspace data reference](docs/DATA_ACCESS.md) lists normalized records, provider paths, units, joins and local access APIs, including the distinction between application data and curve callback inputs.
+
 Firebase 12.19 uses the Node 22-compatible SDK line. Overrides keep Firebase App/compat peers on one matching version; otherwise npm can install a second App instance and break Auth component registration. The gRPC override fixes the reported transitive advisories; the browser connector uses Firestore Lite and does not use the Node gRPC transport. Revalidate SDK initialization, peer consistency and the dependency audit when updating these pins.
 
 `public/sources/caldwell.json` is the standard configuration for the Caldwell source type. It contains only the common Firebase `projectId` and client `apiKey`, deliberately served as public application metadata. A normal build copies it into `dist/sources/caldwell.json`; local development and static hosting use the same file. No local helper, deployment secret or end-user configuration file is needed. Existing browser/source bindings are preserved. User credentials, sessions, preferences and measurements remain separate. See [decision 005](docs/decisions/005-public-source-configuration.md).
