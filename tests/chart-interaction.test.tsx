@@ -10,6 +10,8 @@ vi.mock('../src/domain/distanceCurves/customDistanceCurves', async () => ({
   customDistanceCurves: [
     (await import('../src/domain/distanceCurves/calculatedVelocityG1')).calculatedVelocityG1Curve,
     (await import('../src/domain/distanceCurves/calculatedVelocityG7')).calculatedVelocityG7Curve,
+    (await import('../src/domain/distanceCurves/calculatedDropG1')).calculatedDropG1Curve,
+    (await import('../src/domain/distanceCurves/calculatedDropG7')).calculatedDropG7Curve,
     (await import('../src/domain/distanceCurves/template')).centeredSamplesCurve,
   ],
 }));
@@ -72,6 +74,112 @@ function zoomChart(horizontal: [number, number], vertical: [number, number]) {
 }
 
 describe('chart viewport', () => {
+  it.each([
+    ['simple', 'curve:drop-g1', 'metric'],
+    ['simple', 'curve:drop-g7', 'imperial'],
+    ['compare', 'curve:drop-g1', 'imperial'],
+    ['compare', 'curve:drop-g7', 'metric'],
+  ] as const)('draws %s %s downward from zero in %s units', (kind, quantity, unitSystem) => {
+    render(
+      <MeasurementChart
+        shots={[
+          shot({ muzzleVelocity: 1000, ballisticCoefficientG1: 0.2, ballisticCoefficientG7: 0.1 }),
+        ]}
+        series={[series()]}
+        mode="distance"
+        kind={kind}
+        settings={{ axis: 'distance', quantity, secondary: 'velocity', forecastDistance: 100 }}
+        activeShotId={null}
+        onHoverShot={vi.fn()}
+        unitSystem={unitSystem}
+      />,
+    );
+    const option = chart.setOption.mock.calls.at(-1)![0];
+    expect(option.yAxis).toHaveLength(1);
+    expect(option.yAxis[0]).toMatchObject({ min: 0, inverse: true, nameLocation: 'start' });
+    expect(option.yAxis[0].name).toContain(unitSystem === 'metric' ? '(cm)' : '(in)');
+    expect(option.series[0].data[0].value[1]).toBe(0);
+    expect(option.series[0].data.at(-1).value[1]).toBeGreaterThan(0);
+    expect(option.yAxis[0].max).toBeGreaterThan(option.series[0].data.at(-1).value[1]);
+  });
+
+  it.each([
+    ['velocity', 'curve:drop-g1', [false, true]],
+    ['curve:drop-g7', 'velocity', [true, false]],
+    ['curve:drop-g1', 'curve:drop-g7', [true]],
+  ] as const)(
+    'inverts only the drop axis when comparing %s with %s',
+    (quantity, secondary, inverse) => {
+      render(
+        <MeasurementChart
+          shots={[
+            shot({
+              muzzleVelocity: 1000,
+              ballisticCoefficientG1: 0.2,
+              ballisticCoefficientG7: 0.1,
+              distances: [0, 100],
+              velocities: [1000, 900],
+            }),
+          ]}
+          series={[series()]}
+          mode="distance"
+          kind="dual"
+          settings={{ axis: 'distance', quantity, secondary, forecastDistance: 100 }}
+          activeShotId={null}
+          onHoverShot={vi.fn()}
+        />,
+      );
+      const option = chart.setOption.mock.calls.at(-1)![0];
+      expect(option.yAxis.map((axis: { inverse: boolean }) => axis.inverse)).toEqual(inverse);
+      expect(option.series.map((trace: { yAxisIndex: number }) => trace.yAxisIndex)).toEqual(
+        inverse.length === 1 ? [0, 0] : [0, 1],
+      );
+      option.yAxis.forEach((axis: { inverse: boolean; min: number }) => {
+        if (axis.inverse) expect(axis.min).toBe(0);
+        else expect(axis.min).toBeGreaterThan(0);
+      });
+    },
+  );
+
+  it('retains drop zoom through model and unit changes and restores zero at the top on reset', () => {
+    const props = {
+      shots: [
+        shot({ muzzleVelocity: 1000, ballisticCoefficientG1: 0.2, ballisticCoefficientG7: 0.1 }),
+      ],
+      series: [series()],
+      mode: 'distance' as const,
+      settings: {
+        axis: 'distance' as const,
+        quantity: 'curve:drop-g1',
+        secondary: 'velocity',
+        forecastDistance: 100,
+      },
+      activeShotId: null,
+      onHoverShot: vi.fn(),
+    };
+    const { rerender } = render(<MeasurementChart {...props} unitSystem="metric" />);
+    zoomChart([10, 80], [20, 60]);
+    const old = chart.getOption();
+    const previous = visibleRange(old.yAxis[0], old.dataZoom[2]);
+    rerender(
+      <MeasurementChart
+        {...props}
+        unitSystem="imperial"
+        settings={{ ...props.settings, quantity: 'curve:drop-g7' }}
+      />,
+    );
+    let next = chart.setOption.mock.calls.at(-1)![0];
+    expect(next.yAxis[0].inverse).toBe(true);
+    visibleRange(next.yAxis[0], next.dataZoom[2]).forEach((value, index) =>
+      expect(value).toBeCloseTo(previous[index]! / 2.54),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Reset chart scales' }));
+    next = chart.setOption.mock.calls.at(-1)![0];
+    expect(next.yAxis[0]).toMatchObject({ min: 0, inverse: true });
+    expect(next.dataZoom[2]).toMatchObject({ start: 0, end: 100 });
+    expect(visibleRange(next.yAxis[0], next.dataZoom[2])[0]).toBe(0);
+  });
+
   it('renders a registered distance quantity on its own axis while retaining continuous zoom on both axes', () => {
     render(
       <MeasurementChart

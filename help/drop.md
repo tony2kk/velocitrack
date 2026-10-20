@@ -13,6 +13,11 @@ axis through the muzzle**. The vertical unit is **cm** for Metric and **in** for
 Imperial; horizontal distance remains m/ft. It is independent of the measured
 vertical target offset, whose positive direction is upward from POA.
 
+The drop axis starts with **zero at the top** and increases downward. In Dual,
+only the drop axis is inverted; velocity keeps its usual upward direction.
+Vertical zoom may move zero out of view. **Reset chart scales** fits the data
+again with zero at the top, without changing the positive drop values.
+
 The model uses the same standard atmosphere as calculated velocity: 15 °C,
 1013.25 hPa, dry air, no wind and a constant recorded BC. Standard gravity adds
 a small-deflection estimate while leaving the existing horizontal speed model

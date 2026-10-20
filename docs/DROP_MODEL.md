@@ -19,6 +19,13 @@ bounds, standard atmosphere, forecast limit and sampling grid. See
 This value is not an observed target offset and has the opposite sign convention
 to the target editor's V offset. It does not use a sight line or zeroing distance.
 
+Since 0.13.2, the chart renders the shared `drop` axis inverted. Initial fitting
+and reset put its canonical zero at the top, with padding only below the largest
+drop. Values remain positive; no model, conversion or stored data changes are
+involved. Simple, Dual and String compare use the same convention. A separate
+velocity axis remains uninverted. Session zoom windows survive model/unit changes;
+reset restores the zero baseline. Axis captions stay above the plot.
+
 ## Small-deflection model
 
 The following is our derivation using the [NASA drag equation](https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-equation/)

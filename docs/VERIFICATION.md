@@ -226,3 +226,17 @@ Full verification passed: TypeScript, ESLint, Prettier, **119 behavioral tests a
   No browser console warnings/errors were captured. The 1265×712 desktop screenshot
   remains ignored locally. Physical mobile input was not separately verified.
 - No private records were accessed and no Pages deployment was triggered.
+
+## Downward calculated-drop axis — 2026-10-20
+
+- Version `0.13.2` passed full verification: types, lint, formatting, 249 tests in
+  37 files, production/PWA build and the public-content guard. This includes six
+  unrelated pre-existing local tests excluded from the release; the clean checkout
+  contains 243 tests in 36 files.
+- Eight synthetic chart cases cover G1/G7 in Simple/String compare, cm/in,
+  mixed Dual axes in both positions, a shared G1/G7 drop axis, retained zoom
+  across model/unit changes and reset to zero at the top. Curve values stay
+  positive; the separate velocity axis retains its upward direction.
+- This batch was verified through automated component/axis-option tests, without
+  a new interactive browser check. Calculations, saved records and backups are
+  unchanged. No Pages deployment was triggered.

@@ -118,3 +118,9 @@ with plain G1/G7 and a separate unit line. Quantity/column unit metadata is expl
 never parsed from labels. ColumnLabel provides a portal explanation on hover, focus
 or tap; sorting remains separate. The Analyze checkbox precedes its label.
 Domain IDs, custom field names, saved preferences and backups remain compatible.
+
+Version 0.13.2 inverts the shared `drop` chart axis and fits its lower numerical
+bound to zero, so positive drop runs downward from the top. Velocity axes are
+unchanged, including mixed Dual charts. Canonical zoom memory remains increasing
+and survives model/unit changes; reset fits again from zero. This is presentation
+only and requires no backup or schema migration. See DROP_MODEL.md.

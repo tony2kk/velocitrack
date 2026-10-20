@@ -214,25 +214,28 @@ export default function MeasurementChart({
               offset: 0,
             }),
     );
+    // Drop retains positive values; only its shared physical axis runs downward on screen.
+    const downward = yQuantities.map(
+      (quantity) => mode === 'distance' && distanceCurveRegistry.get(quantity)?.axisKey === 'drop',
+    );
     const y = yQuantities.map((quantity, index) => {
       // Recorded and calculated velocities have the same dimension and share one numerical scale.
       const key =
         mode === 'distance' ? (distanceCurveRegistry.get(quantity)?.axisKey ?? quantity) : quantity;
       const scale = scales[index]!;
-      return retainViewport(
-        memory,
-        `${xKey}:y:${key}`,
-        fitRange(
-          traces
-            .filter((trace) => (trace.yAxisIndex ?? 0) === index)
-            .flatMap((trace) =>
-              trace.data.map((point) =>
-                point.value[1] === null ? null : (point.value[1] - scale.offset) / scale.factor,
-              ),
+      const fitted = fitRange(
+        traces
+          .filter((trace) => (trace.yAxisIndex ?? 0) === index)
+          .flatMap((trace) =>
+            trace.data.map((point) =>
+              point.value[1] === null ? null : (point.value[1] - scale.offset) / scale.factor,
             ),
-        ),
-        reset,
+          ),
       );
+      // Fit/reset starts exactly at the muzzle plane, without negative padding above zero.
+      // Existing zoom windows remain untouched until the user explicitly resets the scales.
+      if (downward[index] && fitted) fitted[0] = 0;
+      return retainViewport(memory, `${xKey}:y:${key}`, fitted, reset);
     });
     const [yStart, yEnd] = zoomPercent(y[0]!);
     for (const secondary of y.slice(1)) alignExtent(secondary, [yStart, yEnd]);
@@ -275,6 +278,8 @@ export default function MeasurementChart({
         },
         yAxis: yQuantities.map((quantity, index) => ({
           type: 'value',
+          inverse: downward[index],
+          nameLocation: downward[index] ? 'start' : 'end',
           min: displayRange(y[index]!.extent, scales[index]!)[0],
           max: displayRange(y[index]!.extent, scales[index]!)[1],
           name:

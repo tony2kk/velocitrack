@@ -185,3 +185,10 @@ Release 0.13.0 implements decision 016. Compact headings remain a proposal.
 
 Release 0.13.1 implements the accepted refinement in COLUMN_LABELS_PROPOSAL.md.
 This is presentation only; existing profile/backup contracts remain unchanged.
+
+## Drop axis direction — 2026-10-20
+
+- [x] Render positive G1/G7 drop downward, with zero at the top on initial fit/reset.
+- [x] Preserve normal velocity axes in Dual and retained drop zoom across model/unit changes.
+
+Release 0.13.2 is presentation only; calculated values and backup contracts stay unchanged.
