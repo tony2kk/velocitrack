@@ -4,12 +4,12 @@ Curve definitions live in TypeScript and are compiled with the application. Both
 
 ## Files to use
 
-| File | Responsibility |
-| --- | --- |
-| [types.ts](../src/domain/distanceCurves/types.ts) | Public extension input, output and definition contracts. |
-| [template.ts](../src/domain/distanceCurves/template.ts) | Working example: subtract the first observed value from measured samples. |
-| [customDistanceCurves.ts](../src/domain/distanceCurves/customDistanceCurves.ts) | Ordered catalog, including Calculated velocity G1/G7 and optional additional definitions. |
-| [registry.ts](../src/domain/distanceCurves/registry.ts) | Recorded-velocity adapter, registration checks, availability and dispatch. |
+| File                                                                            | Responsibility                                                            |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [types.ts](../src/domain/distanceCurves/types.ts)                               | Public extension input, output and definition contracts.                  |
+| [template.ts](../src/domain/distanceCurves/template.ts)                         | Working example: subtract the first observed value from measured samples. |
+| [customDistanceCurves.ts](../src/domain/distanceCurves/customDistanceCurves.ts) | Ordered catalog, including Calculated velocity G1/G7 and optional additional definitions.              |
+| [registry.ts](../src/domain/distanceCurves/registry.ts)                         | Recorded-velocity adapter, registration checks, availability and dispatch.        |
 
 ## Register your first implementation
 
@@ -34,17 +34,17 @@ For a new function, copy `template.ts` to a new module, rename the exported func
 
 ## Definition contract
 
-| Property | Meaning |
-| --- | --- |
-| `id` | Stable `curve:<name>` identity. Use ASCII letters, digits, `_` or `-`; maximum total length 200. Saved settings and backups contain this ID. Do not reuse it for a different meaning. |
-| `label(units)` | English quantity name including the displayed Y unit. |
-| `description` | Required English plain text explaining the transformation and assumptions. React displays it below the graph, once per selected definition. Dual shows both descriptions. |
-| `axisKey` | Canonical numerical scale identity. Use a separate key for unrelated meanings, even if their units match. |
-| `displayScale(units)` | `{ factor, offset }`, applied as `displayY = canonicalY * factor + offset`. Factor must be finite and positive; offset must be finite. |
-| `available(input)` | Cheap, synchronous input check. It controls whether the option is offered for the current selected shots. |
-| `calculate(input)` | Pure synchronous function returning `{ distance, value }[]`. |
-| `usesForecast` | Optional, default false. True exposes the existing Forecast distance field and its slider linkage. |
-| `unavailableReason` | Optional plain-text explanation for omitted shots. |
+| Property              | Meaning                                                                                                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | Stable `curve:<name>` identity. Use ASCII letters, digits, `_` or `-`; maximum total length 200. Saved settings and backups contain this ID. Do not reuse it for a different meaning. |
+| `label(units)`        | English quantity name including the displayed Y unit.                                                                                                                                 |
+| `description`         | Required English plain text explaining the transformation and assumptions. React displays it below the graph, once per selected definition. Dual shows both descriptions.             |
+| `axisKey`             | Canonical numerical scale identity. Use a separate key for unrelated meanings, even if their units match.                                                                             |
+| `displayScale(units)` | `{ factor, offset }`, applied as `displayY = canonicalY * factor + offset`. Factor must be finite and positive; offset must be finite.                                                |
+| `available(input)`    | Cheap, synchronous input check. It controls whether the option is offered for the current selected shots.                                                                             |
+| `calculate(input)`    | Pure synchronous function returning `{ distance, value }[]`.                                                                                                                          |
+| `usesForecast`        | Optional, default false. True exposes the existing Forecast distance field and its slider linkage.                                                                                    |
+| `unavailableReason`   | Optional plain-text explanation for omitted shots.                                                                                                                                    |
 
 IDs must be unique. The existing `calculated:g1` and `calculated:g7` IDs are supported compatibility exceptions owned by their respective files; new functions use `curve:<name>`. Optional `model` metadata preserves the existing G1/G7 tooltip and coefficient display. Definitions sharing `axisKey` must use the same transforms in both unit systems; registration rejects inconsistent scales. Compatible quantities share one Y axis. Other quantities get the right Y axis in Dual, and the vertical slider controls both. The viewport keeps independent numerical ranges by axis meaning.
 

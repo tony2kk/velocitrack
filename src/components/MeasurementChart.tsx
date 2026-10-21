@@ -1,4 +1,12 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useEffectEvent,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type Ref,
+} from 'react';
 import { RotateCcw } from 'lucide-react';
 import { init, use as registerCharts, type EChartsType } from 'echarts/core';
 import { LineChart } from 'echarts/charts';
@@ -34,8 +42,14 @@ import {
 
 registerCharts([LineChart, AriaComponent, GridComponent, DataZoomComponent, CanvasRenderer]);
 
+/** A fresh, unhovered print image of the current viewport; no screenshot of UI chrome. */
+export interface MeasurementChartHandle {
+  capture: () => string;
+}
+
 /** Render measured points and bridge ECharts hover events to the shared shot identity. */
 export default function MeasurementChart({
+  ref,
   shots,
   series,
   mode,
@@ -54,6 +68,7 @@ export default function MeasurementChart({
   forecastDistance,
   onForecastDistanceChange,
 }: {
+  ref?: Ref<MeasurementChartHandle>;
   shots: Shot[];
   series: Series[];
   mode: ChartMode;
@@ -75,6 +90,42 @@ export default function MeasurementChart({
 }) {
   const element = useRef<HTMLDivElement>(null);
   const instance = useRef<EChartsType | null>(null);
+  useImperativeHandle(ref, () => ({
+    capture: () => {
+      const current = instance.current;
+      if (!current) throw new Error('The chart is still loading. Try again in a moment.');
+      const host = document.createElement('div');
+      const copy = init(host, undefined, { width: 1400, height: 600, renderer: 'canvas' });
+      const option = current.getOption();
+      // Retain exact zoom percentages/extents; only print colors and navigation chrome change.
+      const axesForPrint = (axes: unknown) =>
+        (Array.isArray(axes) ? axes : axes ? [axes] : []).map((axis: Record<string, unknown>) => ({
+          ...axis,
+          nameTextStyle: { color: '#334b43', width: 500 },
+          axisLabel: { ...(axis.axisLabel as object), color: '#334b43' },
+          axisLine: { lineStyle: { color: '#8a9c94' } },
+          splitLine: { ...(axis.splitLine as object), lineStyle: { color: '#e6ece8' } },
+        }));
+      try {
+        copy.setOption({
+          ...option,
+          animation: false,
+          backgroundColor: '#ffffff',
+          textStyle: { color: '#334b43' },
+          xAxis: axesForPrint(option.xAxis),
+          yAxis: axesForPrint(option.yAxis),
+        });
+        return copy.getDataURL({
+          type: 'png',
+          pixelRatio: 2,
+          backgroundColor: '#ffffff',
+          excludeComponents: ['dataZoom'],
+        });
+      } finally {
+        copy.dispose();
+      }
+    },
+  }));
   const [ownMemory] = useState<ViewportMemory>(() => new Map());
   const memory = viewportMemory ?? ownMemory;
   const axes = useRef<{ x: AxisViewport; y: AxisViewport[] } | null>(null);

@@ -10,6 +10,8 @@ VelociTrack is not affiliated with, endorsed by or supported by Caldwell or Amer
 
 ## Using VelociTrack
 
+Use the PDF icon in Tools to [save or print a local report](help/reports.md) with selected strings, target crops, statistics, the current chart zoom and visible shot columns. All report sections default on in Profile → Report.
+
 See the [user help](help/README.md) for Sources, Caldwell sign-in, JSON/text import formats, filters, profile preferences and offline use.
 
 Open the published app at **[tony2kk.github.io/velocitrack](https://tony2kk.github.io/velocitrack/)**.
@@ -44,14 +46,14 @@ npm.cmd run dev
 
 Development and preview share the fixed URL `http://127.0.0.1:4180/velocitrack/`. On macOS/Linux use `npm`. `npm.cmd` avoids PowerShell script-policy restrictions. Do not open `index.html` through `file://`.
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Loopback development server |
-| `npm run verify` | Types, lint, formatting, tests, build and public-content guard |
-| `npm test` | Parser, measurement, filter and IndexedDB transaction tests |
-| `npm run format` | Format application, tests and configuration |
-| `npm run build` | Generate static `dist/` and service worker |
-| `npm run preview` | Serve the production build on loopback port 4180 |
+| Command                | Purpose                                                            |
+| ---------------------- | ------------------------------------------------------------------ |
+| `npm run dev`          | Loopback development server                                        |
+| `npm run verify`       | Types, lint, formatting, tests, build and public-content guard     |
+| `npm test`             | Parser, measurement, filter and IndexedDB transaction tests        |
+| `npm run format`       | Format application, tests and configuration                        |
+| `npm run build`        | Generate static `dist/` and service worker                         |
+| `npm run preview`      | Serve the production build on loopback port 4180                   |
 | `npm run check:public` | Basic prohibited-file/credential-pattern scan, not a privacy proof |
 
 TypeScript 6 is pinned because the selected ESLint TypeScript integration does not support TypeScript 7 yet. Do not bypass peer checks to upgrade it.

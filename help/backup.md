@@ -4,12 +4,12 @@
 
 ## Save a backup
 
-Open **Backup / Restore** and select **Download backup ZIP**.
+Open the **archive icon (Backup / Restore)** in Tools and select **Download backup ZIP**.
 
 The ZIP includes measurements and originals, string details, custom fields, tags, invalid-shot marks, photos, filters, and saved display/chart/table preferences. It contains organized JSON and original images. Passwords and remembered sign-in sessions are not included.
 
 Column visibility and the complete order (including hidden columns) are both included.
-Target measurements include their numeric values, calibration and drawing geometry.
+Target measurements include their numeric values, calibration, drawing geometry and report crop. Report section preferences are included; older backups without them use the all-enabled default.
 Calculated velocity/drop choices and forecast distance are saved; the curves are
 recomputed from restored measurements. Temporary shot selection, hover and chart
 zoom are session state and are not included.

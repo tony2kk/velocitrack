@@ -77,3 +77,7 @@ Custom distance functions receive the detached readonly result through `input.st
 Behavior tests cover conversion, calibration/signs, override lifecycle, missing values, storage ownership, refresh preservation, photo deletion, ZIP round trips, readonly custom context, drawing/undo/cancellation, reopening, untouched precision and card display. Navigation tests cover letterboxing, cursor anchoring, pan/zoom bounds, Ctrl gestures, two-finger transitions and unchanged saved geometry after navigation. Browser checks use invented images and a separate origin; see [verification](VERIFICATION.md).
 
 [User guide](../help/targets.md) · [Measurement units](MEASUREMENT_UNITS.md) · [Decision 015](decisions/015-target-photo-measurement.md)
+
+## Report framing
+
+The optional `reportCrop` stores a square in original-image pixels with x/y/size/width/height. It requires a local photo reference but does not require or modify geometry, mmPerPixel or numeric values. The editor preserves it across measurement changes. It is saved atomically with the target draft and validated/recovered with the existing annotation backup. See [PDF help](../help/reports.md) and decision 020.

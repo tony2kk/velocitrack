@@ -8,13 +8,13 @@ Select the **pencil** beside its shot count to open details and photos. Opening 
 
 Open **Profile → Custom fields**, enter a name, choose a type, and select **Add field**. Define as many as you need.
 
-| Type | A good fit for |
-| --- | --- |
-| Short text | A label of up to 100 characters. |
-| Note | Longer, multiline observations. |
-| Number | Any finite number, including negative values. |
-| Weight (grams) / Weight (grains) | A nonnegative mass in a fixed unit. |
-| Speed / Distance | A nonnegative value in your profile's units. |
+| Type                             | A good fit for                                |
+| -------------------------------- | --------------------------------------------- |
+| Short text                       | A label of up to 100 characters.              |
+| Note                             | Longer, multiline observations.               |
+| Number                           | Any finite number, including negative values. |
+| Weight (grams) / Weight (grains) | A nonnegative mass in a fixed unit.           |
+| Speed / Distance                 | A nonnegative value in your profile's units.  |
 
 Earlier **Weight (profile units)** fields still follow profile units. Switching weight types preserves physical values. Other populated fields cannot change type. Names must be unique and at most 100 characters.
 

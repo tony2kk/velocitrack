@@ -180,6 +180,8 @@ export interface Filters {
 
 /** Singleton local preferences, independent of any connected provider account. */
 export interface Profile {
+  /** Local PDF section choices; missing preferences enable every section. */
+  report?: ReportSettings;
   tableSort?: { columnId: string; direction: 'asc' | 'desc' };
   /** Visible identities; their order is inherited from tableColumnOrder when present. */
   tableColumns?: string[];
@@ -202,6 +204,20 @@ export interface Profile {
   filters: Filters;
   /** Shared technical provider settings, never a password or an account token. */
   caldwellConnection?: CaldwellConnection;
+}
+
+/** Independent report sections; the current analysis selection supplies their content. */
+export interface ReportSettings {
+  details: boolean;
+  target: boolean;
+  statistics: boolean;
+  chart: boolean;
+  records: boolean;
+}
+
+/** All sections are included on first use and when restoring an older profile. */
+export function defaultReportSettings(): ReportSettings {
+  return { details: true, target: true, statistics: true, chart: true, records: true };
 }
 
 export const EMPTY_FILTERS: Filters = {

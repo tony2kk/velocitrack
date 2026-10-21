@@ -10,13 +10,15 @@ Connect a source, pick a string, and explore your shots. Everything you save sta
 
 ### What would you like to do?
 
-| | |
-| --- | --- |
-| **[Explore charts](analysis.md)**<br>Compare strings or measured and calculated velocity. | **[Work with shots](shots.md)**<br>Select shots, mark invalid readings, sort rows, and arrange columns. |
-| **[Add context](strings.md)**<br>Keep custom values, colored tags, and target photos with each string. | **[Protect your data](backup.md)**<br>Save a portable backup and bring a workspace back. |
-| **[Make it yours](profile.md)**<br>Change units, theme, labels, and sign-in preferences. | **[Get unstuck](troubleshooting.md)**<br>Find missing data, resolve imports, and understand updates. |
+|                                                                                                        |                                                                                                         |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
+| **[Explore charts](analysis.md)**<br>Compare strings or measured and calculated velocity.              | **[Work with shots](shots.md)**<br>Select shots, mark invalid readings, sort rows, and arrange columns. |
+| **[Add context](strings.md)**<br>Keep custom values, colored tags, and target photos with each string. | **[Protect your data](backup.md)**<br>Save a portable backup and bring a workspace back.                |
+| **[Make it yours](profile.md)**<br>Change units, theme, labels, and sign-in preferences.               | **[Get unstuck](troubleshooting.md)**<br>Find missing data, resolve imports, and understand updates.    |
 
 [**Measure a target →**](targets.md) Enter group size and offsets, or calibrate a drawing on an attached photo.
+
+[**Save a PDF report →**](reports.md) Archive the selected strings, target crops, chart and shot records.
 
 > [!TIP]
 > Select a string on the left. Its chart appears above the shot table. The pencil beside its shot count opens details and photos.

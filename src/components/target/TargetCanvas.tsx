@@ -15,6 +15,7 @@ import {
   type TargetMeasurement,
 } from '../../domain/targetMeasurement';
 import { TargetDrawing } from './TargetDrawing';
+import { constrainCrop, type ReportCrop } from '../../domain/reportCrop';
 import {
   constrainView,
   imageAtClient,
@@ -29,7 +30,7 @@ export interface TargetCanvasHandle {
   fit: () => void;
 }
 /** The selected handle remains keyboard-adjustable after a pointer gesture. */
-type Handle = 'center' | 'edge' | 'poa';
+type Handle = 'center' | 'edge' | 'poa' | 'crop-move' | 'crop-resize';
 /** A single-pointer edit or pan uses an immutable starting snapshot to avoid movement drift. */
 interface Gesture {
   id: number;
@@ -37,6 +38,7 @@ interface Gesture {
   start: ImagePoint;
   client: ImagePoint;
   geometry?: TargetGeometry;
+  crop?: ReportCrop;
   view: TargetView;
   grabbed: boolean;
 }
@@ -63,6 +65,8 @@ export function TargetCanvas({
   onEnd,
   onCancel,
   onZoom,
+  cropMode = false,
+  onCropChange,
 }: {
   ref: Ref<TargetCanvasHandle>;
   canvasRef: RefObject<SVGSVGElement | null>;
@@ -78,6 +82,8 @@ export function TargetCanvas({
   onEnd: () => void;
   onCancel: () => void;
   onZoom: (zoom: number) => void;
+  cropMode?: boolean;
+  onCropChange?: (crop: ReportCrop) => void;
 }) {
   const gesture = useRef<Gesture | null>(null);
   const contacts = useRef(new Map<number, ImagePoint>());
@@ -105,16 +111,21 @@ export function TargetCanvas({
       height: box?.height || height,
     };
   }
-  /** Toolbar zoom focuses an existing circle; pointer zoom instead preserves the cursor anchor. */
+  /** Toolbar zoom focuses the active crop/circle; pointer zoom preserves the cursor anchor. */
   function zoom(factor: number) {
     if (gesture.current || navigatingTouch.current) return;
     const current = latestView.current;
     const box = bounds();
     const client = { x: box.left + box.width / 2, y: box.top + box.height / 2 };
     const anchor =
-      factor > 1 && measurement.geometry && !pan
-        ? measurement.geometry.center
-        : imageAtClient(client, current, box);
+      factor > 1 && cropMode && measurement.reportCrop && !pan
+        ? {
+            x: measurement.reportCrop.x + measurement.reportCrop.size / 2,
+            y: measurement.reportCrop.y + measurement.reportCrop.size / 2,
+          }
+        : factor > 1 && measurement.geometry && !pan
+          ? measurement.geometry.center
+          : imageAtClient(client, current, box);
     updateView(zoomView(current, factor, anchor, client, box, width, height));
   }
   useImperativeHandle(ref, () => ({
@@ -211,6 +222,30 @@ export function TargetCanvas({
     }
     return initial;
   }
+  /** A fixed square uses the original grab point; resize anchors the top-left corner. */
+  function applyGesture(g: Gesture, point: ImagePoint) {
+    if (g.crop && (g.action === 'crop-move' || g.action === 'crop-resize')) {
+      const dx = point.x - g.start.x;
+      const dy = point.y - g.start.y;
+      onCropChange?.(
+        constrainCrop(
+          g.action === 'crop-move'
+            ? { ...g.crop, x: g.crop.x + dx, y: g.crop.y + dy }
+            : {
+                ...g.crop,
+                size: Math.min(
+                  g.crop.width - g.crop.x,
+                  g.crop.height - g.crop.y,
+                  g.crop.size + Math.max(dx, dy),
+                ),
+              },
+        ),
+      );
+    } else {
+      const next = geometryAt(g, point);
+      if (next) onChange(next);
+    }
+  }
   /** The second finger rolls back any provisional single-finger edit before navigation begins. */
   function beginPinch() {
     if (gesture.current && gesture.current.action !== 'pan') onCancel();
@@ -244,7 +279,14 @@ export function TargetCanvas({
     const current = latestView.current;
     const point = imageAtClient(client, current, bounds());
     const hit = (event.target as Element).getAttribute('data-handle') as Handle | null;
-    const action = event.ctrlKey || pan ? 'pan' : (hit ?? 'draw');
+    const action =
+      event.ctrlKey || pan
+        ? 'pan'
+        : cropMode
+          ? hit?.startsWith('crop-')
+            ? hit
+            : 'pan'
+          : (hit ?? 'draw');
     if (action !== 'pan' && (point.x < 0 || point.x > width || point.y < 0 || point.y > height))
       return;
     selected.current = hit;
@@ -255,6 +297,7 @@ export function TargetCanvas({
       client,
       view: current,
       geometry: measurement.geometry ? structuredClone(measurement.geometry) : undefined,
+      crop: measurement.reportCrop ? { ...measurement.reportCrop } : undefined,
       grabbed: !!hit,
     };
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -262,8 +305,7 @@ export function TargetCanvas({
     if (action !== 'pan') {
       onBegin();
       setEditing(true);
-      const next = geometryAt(gesture.current, point);
-      if (next) onChange(next);
+      applyGesture(gesture.current, point);
     }
   }
   /** Two fingers pan and zoom together; one pointer changes only its selected geometry or view. */
@@ -299,8 +341,7 @@ export function TargetCanvas({
         ),
       );
     } else {
-      const next = geometryAt(g, point);
-      if (next) onChange(next);
+      applyGesture(g, point);
     }
   }
   /** End a drawing once; after two-finger navigation, ignore the remaining finger until both lift. */
@@ -343,8 +384,24 @@ export function TargetCanvas({
       return;
     }
     const handle = selected.current;
+    const crop = measurement.reportCrop;
+    if (cropMode && crop && handle?.startsWith('crop-')) {
+      onBegin();
+      onCropChange?.(
+        constrainCrop(
+          handle === 'crop-resize'
+            ? {
+                ...crop,
+                size: Math.min(crop.width - crop.x, crop.height - crop.y, crop.size + dx - dy),
+              }
+            : { ...crop, x: crop.x + dx, y: crop.y + dy },
+        ),
+      );
+      onEnd();
+      return;
+    }
     const g = measurement.geometry;
-    if (!g || !handle) return;
+    if (!g || !handle || handle === 'crop-move' || handle === 'crop-resize') return;
     const next = structuredClone(g);
     if (handle === 'edge')
       next.radius = Math.min(Math.hypot(width, height), Math.max(1, next.radius + dx - dy));
@@ -400,19 +457,78 @@ export function TargetCanvas({
         }}
       >
         <image href={url} width={width} height={height} />
-        <TargetDrawing
-          measurement={measurement}
-          pixelSize={pixelSize}
-          editing={editing}
-          activeField={activeField}
-        />
+        <g pointerEvents={cropMode ? 'none' : undefined}>
+          <TargetDrawing
+            measurement={measurement}
+            pixelSize={pixelSize}
+            editing={editing}
+            activeField={activeField}
+          />
+        </g>
+        {measurement.reportCrop &&
+          (() => {
+            const c = measurement.reportCrop;
+            return (
+              <g pointerEvents={cropMode ? 'auto' : 'none'}>
+                <rect
+                  x={c.x}
+                  y={c.y}
+                  width={c.size}
+                  height={c.size}
+                  fill="none"
+                  stroke="#263e35"
+                  strokeWidth={4 * pixelSize}
+                  pointerEvents="none"
+                />
+                <rect
+                  x={c.x}
+                  y={c.y}
+                  width={c.size}
+                  height={c.size}
+                  fill={cropMode ? '#ffffff15' : 'none'}
+                  stroke="#ffffff"
+                  strokeWidth={2 * pixelSize}
+                  strokeDasharray={`${8 * pixelSize} ${4 * pixelSize}`}
+                  data-handle="crop-move"
+                  style={{ cursor: 'move' }}
+                />
+                {cropMode && (
+                  <rect
+                    x={c.x + c.size - 9 * pixelSize}
+                    y={c.y + c.size - 9 * pixelSize}
+                    width={18 * pixelSize}
+                    height={18 * pixelSize}
+                    fill="#08796e"
+                    stroke="white"
+                    strokeWidth={2 * pixelSize}
+                    data-handle="crop-resize"
+                    style={{ cursor: 'nwse-resize' }}
+                  />
+                )}
+                <text
+                  x={c.x + 7 * pixelSize}
+                  y={c.y + 20 * pixelSize}
+                  fontSize={13 * pixelSize}
+                  fill="white"
+                  stroke="#263c35"
+                  strokeWidth={3 * pixelSize}
+                  paintOrder="stroke"
+                  pointerEvents="none"
+                >
+                  Report crop
+                </text>
+              </g>
+            );
+          })()}
       </svg>
       <p className="muted target-canvas-help">
-        {pan
-          ? 'Drag to pan.'
-          : mode === 'offset'
-            ? 'Drag from POA to group center; drag the circle edge to resize.'
-            : 'Drag from group center to circle edge.'}{' '}
+        {cropMode && !pan
+          ? 'Drag the report square to move; drag the bottom-right corner to resize. Arrow keys fine-tune the selected handle.'
+          : pan
+            ? 'Drag to pan.'
+            : mode === 'offset'
+              ? 'Drag from POA to group center; drag the circle edge to resize.'
+              : 'Drag from group center to circle edge.'}{' '}
         Ctrl + drag to pan · Ctrl + wheel to zoom · Two fingers to pan or pinch.
       </p>
     </div>

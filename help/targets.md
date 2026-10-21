@@ -2,6 +2,8 @@
 
 # Measure a target
 
+For PDF framing, enable **Use report crop** in the photo editor. Drag the square or its bottom-right corner, then save. Framing is independent of measurement and does not alter the original photo. See [PDF reports](reports.md).
+
 Open a string's **pencil** button. **Target measurement** contains three optional values:
 
 | Value | Meaning |

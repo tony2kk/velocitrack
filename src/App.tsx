@@ -16,6 +16,8 @@ import {
   CircleHelp,
   Database,
   FolderPlus,
+  FileDown,
+  ArchiveRestore,
   Library,
   RefreshCw,
   ShieldCheck,
@@ -24,6 +26,8 @@ import {
 } from 'lucide-react';
 import { SeriesDetails } from './components/SeriesDetails';
 import { BackupDialog } from './components/BackupDialog';
+import { ReportDialog } from './components/ReportDialog';
+import type { ReportHandle, ReportInput } from './reports/types';
 import type { Filters } from './domain/model';
 import { filterDateError, filterSeries, hasFilters } from './domain/filters';
 import { loadWorkspace, saveProfile, type Workspace } from './storage/workspace';
@@ -89,6 +93,8 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
   } = workspace;
   const dark = useTheme(profile.theme);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const reportHandle = useRef<ReportHandle>(null);
+  const [report, setReport] = useState<ReportInput | null>(null);
   const detailSeries = series.find((item) => item.id === detailId);
   const [dialog, setDialog] = useState<
     'sources' | 'refresh' | 'profile' | 'catalog' | 'backup' | null
@@ -292,9 +298,28 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           <div className="group-controls">
             <button
               title="Download a local workspace backup or preview a ZIP archive before restoring it."
+              className="icon-button"
+              aria-label="Backup / Restore"
               onClick={() => setDialog('backup')}
             >
-              Backup / Restore
+              <ArchiveRestore size={20} />
+            </button>
+            <button
+              className="icon-button"
+              aria-label="Create PDF report"
+              title="Generate a PDF from the selected strings, shots and current chart zoom. Configure sections in Profile → Report."
+              disabled={!selectedSeries.length}
+              onClick={() => {
+                try {
+                  if (reportHandle.current) setReport(reportHandle.current.capture());
+                } catch (error) {
+                  showMessage(
+                    error instanceof Error ? error.message : 'The report could not be prepared.',
+                  );
+                }
+              }}
+            >
+              <FileDown size={20} />
             </button>
           </div>
         </div>
@@ -365,6 +390,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           </footer>
         </aside>
         <AnalysisPanel
+          ref={reportHandle}
           series={selectedSeries}
           shots={selectedShots}
           view="chart"
@@ -390,6 +416,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           onDetails={setDetailId}
         />
       </main>
+      {report && <ReportDialog input={report} onClose={() => setReport(null)} />}
       <footer className="app-footer">
         <span>
           <span className="dot" />

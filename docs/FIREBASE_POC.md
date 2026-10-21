@@ -27,14 +27,14 @@ Firebase client keys identify a project; access control depends on rules and oth
 
 ## What to distinguish
 
-| Layer | Evidence needed | What must not be inferred |
-| --- | --- | --- |
-| Browser transport/CORS | A real browser request to the service succeeds from the tested origin | A terminal request or Python export proves CORS |
-| API key restrictions | The permitted web key works for the intended API/origin | An Android key is suitable for public web use |
-| Auth provider/domains | The selected provider and flow work from the actual origin | Password auth and redirect/OAuth have identical domain requirements |
-| App Check | Supported permitted web behavior, if enforced | Missing attestation can be spoofed or bypassed |
-| Firestore | Successful explicit server reads scoped to the authenticated UID | Client-side path construction proves server-side tenant isolation |
-| Distribution rights | Applicable terms or permission cover the intended integration | A successful login authorizes a public integration |
+| Layer                  | Evidence needed                                                       | What must not be inferred                                           |
+| ---------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Browser transport/CORS | A real browser request to the service succeeds from the tested origin | A terminal request or Python export proves CORS                     |
+| API key restrictions   | The permitted web key works for the intended API/origin               | An Android key is suitable for public web use                       |
+| Auth provider/domains  | The selected provider and flow work from the actual origin            | Password auth and redirect/OAuth have identical domain requirements |
+| App Check              | Supported permitted web behavior, if enforced                         | Missing attestation can be spoofed or bypassed                      |
+| Firestore              | Successful explicit server reads scoped to the authenticated UID      | Client-side path construction proves server-side tenant isolation   |
+| Distribution rights    | Applicable terms or permission cover the intended integration         | A successful login authorizes a public integration                  |
 
 Do not disable browser security, use a CORS bypass proxy, forge Android headers, modify provider rules or test another person's path. Denials become a feasibility finding. Security rule isolation can be validated in a project the developer owns or through evidence from the provider; customer credentials alone do not allow a full rules audit.
 

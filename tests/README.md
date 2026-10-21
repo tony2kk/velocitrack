@@ -62,3 +62,7 @@ Series-context coverage includes the additive v2 migration, custom field unit/va
   historical selection normalization and unchanged drop. Analysis controls verify
   unified menus and mixed conditions; atmosphere storage checks restore historical
   local choices as automatic models and reproduce values after ZIP recovery.
+
+- `reports.test.ts`: section defaults, current column order/units, curated details, safe Unicode names, recorded min/max, crop bounds and real PDF generation with embedded fonts. Set VELOCI_REPORT_SAMPLE=1 to write an ignored synthetic PDF for visual QA.
+- `report-preferences.test.tsx`: local all-on defaults and save, native picker cancellation/success, fallback download lifecycle.
+- Existing chart, target-editor and backup suites verify a frozen zoom export, crop-only movement/save and recovery of report preferences plus crop geometry.

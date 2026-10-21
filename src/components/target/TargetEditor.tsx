@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { CircleDot, Crosshair, Hand, Maximize, Trash2, Undo2, ZoomIn, ZoomOut } from 'lucide-react';
+import {
+  CircleDot,
+  Crop,
+  Crosshair,
+  Hand,
+  Maximize,
+  Trash2,
+  Undo2,
+  ZoomIn,
+  ZoomOut,
+} from 'lucide-react';
 import type { Attachment, UnitSystem } from '../../domain/model';
 import {
   calibrateTarget,
@@ -19,6 +29,7 @@ import { TargetValueInput } from '../TargetValueInput';
 import { TargetCanvas, type TargetCanvasHandle } from './TargetCanvas';
 import { TargetConnections } from './TargetConnections';
 import { TARGET_COLORS } from './TargetDrawing';
+import { initialReportCrop, type ReportCrop } from '../../domain/reportCrop';
 
 /** Load the local original only while its editor is open; revoke blob URLs on completion/unmount. */
 function useTargetPhoto(photo: Attachment) {
@@ -85,6 +96,7 @@ export function TargetEditor({
   const [history, setHistory] = useState<TargetMeasurement[]>([]);
   const [mode, setMode] = useState<'group' | 'offset'>(draft.geometry?.poa ? 'offset' : 'group');
   const [pan, setPan] = useState(false);
+  const [cropMode, setCropMode] = useState(false);
   const [zoom, setZoom] = useState(1);
   const canvas = useRef<TargetCanvasHandle>(null);
   const canvasElement = useRef<SVGSVGElement>(null);
@@ -98,8 +110,10 @@ export function TargetEditor({
   const { image, error: imageError } = useTargetPhoto(photo);
   const mismatch =
     image &&
-    draft.geometry &&
-    (image.width !== draft.geometry.width || image.height !== draft.geometry.height);
+    ((draft.geometry &&
+      (image.width !== draft.geometry.width || image.height !== draft.geometry.height)) ||
+      (draft.reportCrop &&
+        (image.width !== draft.reportCrop.width || image.height !== draft.reportCrop.height)));
   const pixels = draft.geometry ? targetPixels(draft.geometry) : undefined;
 
   /** Keep a synchronous gesture snapshot beside React state so release events cannot use a stale draft. */
@@ -114,6 +128,10 @@ export function TargetEditor({
   /** Geometry changes recalculate only dimensions represented by this tool's drawing. */
   function geometryChanged(geometry: TargetGeometry) {
     update(changeTargetGeometry({ ...latest.current, photoId: photo.id }, geometry));
+  }
+  /** Report framing changes no physical values, calibration or measurement geometry. */
+  function cropChanged(reportCrop: ReportCrop) {
+    update({ ...latest.current, photoId: photo.id, reportCrop });
   }
   /** First nonzero length establishes scale; later edits become explicit overrides until geometry moves. */
   function valueChanged(field: TargetField, text: string) {
@@ -149,7 +167,7 @@ export function TargetEditor({
               key={tool}
               type="button"
               className="target-tool-button"
-              aria-pressed={mode === tool && !pan}
+              aria-pressed={mode === tool && !pan && !cropMode}
               aria-label={tool === 'group' ? 'Group size' : 'Group size + offset'}
               title={
                 tool === 'group'
@@ -158,6 +176,7 @@ export function TargetEditor({
               }
               disabled={busy}
               onClick={() => {
+                setCropMode(false);
                 setPan(false);
                 if (tool === mode) return;
                 setMode(tool);
@@ -207,6 +226,7 @@ export function TargetEditor({
             update({
               values: { ...draft.values },
               manual: TARGET_FIELDS.filter((field) => draft.values[field] !== null),
+              ...(draft.reportCrop ? { reportCrop: draft.reportCrop, photoId: photo.id } : {}),
             });
             setCalibrating(true);
             setPan(false);
@@ -216,6 +236,32 @@ export function TargetEditor({
           <Trash2 size={20} />
         </button>
         <span className="target-toolbar-divider" aria-hidden="true" />
+        <button
+          type="button"
+          className="icon-button"
+          aria-label="Edit report crop"
+          aria-pressed={cropMode}
+          disabled={busy || !image}
+          title="Set a square report crop. Drag inside to move; drag its corner to resize."
+          onClick={() => {
+            if (!image) return;
+            if (!latest.current.reportCrop) {
+              remember(latest.current);
+              cropChanged(
+                initialReportCrop(
+                  image.width,
+                  image.height,
+                  draft.geometry?.center,
+                  draft.geometry ? draft.geometry.radius * 2 : undefined,
+                ),
+              );
+            }
+            setPan(false);
+            setCropMode((value) => !value);
+          }}
+        >
+          <Crop size={20} />
+        </button>
         <button
           type="button"
           className="icon-button"
@@ -284,6 +330,8 @@ export function TargetEditor({
             measurement={draft}
             mode={mode}
             pan={pan}
+            cropMode={cropMode}
+            onCropChange={cropChanged}
             activeField={activeField}
             onZoom={setZoom}
             onBegin={() => {
@@ -305,6 +353,40 @@ export function TargetEditor({
             }}
           />
           <aside ref={valuesPanel} className="target-editor-values">
+            <label className="check-field">
+              <input
+                type="checkbox"
+                checked={!!draft.reportCrop}
+                disabled={busy}
+                onChange={(event) => {
+                  remember(latest.current);
+                  if (event.target.checked) {
+                    cropChanged(
+                      initialReportCrop(
+                        image.width,
+                        image.height,
+                        draft.geometry?.center,
+                        draft.geometry ? draft.geometry.radius * 2 : undefined,
+                      ),
+                    );
+                    setCropMode(true);
+                    setPan(false);
+                  } else {
+                    const next = { ...latest.current };
+                    delete next.reportCrop;
+                    if (!next.geometry) delete next.photoId;
+                    update(next);
+                    setCropMode(false);
+                  }
+                }}
+              />
+              <span>
+                Use report crop
+                <small>
+                  Square framing for PDF only. The original photo and dimensions stay unchanged.
+                </small>
+              </span>
+            </label>
             <h3>Dimensions</h3>
             <p className="muted">Hover or focus a value to locate its dimension on the photo.</p>
             <p className="muted">
@@ -391,7 +473,11 @@ export function TargetEditor({
         <button
           className="primary"
           disabled={
-            busy || !image || !!mismatch || !draft.geometry || !draft.mmPerPixel || calibrating
+            busy ||
+            !image ||
+            !!mismatch ||
+            (!draft.reportCrop && (!draft.geometry || !draft.mmPerPixel || calibrating)) ||
+            (!!draft.geometry && (!draft.mmPerPixel || calibrating))
           }
           onClick={async () => {
             setBusy(true);

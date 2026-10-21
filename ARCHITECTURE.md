@@ -24,14 +24,14 @@ flowchart LR
 
 File reads and cloud downloads finish before an IndexedDB transaction. One transaction resolves catalog references, upserts the source's series/shots and marks success. Any failure rolls it back. Failure status is saved separately while retaining last success. Refresh spans all enabled sources independently of filters; file sources ask for current files and Caldwell sources use their available sessions. One tab deduplicates concurrent refreshes per source. Downloads are paginated with record/byte limits; failures never commit a truncated result.
 
-| Entity | Responsibility |
-| --- | --- |
-| DataSource | Local name, adapter, enabled flag, catalog policy and refresh status |
-| Series | Source-scoped identity, date, name, catalog links, raw record |
-| Shot | Series-scoped identity, measured values, raw unit code, exclusion, raw record |
-| CatalogItem | Shared firearm/projectile name, source links and naming provenance |
-| Annotation | Separate local notes and typed fields, protected from refresh |
-| Profile | Local singleton nickname, preferences and filters |
+| Entity      | Responsibility                                                                |
+| ----------- | ----------------------------------------------------------------------------- |
+| DataSource  | Local name, adapter, enabled flag, catalog policy and refresh status          |
+| Series      | Source-scoped identity, date, name, catalog links, raw record                 |
+| Shot        | Series-scoped identity, measured values, raw unit code, exclusion, raw record |
+| CatalogItem | Shared firearm/projectile name, source links and naming provenance            |
+| Annotation  | Separate local notes and typed fields, protected from refresh                 |
+| Profile     | Local singleton nickname, preferences and filters                             |
 
 Composite IDs encode tuples as JSON. Provider IDs are always source-scoped. Reimport updates existing identities and retains records absent from subsequent files: cumulative upserts, not inferred deletions. Before upserts, the same write transaction checks incoming identities and counts only previously absent series/shots. Counts are returned after the transaction succeeds. Batch refresh reports the sum across successful sources and flags sources still needing attention; an unchanged last source cannot hide earlier new records.
 
@@ -94,3 +94,9 @@ G1/G7 definitions are explicit entries in `customDistanceCurves.ts`, with separa
 ## Target measurements
 
 Version 0.12.0 adds optional string `Annotation.target`: canonical-mm values, manual-override markers and original-image geometry/calibration with a local photo reference. The photo editor owns a detached draft and writes the complete result atomically on Save. Direct numeric edits merge touched fields. Image deletion removes provenance but retains numbers; imports preserve the annotation. Generic scalar analysis and readonly custom context expose the result. The optional local `Profile.showGroupSize` controls navigator display. See [target contract](docs/TARGET_MEASUREMENTS.md) and decision 015; no schema or backup-format migration is required.
+
+## Local PDF reports (0.17)
+
+`src/reports` separates the frozen workspace contract, pure PDF composition, local image rendering and Save as handling. `AnalysisPanel` captures selected strings/shots and current table order; `MeasurementChart` copies live zoom into a separate light canvas. `ReportDialog` lazy-loads pdfmake with bundled Roboto fonts, generates a local Blob, and offers a user-initiated file picker with download fallback. External PDF resource loading is denied.
+
+`Profile.report` defaults all five sections on when absent. `TargetMeasurement.reportCrop` stores an optional square in original-image pixels, independent of mm calibration and group geometry. Crop bounds and photo ownership are checked on save/recovery. Existing annotation and profile backup paths preserve both additions without a schema migration. Original photos remain unchanged. See [decision 020](docs/decisions/020-local-pdf-reports.md).

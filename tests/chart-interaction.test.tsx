@@ -5,6 +5,8 @@ import MeasurementChart from '../src/components/MeasurementChart';
 import { series, shot } from './fixtures/synthetic';
 import { defaultAnalysis } from '../src/domain/model';
 import { centeredSamplesCurve } from '../src/domain/distanceCurves/template';
+import { createRef } from 'react';
+import type { MeasurementChartHandle } from '../src/components/MeasurementChart';
 
 vi.mock('../src/domain/distanceCurves/customDistanceCurves', async () => ({
   customDistanceCurves: [
@@ -74,6 +76,34 @@ function zoomChart(horizontal: [number, number], vertical: [number, number]) {
 }
 
 describe('chart viewport', () => {
+  it('exports the live zoom on a separate light canvas without changing the workspace chart', () => {
+    const ref = createRef<MeasurementChartHandle>();
+    render(
+      <MeasurementChart
+        ref={ref}
+        shots={[shot()]}
+        series={[series()]}
+        mode="distance"
+        activeShotId={null}
+        onHoverShot={vi.fn()}
+      />,
+    );
+    zoomChart([25, 75], [10, 90]);
+    const current = chart.getOption();
+    const copy = {
+      setOption: vi.fn(),
+      getDataURL: vi.fn(() => 'data:image/png;base64,test'),
+      dispose: vi.fn(),
+    };
+    chart.init.mockReturnValueOnce(copy);
+    const mutations = chart.setOption.mock.calls.length;
+    expect(ref.current!.capture()).toBe('data:image/png;base64,test');
+    expect(copy.setOption.mock.calls[0]![0].dataZoom).toEqual(current.dataZoom);
+    expect(copy.setOption.mock.calls[0]![0].backgroundColor).toBe('#ffffff');
+    expect(chart.setOption).toHaveBeenCalledTimes(mutations);
+    expect(copy.dispose).toHaveBeenCalledOnce();
+    expect(chart.dispose).not.toHaveBeenCalled();
+  });
   it.each([
     ['simple', 'curve:drop-g1', 'metric'],
     ['simple', 'curve:drop-g7', 'imperial'],

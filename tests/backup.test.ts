@@ -10,6 +10,8 @@ import { defaultAnalysis } from '../src/domain/model';
 import { parseVelociRadarExport } from '../src/sources/velociradar';
 import { columnOrder, visibleColumns } from '../src/domain/table';
 import { dispatchDistanceCurve } from '../src/domain/distanceCurves/registry';
+import { defaultReportSettings } from '../src/domain/model';
+import { emptyTarget } from '../src/domain/targetMeasurement';
 
 let database: WorkspaceDatabase;
 beforeEach(() => {
@@ -37,6 +39,7 @@ async function seed() {
   await saveProfile(
     {
       unitSystem: 'metric',
+      report: { ...defaultReportSettings(), chart: false },
       visibleFieldIds: ['weight'],
       showTags: true,
       theme: 'dark',
@@ -75,6 +78,13 @@ async function seed() {
     createdAt: new Date().toISOString(),
   });
   await database.attachmentContents.add({ id: 'invented-photo', blob });
+  await database.annotations.update(series.id, {
+    target: {
+      ...emptyTarget(),
+      photoId: 'invented-photo',
+      reportCrop: { x: 10, y: 20, size: 200, width: 800, height: 600 },
+    },
+  });
 }
 
 describe('structured ZIP backup and atomic restore', () => {

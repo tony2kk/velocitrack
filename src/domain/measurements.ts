@@ -52,7 +52,15 @@ export function summarizeShots(shots: Shot[]) {
   // Unknown units are only comparable within the same source and raw unit code.
   const groups = new Set(included.map((shot) => JSON.stringify([shot.sourceId, shot.rawUnit])));
   if (groups.size > 1) {
-    return { count: included.length, mean: null, sd: null, spread: null, incompatible: true };
+    return {
+      count: included.length,
+      mean: null,
+      sd: null,
+      spread: null,
+      minimum: null,
+      maximum: null,
+      incompatible: true,
+    };
   }
 
   let mean = 0;
@@ -75,6 +83,8 @@ export function summarizeShots(shots: Shot[]) {
     // Sample deviation needs at least two readings and uses n - 1, not population variance.
     sd: included.length > 1 ? Math.sqrt(squaredDeviations / (included.length - 1)) : null,
     spread: included.length ? maximum - minimum : null,
+    minimum: included.length ? minimum : null,
+    maximum: included.length ? maximum : null,
     incompatible: false,
   };
 }

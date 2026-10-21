@@ -172,3 +172,11 @@ family selections collapse. No schema/backup migration or Pages deployment.
 The owner clarified that VelociRadar always reports `distanceToChronograph = 0`.
 Muzzle alignment is beside the radar, aligned or at most 5 cm ahead. Preserve raw
 metadata but do not apply an offset; revisit only when supporting another device.
+
+## Local PDF reports — 0.17.0
+
+Read decision 020 and help/reports.md. Profile.report is optional; absence means all sections enabled. Reports freeze the current selection and retain chart zoom via a separate light ECharts instance. pdfmake/Roboto load lazily but are precached for offline use. The save picker is called only by a fresh user click; fall back to a named download. Do not serialize sources, credentials or arbitrary raw records into PDF details.
+
+TargetMeasurement.reportCrop uses original-image pixels (x/y/size/width/height), requires a photo owned by the string and remains independent of physical values. Crop-only targets are valid without geometry/calibration. Save and backup validators cover the addition. Removing a photo removes its framing/provenance while retaining numeric target values. Original image bytes are never overwritten.
+
+Verification: full npm run verify passed (307 tests across 42 files), including real PDF bytes, selected column/unit rendering, min/max, crop-only editing and backup round trips. A browser PDF with a local synthetic target crop and live chart was downloaded, rendered and inspected; multipage records and Czech text were checked separately. Native Save as is unit-tested; the embedded browser's PDF was obtained through its download capability. No Pages deployment is included.

@@ -80,6 +80,37 @@ function enter(label: string, value: string) {
 }
 
 describe('target editor interaction', () => {
+  it('moves and saves a report crop without inventing or changing a group measurement', async () => {
+    const saved = vi.fn();
+    render(
+      <TargetEditor
+        photo={photo}
+        initial={emptyTarget()}
+        units="metric"
+        onClose={vi.fn()}
+        onSaved={saved}
+      />,
+    );
+    const canvas = await screen.findByRole('group', { name: 'Target photo measurement canvas' });
+    fireEvent.click(screen.getByRole('checkbox', { name: /Use report crop/ }));
+    const frame = document.querySelector('[data-handle="crop-move"]')!;
+    fireEvent.pointerDown(frame, { clientX: 500, clientY: 400, pointerId: 1, button: 0 });
+    fireEvent.pointerMove(canvas, { clientX: 600, clientY: 450, pointerId: 1 });
+    fireEvent.pointerUp(canvas, { clientX: 600, clientY: 450, pointerId: 1 });
+    fireEvent.click(screen.getByRole('button', { name: 'Save measurement' }));
+    await waitFor(() => expect(saved).toHaveBeenCalledOnce());
+    const target = (await db.annotations.get('series'))!.target!;
+    expect(target.values).toEqual(emptyTarget().values);
+    expect(target.geometry).toBeUndefined();
+    expect(target.mmPerPixel).toBeUndefined();
+    expect(target.reportCrop).toMatchObject({
+      x: 460,
+      y: 210,
+      size: 480,
+      width: 1200,
+      height: 800,
+    });
+  });
   it('shows group size on cards only when enabled, with correct units and no missing-value placeholder', () => {
     const props = {
       series: [series(), series({ id: 'missing', name: 'No target result' })],

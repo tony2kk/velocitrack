@@ -14,14 +14,14 @@ Calculated velocity needs supported muzzle velocity and matching G1/G7. Missing 
 
 ## Refresh needs attention
 
-| What you see | What to try |
-| --- | --- |
-| Sign-in needed | Open Sources and sign in to the original Caldwell account. |
-| Files needed | Select the latest strings/shots files for that source. |
-| Missing catalog value | Add the named value in Local catalogs, or allow source catalog updates, then retry. |
-| Service unavailable / connection denied | Check connectivity and retry. If still denied, check with the provider; VelociTrack does not bypass access controls. |
-| Different account | Use the original account or create another source. |
-| Unsupported file or size | Keep the workspace and check the [file reference](../docs/IMPORT_FORMAT.md). Failed imports do not partially replace data. |
+| What you see                            | What to try                                                                                                                |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Sign-in needed                          | Open Sources and sign in to the original Caldwell account.                                                                 |
+| Files needed                            | Select the latest strings/shots files for that source.                                                                     |
+| Missing catalog value                   | Add the named value in Local catalogs, or allow source catalog updates, then retry.                                        |
+| Service unavailable / connection denied | Check connectivity and retry. If still denied, check with the provider; VelociTrack does not bypass access controls.       |
+| Different account                       | Use the original account or create another source.                                                                         |
+| Unsupported file or size                | Keep the workspace and check the [file reference](../docs/IMPORT_FORMAT.md). Failed imports do not partially replace data. |
 
 **No new data detected** is a successful result. Another file source can still need attention after Caldwell finishes.
 

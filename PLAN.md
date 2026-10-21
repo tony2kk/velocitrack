@@ -223,3 +223,14 @@ Release 0.15.0 implements decision 018. Pages deployment remains separate.
 - [x] Preserve historical profile/backup selections and existing numerical boundaries.
 
 Release 0.16.0 implements decision 019. Field comparison remains pending. VelociRadar distance-offset handling is resolved.
+
+## PDF reports — 2026-10-21
+
+- [x] Local PDF generation, editable name, Save as/download and print preview.
+- [x] All sections enabled by default in Profile → Report; portrait context and landscape charts/wide tables.
+- [x] Independent square target crop, movement/resizing, undo, save and backup recovery.
+- [x] Current chart zoom and selected record/column order, min/max velocity summaries.
+- [x] Embedded Unicode fonts, repeated table headings, versioned archival footer and offline assets.
+- [x] Behavior tests, browser-generated PDF and rendered-page layout checks on synthetic data.
+
+Release 0.17.0 implements decision 020. Build the clean preview after committing; Pages deployment remains separate.

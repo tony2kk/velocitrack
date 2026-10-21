@@ -23,6 +23,10 @@ Choose **Save display**. These choices are saved and included in backups.
 
 Labels use each string's recorded projectile snapshot. If a Caldwell catalog edit does not update an old string's weight, assign the updated projectile to that string in Caldwell and refresh again.
 
+## Report
+
+**String details, Target, String statistics, Chart and Shot records are all enabled by default.** Choose sections and select **Save report preferences**. These local choices are included in backups. See [PDF reports](reports.md) for framing and Save as behavior.
+
 ## Custom fields and tags
 
 The other tabs manage reusable fields and colored tags. See [Add context](strings.md).

@@ -4,12 +4,12 @@
 
 Choose a view in **Analysis**, between Filters and Tools.
 
-| View | Use it for |
-| --- | --- |
-| **Simple chart** | One quantity across selected shots. |
-| **Dual chart** | Two quantities together, including recorded versus calculated velocity. |
-| **String compare** | A separate curve for each string. |
-| **String info** | Dates, notes, conditions, original statistics, tags, and custom values. Works without shots. |
+| View               | Use it for                                                                                   |
+| ------------------ | -------------------------------------------------------------------------------------------- |
+| **Simple chart**   | One quantity across selected shots.                                                          |
+| **Dual chart**     | Two quantities together, including recorded versus calculated velocity.                      |
+| **String compare** | A separate curve for each string.                                                            |
+| **String info**    | Dates, notes, conditions, original statistics, tags, and custom values. Works without shots. |
 
 ## Choose an axis and quantity
 

@@ -47,29 +47,29 @@ An ID is an opaque local identity. Imported string IDs encode `(sourceId, remote
 
 The UI calls it a String; the domain/storage type remains `Series`.
 
-| Field | Type / meaning |
-| --- | --- |
+| Field                        | Type / meaning                                                     |
+| ---------------------------- | ------------------------------------------------------------------ |
 | `id`, `sourceId`, `remoteId` | Local identity, owning source and source-scoped provider identity. |
-| `name` | Display name. |
-| `startedAt` | Normalized UTC ISO string or null. |
-| `firearmId`, `projectileId` | Local `CatalogItem.id` references. |
-| `raw` | Original provider/string object, `Record<string, unknown>`. |
+| `name`                       | Display name.                                                      |
+| `startedAt`                  | Normalized UTC ISO string or null.                                 |
+| `firearmId`, `projectileId`  | Local `CatalogItem.id` references.                                 |
+| `raw`                        | Original provider/string object, `Record<string, unknown>`.        |
 
 Indexes: `id`, `sourceId`, `firearmId`, `projectileId`. Empty strings with zero shots can still have context, annotations and photos.
 
 ### Shot: `Shot`, table `shots`
 
-| Field | Type / canonical meaning |
-| --- | --- |
-| `id`, `sourceId`, `seriesId`, `remoteId` | Local shot/source/parent identities and original provider identity. |
-| `number` | Recorded number or importer fallback. Not globally unique. |
-| `muzzleVelocity` | Finite source number or null; supported inputs use **ft/s**. Views additionally require positive values. |
-| `ballisticCoefficientG1`, `ballisticCoefficientG7` | Source coefficient number or null. Stored separately; do not substitute one for the other. |
-| `distances` | Original numeric array in **ft**, including original padding/order. |
-| `velocities` | Original numeric array in **ft/s**, aligned by array index where present. |
-| `excluded` | Imported provider exclusion flag. |
-| `rawUnit` | Provider enum/code as a string; metadata, not a conversion instruction. |
-| `raw` | Original provider shot object. |
+| Field                                              | Type / canonical meaning                                                                                 |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `id`, `sourceId`, `seriesId`, `remoteId`           | Local shot/source/parent identities and original provider identity.                                      |
+| `number`                                           | Recorded number or importer fallback. Not globally unique.                                               |
+| `muzzleVelocity`                                   | Finite source number or null; supported inputs use **ft/s**. Views additionally require positive values. |
+| `ballisticCoefficientG1`, `ballisticCoefficientG7` | Source coefficient number or null. Stored separately; do not substitute one for the other.               |
+| `distances`                                        | Original numeric array in **ft**, including original padding/order.                                      |
+| `velocities`                                       | Original numeric array in **ft/s**, aligned by array index where present.                                |
+| `excluded`                                         | Imported provider exclusion flag.                                                                        |
+| `rawUnit`                                          | Provider enum/code as a string; metadata, not a conversion instruction.                                  |
+| `raw`                                              | Original provider shot object.                                                                           |
 
 Indexes: `id`, `sourceId`, `seriesId`. Import does not trim arrays, drop invalid samples or delete records absent from a subsequent import. Local invalidation is a separate annotation, not `Shot.excluded`.
 
@@ -77,14 +77,14 @@ Indexes: `id`, `sourceId`, `seriesId`. Import does not trim arrays, drop invalid
 
 ### Local annotations: `Annotation`, table `annotations`
 
-| Field | Meaning |
-| --- | --- |
-| `entityId` | String or shot identity, primary key. |
-| `notes` | Local free text, separate from provider notes. |
-| `values?` | Current custom values keyed by `FieldDefinition.id`: string or canonical number. |
-| `tagIds?` | Assigned `Tag.id` values, normally on strings. |
-| `invalid?` | Persistent local shot invalidation. |
-| `fields` | Preserved legacy values; each entry has a tagged type and value. |
+| Field      | Meaning                                                                          |
+| ---------- | -------------------------------------------------------------------------------- |
+| `entityId` | String or shot identity, primary key.                                            |
+| `notes`    | Local free text, separate from provider notes.                                   |
+| `values?`  | Current custom values keyed by `FieldDefinition.id`: string or canonical number. |
+| `tagIds?`  | Assigned `Tag.id` values, normally on strings.                                   |
+| `invalid?` | Persistent local shot invalidation.                                              |
+| `fields`   | Preserved legacy values; each entry has a tagged type and value.                 |
 
 Legacy `fields` supports text, number with optional unit, boolean, date and choice. Do not confuse it with current `values`. An import never overwrites local annotations.
 
@@ -92,16 +92,16 @@ Legacy `fields` supports text, number with optional unit, boolean, date and choi
 
 All fields: `id`, `name`, `type`, `order`, optional `showInNavigator`. Indexes: `id`, `order`. Values live in string annotations, not on the definition or each shot.
 
-| Type | Stored value / display |
-| --- | --- |
-| `short-text` | String up to 100 characters. |
-| `note` | Multiline string; the field validator has no per-field character cap. Archive/storage limits still apply. |
-| `number` | Finite scalar. |
-| `weight` | Canonical grains; profile units choose displayed grains or grams. |
-| `weight-grams` | Canonical grains; always displayed as grams. |
-| `weight-grains` | Canonical grains; always displayed as grains. |
-| `speed` | Canonical ft/s; profile converts display. |
-| `distance` | Canonical ft; profile converts display. |
+| Type            | Stored value / display                                                                                    |
+| --------------- | --------------------------------------------------------------------------------------------------------- |
+| `short-text`    | String up to 100 characters.                                                                              |
+| `note`          | Multiline string; the field validator has no per-field character cap. Archive/storage limits still apply. |
+| `number`        | Finite scalar.                                                                                            |
+| `weight`        | Canonical grains; profile units choose displayed grains or grams.                                         |
+| `weight-grams`  | Canonical grains; always displayed as grams.                                                              |
+| `weight-grains` | Canonical grains; always displayed as grains.                                                             |
+| `speed`         | Canonical ft/s; profile converts display.                                                                 |
+| `distance`      | Canonical ft; profile converts display.                                                                   |
 
 Use `fieldUnit`, `fieldFactor`, `fieldDisplay`, `parseFieldInput` and `validFieldValue` from [customFields.ts](../src/domain/customFields.ts). Empty/unassigned is distinct from zero. Resolve a shot's inherited value through its **string** annotation:
 
@@ -132,9 +132,7 @@ All fields: `id`, `name`, `kind` (`velociradar-export` or `caldwell`), `enabled`
 
 ```ts
 const metadata = workspace.attachments.filter((photo) => photo.seriesId === stringId);
-const content = metadata[0]
-  ? await db.attachmentContents.get(metadata[0].id)
-  : undefined;
+const content = metadata[0] ? await db.attachmentContents.get(metadata[0].id) : undefined;
 // content?.blob is the original image. Components own/revoke any temporary object URL.
 ```
 
@@ -144,16 +142,16 @@ There are no automatic target/group-analysis results in the current schema.
 
 The singleton ID is `local`.
 
-| Fields | Meaning |
-| --- | --- |
-| `nickname`, `rememberSignIn`, `refreshOnStart`, `unitSystem` | Local preferences; units are `imperial` or `metric`. |
-| `analysis?` | Active `mode` and independent `simple`, `dual`, `compare` settings. Each has `axis`, `quantity`, `secondary`, optional canonical-ft `forecastDistance`. |
-| `tableColumns?`, `tableSort?` | Ordered column IDs and `{ columnId, direction }`; Shot is not independently sortable. |
-| `infoSeriesId?`, `theme?`, `showProjectileWeight?` | Selected context string; Light/Dark/Auto preference; name decoration. |
-| `visibleFieldIds?`, `showTags?` | Older/inherited table visibility preferences. |
-| `shotDetail` | Preserved legacy preference, no longer an editable General control. |
-| `caldwellConnection?` | Shared technical connection metadata. Not measurement data. |
-| `filters` | The criteria below. |
+| Fields                                                       | Meaning                                                                                                                                                 |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nickname`, `rememberSignIn`, `refreshOnStart`, `unitSystem` | Local preferences; units are `imperial` or `metric`.                                                                                                    |
+| `analysis?`                                                  | Active `mode` and independent `simple`, `dual`, `compare` settings. Each has `axis`, `quantity`, `secondary`, optional canonical-ft `forecastDistance`. |
+| `tableColumns?`, `tableSort?`                                | Ordered column IDs and `{ columnId, direction }`; Shot is not independently sortable.                                                                   |
+| `infoSeriesId?`, `theme?`, `showProjectileWeight?`           | Selected context string; Light/Dark/Auto preference; name decoration.                                                                                   |
+| `visibleFieldIds?`, `showTags?`                              | Older/inherited table visibility preferences.                                                                                                           |
+| `shotDetail`                                                 | Preserved legacy preference, no longer an editable General control.                                                                                     |
+| `caldwellConnection?`                                        | Shared technical connection metadata. Not measurement data.                                                                                             |
+| `filters`                                                    | The criteria below.                                                                                                                                     |
 
 Filter fields: `sourceIds`, `firearmIds`, `projectileIds`, optional `tagIds`, `dateMode` (`all`, `range`, `weeks`, `months`), `dateFrom`, `dateTo`, `relativeAmount`. Use [filters.ts](../src/domain/filters.ts), including `filterSeries`, for their existing semantics. `saveProfile` merges top-level fields; `saveAnalysis` merges a particular chart transactionally. Do not overwrite a whole stale snapshot to save one chart choice.
 
@@ -175,24 +173,24 @@ const rawKeys = Object.keys(string.raw); // Names only; do not log private value
 
 ### String raw paths currently displayed/read
 
-| Path(s) | Interpretation |
-| --- | --- |
-| `_documentId` / `id` / `stringId`, `name`, `startTimestamp` | Import identities/name/start. Normalized counterparts exist on Series. |
-| `endTimestamp`, `lastModifiedTimestamp` | Provider end/change metadata. Use `providerTimestamp` for supported forms. |
-| `notes` | Provider string notes, separate from local notes. |
-| `firearm`, `projectile` | Original catalog snapshots; names/IDs are normalized separately. Other supplied nested properties remain raw. |
-| `projectile.weight`, `projectile.weightUnit` | Use `projectileWeight(series)`: supported numeric code **0 = grains**, **1 = grams**; supported textual labels are handled too. Unknown codes remain unresolved. The helper also returns canonical grains when known. |
+| Path(s)                                                                                     | Interpretation                                                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `_documentId` / `id` / `stringId`, `name`, `startTimestamp`                                 | Import identities/name/start. Normalized counterparts exist on Series.                                                                                                                                                |
+| `endTimestamp`, `lastModifiedTimestamp`                                                     | Provider end/change metadata. Use `providerTimestamp` for supported forms.                                                                                                                                            |
+| `notes`                                                                                     | Provider string notes, separate from local notes.                                                                                                                                                                     |
+| `firearm`, `projectile`                                                                     | Original catalog snapshots; names/IDs are normalized separately. Other supplied nested properties remain raw.                                                                                                         |
+| `projectile.weight`, `projectile.weightUnit`                                                | Use `projectileWeight(series)`: supported numeric code **0 = grains**, **1 = grams**; supported textual labels are handled too. Unknown codes remain unresolved. The helper also returns canonical grains when known. |
 | `projectile.diameter`, `projectile.diameterUnit` | Owner-confirmed unit codes: **0 = inches**, **1 = mm**. Read value and code together; unknown codes remain unresolved. |
 | `altitude` | **ft**, confirmed by the owner on 2026-10-20. |
 | `distanceToChronograph` | Source units and distance origin remain unvalidated. |
-| `weatherData.temperature`, `temperatureMin`, `temperatureMax`, `feelsLikeTemperature` | These are paths under `weatherData`; supported raw temperature is °F. Use display conversion, never rewrite raw data. |
-| `weatherData.humidity` | Displayed as percent; full provider environmental semantics are not independently validated. |
-| `weatherData.pressure` | **hPa, reduced to sea level**, confirmed by the owner on 2026-10-20. 1 hPa = 100 Pa; this field is not station pressure. |
-| `weatherData.windSpeed`, `windGust`, `visibility` | Source units remain unvalidated. |
-| `weatherData.windDegrees` | Displayed in degrees; reference/direction semantics remain unvalidated. |
-| `weatherData.cityName`, `weatherDescription`, `windSpeedDirection` | Text under `weatherData`, shown when present. Not numerical inputs. |
-| `statistics.minimum`, `maximum`, `average`, `muzzleVelocity`, `standardDeviation`, `spread` | All paths under `statistics`; original provider velocity summaries displayed using ft/s or profile conversion. They are not the currently selected-shot summaries. |
-| `statistics.totalShots`, `ballisticCoefficientG1`, `ballisticCoefficientG7` | All under `statistics`; provider count/coefficients, not recomputed selected-shot results. |
+| `weatherData.temperature`, `temperatureMin`, `temperatureMax`, `feelsLikeTemperature`       | These are paths under `weatherData`; supported raw temperature is °F. Use display conversion, never rewrite raw data.                                                                                                 |
+| `weatherData.humidity`                                                                      | Displayed as percent; full provider environmental semantics are not independently validated.                                                                                                                          |
+| `weatherData.pressure`                                                                      | **hPa, reduced to sea level**, confirmed by the owner on 2026-10-20. 1 hPa = 100 Pa; this field is not station pressure.                                                                                                                                          |
+| `weatherData.windSpeed`, `windGust`, `visibility`                                           | Source units remain unvalidated.                                                                                                                                                                                      |
+| `weatherData.windDegrees`                                                                   | Displayed in degrees; reference/direction semantics remain unvalidated.                                                                                                                                               |
+| `weatherData.cityName`, `weatherDescription`, `windSpeedDirection`                          | Text under `weatherData`, shown when present. Not numerical inputs.                                                                                                                                                   |
+| `statistics.minimum`, `maximum`, `average`, `muzzleVelocity`, `standardDeviation`, `spread` | All paths under `statistics`; original provider velocity summaries displayed using ft/s or profile conversion. They are not the currently selected-shot summaries.                                                    |
+| `statistics.totalShots`, `ballisticCoefficientG1`, `ballisticCoefficientG7`                 | All under `statistics`; provider count/coefficients, not recomputed selected-shot results.                                                                                                                            |
 
 ### Shot raw paths currently displayed/read
 
@@ -228,14 +226,14 @@ Callbacks have no profile, source configuration, credentials, database handle or
 
 ## Write through existing operations
 
-| Change | Existing module/API |
-| --- | --- |
-| Import measured records | `importBundle` in [workspace.ts](../src/storage/workspace.ts), after adapter validation. |
-| General preferences / chart settings | `saveProfile` / `saveAnalysis`. |
-| Local shot invalidation | `setShotInvalid` in [shots.ts](../src/storage/shots.ts). |
-| Field/tag definitions and string details | `saveField`, `removeField`, `moveField`, `saveTag`, `removeTag`, `saveSeriesDetails` in [customization.ts](../src/storage/customization.ts). |
-| Photos | `addPhoto`, `removePhoto` in [attachments.ts](../src/storage/attachments.ts); existing photo component handles captions. |
-| Portable archive | `createBackup`, `prepareBackup`, `restoreBackup` in [backup.ts](../src/storage/backup.ts). Restore requires the existing validation/confirmation flow. |
+| Change                                   | Existing module/API                                                                                                                                    |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Import measured records                  | `importBundle` in [workspace.ts](../src/storage/workspace.ts), after adapter validation.                                                               |
+| General preferences / chart settings     | `saveProfile` / `saveAnalysis`.                                                                                                                        |
+| Local shot invalidation                  | `setShotInvalid` in [shots.ts](../src/storage/shots.ts).                                                                                               |
+| Field/tag definitions and string details | `saveField`, `removeField`, `moveField`, `saveTag`, `removeTag`, `saveSeriesDetails` in [customization.ts](../src/storage/customization.ts).           |
+| Photos                                   | `addPhoto`, `removePhoto` in [attachments.ts](../src/storage/attachments.ts); existing photo component handles captions.                               |
+| Portable archive                         | `createBackup`, `prepareBackup`, `restoreBackup` in [backup.ts](../src/storage/backup.ts). Restore requires the existing validation/confirmation flow. |
 
 Preserve transactional writes, annotations separate from imports, source-scoped identities and the existing local origin. There is no application backend, global dataset or cross-origin workspace access. Do not put measurements, profile values or sessions in code, documentation examples, logs, tests or build configuration.
 
@@ -244,3 +242,9 @@ Preserve transactional writes, annotations separate from imports, source-scoped 
 ## Target measurements (0.12.0)
 
 String annotations may have `target`, with `values.horizontalOffset`, `values.verticalOffset` and `values.groupSize` in canonical **mm** (or null). Photo geometry is in original-image pixels and `mmPerPixel` is mm/pixel. The complete readonly result is also available through `input.stringAnnotation?.target`; photo bytes are not exposed to custom callbacks. Use `saveTargetValues` or `saveTargetMeasurement` in [targetMeasurement.ts](../src/storage/targetMeasurement.ts) for transactional edits, preserving unrelated annotation fields. Read the [target contract](TARGET_MEASUREMENTS.md) for ownership, calibration, lifecycle and backup invariants.
+
+## Report preferences and photo framing (0.17)
+
+`Profile.report?` contains boolean `details`, `target`, `statistics`, `chart`, `records`; omission means all true. These are local display/export settings included in backups.
+
+`Annotation.target.reportCrop?` contains `x`, `y`, `size`, `width`, `height`, all in original-image pixels. Width/height describe the original image; x/y locate a square of side size. The crop must fit the image, and `photoId` must reference a photo owned by the annotated string. A crop can exist without group geometry or mm calibration. PDF rendering uses it without changing the original Blob or target values. Custom functions retain access through the existing readonly annotation contract.

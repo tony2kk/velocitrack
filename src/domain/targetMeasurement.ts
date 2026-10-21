@@ -1,5 +1,6 @@
 import type { UnitSystem } from './model';
 import { unitLabels } from './units';
+import { validReportCrop, type ReportCrop } from './reportCrop';
 
 /** Target lengths are stored in mm; null means absent and signed offsets preserve zero. */
 export interface TargetValues {
@@ -24,6 +25,8 @@ export interface TargetGeometry {
 }
 /** One active local result per string, with optional image provenance and exact editor state. */
 export interface TargetMeasurement {
+  /** Optional report framing; it never changes the measurement or original photo. */
+  reportCrop?: ReportCrop;
   values: TargetValues;
   manual: TargetField[];
   photoId?: string;
@@ -166,6 +169,8 @@ export function validTargetMeasurement(value: unknown): value is TargetMeasureme
     return false;
   if (target.photoId !== undefined && (typeof target.photoId !== 'string' || !target.photoId))
     return false;
+  if (target.reportCrop !== undefined && (!target.photoId || !validReportCrop(target.reportCrop)))
+    return false;
   if (
     target.mmPerPixel !== undefined &&
     (!Number.isFinite(target.mmPerPixel) || target.mmPerPixel <= 0)
@@ -175,9 +180,14 @@ export function validTargetMeasurement(value: unknown): value is TargetMeasureme
     return (
       target.geometry === undefined &&
       target.mmPerPixel === undefined &&
-      target.photoId === undefined
+      (target.photoId === undefined || !!target.reportCrop)
     );
   const g = target.geometry;
+  if (
+    target.reportCrop &&
+    (target.reportCrop.width !== g.width || target.reportCrop.height !== g.height)
+  )
+    return false;
   if (
     !target.photoId ||
     !Number.isSafeInteger(g.width) ||

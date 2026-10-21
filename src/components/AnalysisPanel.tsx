@@ -1,4 +1,13 @@
-import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  type Ref,
+} from 'react';
 import { ArrowUpRight, ChartNoAxesCombined } from 'lucide-react';
 import type {
   Series,
@@ -28,6 +37,8 @@ import { ColumnPicker } from './ColumnPicker';
 import { columnOrder, sortShots, tableColumns, visibleColumns } from '../domain/table';
 import { StringInfo } from './StringInfo';
 import { ShotTable } from './ShotTable';
+import type { MeasurementChartHandle } from './MeasurementChart';
+import type { ReportHandle } from '../reports/types';
 import { displayValue, formatValue, unitLabels } from '../domain/units';
 import type { ViewportMemory } from '../domain/chartViewport';
 import {
@@ -41,6 +52,7 @@ const MeasurementChart = lazy(() => import('./MeasurementChart'));
 
 /** Present compatible statistics, charts and a paginated table in the profile's display units. */
 export function AnalysisPanel({
+  ref,
   series,
   shots,
   view,
@@ -65,6 +77,7 @@ export function AnalysisPanel({
   dark = false,
   colorOrder,
 }: {
+  ref?: Ref<ReportHandle>;
   series: Series[];
   shots: Shot[];
   view: 'chart' | 'table';
@@ -90,6 +103,7 @@ export function AnalysisPanel({
   colorOrder?: string[];
 }) {
   const [columnError, setColumnError] = useState('');
+  const chartRef = useRef<MeasurementChartHandle>(null);
   // Keep viewports through temporary empty selections and String info without persisting user gestures.
   const [viewportMemory] = useState<ViewportMemory>(() => new Map());
   // Availability, omission notices and calculation must observe the same current local records.
@@ -223,6 +237,59 @@ export function AnalysisPanel({
       : [];
   const forecast = activeCurves.some((curve) => curve.usesForecast);
   const derived = activeCurves.some((curve) => curve.derived);
+  useImperativeHandle(ref, () => ({
+    capture: () => {
+      const reportProfile = profile ?? defaultProfile();
+      const chartVisible = kind !== 'info' && view === 'chart' && compatible && shots.length > 0;
+      const labels =
+        kind === 'compare'
+          ? [...series].sort((a, b) => a.id.localeCompare(b.id)).map((item) => item.name)
+          : [...new Set([settings.quantity, ...(kind === 'dual' ? [settings.secondary] : [])])].map(
+              (id) =>
+                quantities.find((item) => item.id === id)?.label ?? quantityLabel(id, unitSystem),
+            );
+      if (chartVisible && reportProfile.report?.chart !== false && !chartRef.current)
+        throw new Error('The chart is still loading. Try again in a moment.');
+      return structuredClone({
+        series,
+        shots: sortedShots.filter((shot) => !shot.excluded && !invalidShots?.has(shot.id)),
+        profile: reportProfile,
+        catalog,
+        annotations,
+        fields,
+        tags,
+        attachments,
+        createdAt: new Date().toISOString(),
+        version: __APP_VERSION__,
+        revision: __BUILD_REVISION__,
+        ...(chartVisible && reportProfile.report?.chart !== false
+          ? {
+              chart: {
+                image: chartRef.current!.capture(),
+                legend: labels.map((label, index) => ({
+                  label,
+                  color: chartStyle(
+                    kind === 'compare'
+                      ? Math.max(
+                          0,
+                          colorOrder?.indexOf(
+                            [...series].sort((a, b) => a.id.localeCompare(b.id))[index]!.id,
+                          ) ?? index,
+                        )
+                      : index,
+                    dark,
+                  ).color,
+                })),
+                descriptions: activeCurves.flatMap((curve) => [
+                  curve.label(unitSystem) + ': ' + curve.description,
+                  ...describeCurveConditions(curve, sortedShots, curveData),
+                ]),
+              },
+            }
+          : {}),
+      });
+    },
+  }));
   const forecastInput = formatValue(
     displayValue(settings.forecastDistance ?? DEFAULT_FORECAST_DISTANCE, 'distance', unitSystem),
     3,
@@ -290,6 +357,12 @@ export function AnalysisPanel({
                 ? 'Valid muzzle readings'
                 : unitLabels[unitSystem].velocity}
             </small>
+            {label === 'Mean velocity' && (
+              <small title="Lowest and highest included muzzle readings.">
+                Min {formatValue(displayValue(summary.minimum, 'velocity', unitSystem), 2)} · Max{' '}
+                {formatValue(displayValue(summary.maximum, 'velocity', unitSystem), 2)}
+              </small>
+            )}
           </div>
         ))}
       </div>
@@ -461,6 +534,7 @@ export function AnalysisPanel({
             <>
               <Suspense fallback={<p className="empty-note">Loading chart…</p>}>
                 <MeasurementChart
+                  ref={chartRef}
                   shots={sortedShots}
                   series={series}
                   mode={mode}
