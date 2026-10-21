@@ -21,10 +21,6 @@ vi.mock('../src/domain/distanceCurves/customDistanceCurves', async () => ({
   customDistanceCurves: [
     (await import('../src/domain/distanceCurves/calculatedVelocityG1')).calculatedVelocityG1Curve,
     (await import('../src/domain/distanceCurves/calculatedVelocityG7')).calculatedVelocityG7Curve,
-    (await import('../src/domain/distanceCurves/calculatedVelocityG1Local'))
-      .calculatedVelocityG1LocalCurve,
-    (await import('../src/domain/distanceCurves/calculatedVelocityG7Local'))
-      .calculatedVelocityG7LocalCurve,
     (await import('../src/domain/distanceCurves/calculatedDropG1')).calculatedDropG1Curve,
     (await import('../src/domain/distanceCurves/calculatedDropG7')).calculatedDropG7Curve,
     (await import('../src/domain/distanceCurves/template')).centeredSamplesCurve,
@@ -45,10 +41,14 @@ afterEach(async () => {
 });
 
 describe('persistent analysis controls', () => {
-  it('offers local variants with complete atmosphere, saves the choice and explains unavailable inputs', async () => {
+  it('restores legacy local choices as automatic models and explains mixed conditions', async () => {
     const profile = defaultProfile();
     profile.analysis!.mode = 'dual';
-    profile.analysis!.dual = { axis: 'distance', quantity: 'velocity', secondary: 'calculated:g1' };
+    profile.analysis!.dual = {
+      axis: 'distance',
+      quantity: 'velocity',
+      secondary: 'curve:velocity-g1-local',
+    };
     await saveProfile(profile);
     const props = {
       shots: [
@@ -59,37 +59,76 @@ describe('persistent analysis controls', () => {
           distances: [10],
           velocities: [990],
         }),
+        shot({
+          id: 'second',
+          seriesId: 'missing',
+          muzzleVelocity: 1000,
+          ballisticCoefficientG1: 0.3,
+        }),
       ],
       view: 'chart' as const,
       activeShotId: null,
       onHoverShot: vi.fn(),
     };
-    const view = render(
+    const parents = [
+      series({
+        name: 'Local string',
+        airDensity: 1.1,
+        soundSpeed: 345,
+        raw: { altitude: 0, weatherData: { temperature: 68, pressure: 1010, humidity: 50 } },
+      }),
+      series({ id: 'missing', name: 'Missing weather' }),
+    ];
+    const view = render(<AnalysisPanel {...props} series={parents} profile={profile} />);
+    for (const name of ['Chart quantity', 'Second chart quantity']) {
+      expect(screen.getByLabelText(name).textContent).toContain('Calculated velocity (G1)');
+      expect(screen.getByLabelText(name).textContent).not.toContain(', local)');
+    }
+    expect((screen.getByLabelText('Second chart quantity') as HTMLSelectElement).value).toBe(
+      'calculated:g1',
+    );
+    expect(
+      screen.getByText(/Local string — Atmosphere: 20 °C, 1010.00 hPa, humid air/),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/Missing weather — Atmosphere: 15 °C, 1013.25 hPa, dry air/),
+    ).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Second chart quantity'), {
+      target: { value: 'calculated:g7' },
+    });
+    await waitFor(async () =>
+      expect((await loadWorkspace()).profile.analysis!.dual.secondary).toBe('calculated:g7'),
+    );
+    const saved = (await loadWorkspace()).profile;
+    view.rerender(
+      <AnalysisPanel {...props} series={[series(), series({ id: 'missing' })]} profile={saved} />,
+    );
+    expect(screen.getByText(/Atmosphere: 15 °C, 1013.25 hPa, dry air/)).toBeTruthy();
+    expect(screen.queryByText(/string air density or sound speed/)).toBeNull();
+  });
+  it('collapses an old standard/local pair without calling the shared quantity unavailable', () => {
+    const profile = defaultProfile();
+    profile.analysis!.mode = 'dual';
+    profile.analysis!.dual = {
+      axis: 'distance',
+      quantity: 'calculated:g1',
+      secondary: 'curve:velocity-g1-local',
+    };
+    render(
       <AnalysisPanel
-        {...props}
-        series={[series({ airDensity: 1.1, soundSpeed: 345 })]}
+        series={[series()]}
+        shots={[
+          shot({ muzzleVelocity: 1000, ballisticCoefficientG1: 0.3, ballisticCoefficientG7: 0.2 }),
+        ]}
+        view="chart"
+        activeShotId={null}
+        onHoverShot={vi.fn()}
         profile={profile}
       />,
     );
-    for (const name of ['Chart quantity', 'Second chart quantity']) {
-      expect(screen.getByLabelText(name).textContent).toContain('Calculated velocity (G1, local)');
-      expect(screen.getByLabelText(name).textContent).toContain('Calculated velocity (G7, local)');
-    }
-    fireEvent.change(screen.getByLabelText('Second chart quantity'), {
-      target: { value: 'curve:velocity-g1-local' },
-    });
-    await waitFor(async () =>
-      expect((await loadWorkspace()).profile.analysis!.dual.secondary).toBe(
-        'curve:velocity-g1-local',
-      ),
-    );
-    const saved = (await loadWorkspace()).profile;
-    view.rerender(<AnalysisPanel {...props} series={[series()]} profile={saved} />);
-    expect(screen.getByText(/1 shot\(s\) omitted.*string air density or sound speed/)).toBeTruthy();
-    expect((screen.getByLabelText('Second chart quantity') as HTMLSelectElement).value).toBe(
-      'curve:velocity-g1-local',
-    );
-    expect(screen.getByText(/Experimental local-atmosphere prediction/)).toBeTruthy();
+    expect(screen.getByText('Same as primary quantity')).toBeTruthy();
+    expect(screen.queryByText('Saved quantity — no readings')).toBeNull();
+    expect(screen.getAllByText(/Atmosphere: 15 °C/)).toHaveLength(1);
   });
   it('keeps both drop choices when controls change before the profile has rerendered', async () => {
     const profile = defaultProfile();

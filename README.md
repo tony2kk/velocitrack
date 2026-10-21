@@ -4,7 +4,7 @@ A private, local workspace for exploring recorded Caldwell VelociRadar measureme
 
 **MVP:** JSON/CSV/text imports, read-only Caldwell account imports, shared catalogs, persistent filters, series comparison, charts, a shot table below the chart, series custom fields/tags, local photos, ZIP backup/restore and an offline application shell. Local and hosted installations use the same standard Caldwell client configuration, so users enter only their email/password. See the [verification record](docs/VERIFICATION.md) for observed sign-in/import results and remaining checks.
 
-The shot table supports saved reversible invalidation and bulk Analyze. Over distance can compare recorded velocity with G1/G7 model estimates from each shot's muzzle velocity and matching Caldwell BC. Predictions use explicit standard-atmosphere assumptions and retain original data; see the [research and numerical validation](docs/VELOCITY_RESEARCH.md). Start with the short [user help hub](help/README.md) for everyday tasks.
+The shot table supports saved reversible invalidation and bulk Analyze. Over distance can compare recorded velocity with G1/G7 model estimates from each shot's muzzle velocity and matching Caldwell BC. Predictions automatically use each string's saved local atmosphere, with a disclosed standard fallback, and retain original data; see the [research and numerical validation](docs/VELOCITY_RESEARCH.md). Start with the short [user help hub](help/README.md) for everyday tasks.
 
 VelociTrack is not affiliated with, endorsed by or supported by Caldwell or American Outdoor Brands (AOB). The original feasibility study, proprietary APK and private exports are not part of this project.
 

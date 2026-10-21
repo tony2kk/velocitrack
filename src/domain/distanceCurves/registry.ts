@@ -7,7 +7,12 @@ import {
   type DragModel,
 } from '../calculatedVelocity';
 import { customDistanceCurves } from './customDistanceCurves';
-import type { CustomDistanceCurve, DistanceCurveData, DistanceSample } from './types';
+import type {
+  CurveConditions,
+  CustomDistanceCurve,
+  DistanceCurveData,
+  DistanceSample,
+} from './types';
 import { createDistanceCurveContext } from './context';
 
 export const MAX_CURVE_POINTS = 5000;
@@ -25,7 +30,7 @@ export interface DistanceCurve {
   readonly derived: boolean;
   readonly usesForecast: boolean;
   readonly model?: DragModel;
-  readonly atmosphere?: CustomDistanceCurve['atmosphere'];
+  readonly conditions?: (shot: Shot, data?: DistanceCurveData) => CurveConditions;
   readonly available: (shot: Shot, data?: DistanceCurveData) => boolean;
   readonly calculate: (
     shot: Shot,
@@ -93,6 +98,12 @@ export function createDistanceCurveRegistry(
       ...definition,
       derived: true,
       usesForecast: definition.usesForecast ?? false,
+      conditions: definition.conditions
+        ? (shot, data) =>
+            definition.conditions!(
+              createDistanceCurveContext(shot, DEFAULT_FORECAST_DISTANCE, data),
+            )
+        : undefined,
       available: (shot, data) =>
         definition.available(createDistanceCurveContext(shot, DEFAULT_FORECAST_DISTANCE, data)),
       calculate: (shot, maxDistance, data) =>
@@ -125,6 +136,35 @@ export function createDistanceCurveRegistry(
 }
 
 export const distanceCurveRegistry = createDistanceCurveRegistry(customDistanceCurves);
+
+/** Summarize actual conditions for eligible plotted strings; never average different atmospheres. */
+export function describeCurveConditions(
+  curve: DistanceCurve,
+  shots: readonly Shot[],
+  data: DistanceCurveData,
+): string[] {
+  const descriptions = new Map<string, Set<string>>(); // Group identical conditions to keep the notice short.
+  const seen = new Set<string>(); // One description per source-scoped string.
+  let count = 0; // Match the plotted eligible-shot cap and table order.
+  if (!curve.conditions) return [];
+  for (const shot of shots) {
+    if (!supportsDistanceCurve(curve, shot, data)) continue;
+    if (++count > MAX_DERIVED_SHOTS) break;
+    const key = JSON.stringify([shot.sourceId, shot.seriesId]);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const description = curve.conditions(shot, data).description;
+    const parent = data.series.find(
+      (item) => item.id === shot.seriesId && item.sourceId === shot.sourceId,
+    );
+    const names = descriptions.get(description) ?? new Set<string>();
+    names.add(parent?.name ?? 'Unmatched string');
+    descriptions.set(description, names);
+  }
+  return [...descriptions].map(([description, names]) =>
+    descriptions.size === 1 ? description : `${[...names].join(', ')} — ${description}`,
+  );
+}
 
 /** Availability is input-only and exception-safe, so a broken optional function cannot crash menus. */
 export function supportsDistanceCurve(

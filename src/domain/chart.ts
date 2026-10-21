@@ -151,7 +151,7 @@ export function formatPointTooltip(point: ChartPoint): string {
       : []),
     ...(point.model
       ? [
-          `${point.model.toUpperCase()} model · ${point.atmosphere === 'local' ? 'local atmosphere (experimental)' : 'standard atmosphere'}${point.coefficient ? ` · BC ${formatValue(point.coefficient)}` : ''}`,
+          `${point.model.toUpperCase()} model · ${point.atmosphere === 'local' ? 'local atmosphere' : 'standard atmosphere'}${point.coefficient ? ` · BC ${formatValue(point.coefficient)}` : ''}`,
         ]
       : []),
     point.quantity && point.quantity !== 'velocity'
@@ -211,6 +211,10 @@ export function buildAnalysisTraces(
         ...dispatchDistanceCurve(quantity, shot, settings.forecastDistance, registry, curveData),
       }));
       const rows = results.map(({ shot, points }) => ({ shot, points }));
+      // Resolve once per shot, not per sample; descriptions and numerical input share one policy.
+      const conditions = new Map(
+        candidates.map((shot) => [shot.id, curve.conditions?.(shot, curveData)]),
+      );
       const failures = results.filter(
         (result) => result.issue && result.issue !== 'unavailable',
       ).length;
@@ -232,7 +236,7 @@ export function buildAnalysisTraces(
           sampleIndex: curve!.derived ? undefined : sample.sampleIndex,
           distance: true,
           model,
-          atmosphere: curve!.atmosphere,
+          atmosphere: conditions.get(shot.id)?.atmosphere,
           derived: curve!.derived,
           coefficient: model
             ? ((model === 'g1' ? shot.ballisticCoefficientG1 : shot.ballisticCoefficientG7) ??
@@ -240,12 +244,15 @@ export function buildAnalysisTraces(
             : undefined,
           quantity,
           quantityTitle: curve!.label(units),
-          quantityNote: curve!.tooltipNote,
+          quantityNote: [conditions.get(shot.id)?.description, curve!.tooltipNote]
+            .filter(Boolean)
+            .join('\n'),
         };
       }
       if (kind === 'compare')
         return groups.map((item, index) => {
           const members = rows.filter(({ shot }) => shot.seriesId === item.id);
+          const meanConditions = members[0] ? conditions.get(members[0].shot.id) : undefined;
           return {
             id: item.id,
             name: item.name,
@@ -261,11 +268,13 @@ export function buildAnalysisTraces(
             ).map((point) => ({
               ...point,
               model,
-              atmosphere: curve.atmosphere,
+              atmosphere: meanConditions?.atmosphere,
               derived: curve.derived,
               quantity,
               quantityTitle: curve.label(units),
-              quantityNote: curve.tooltipNote,
+              quantityNote: [meanConditions?.description, curve.tooltipNote]
+                .filter(Boolean)
+                .join('\n'),
             })),
             members: members.flatMap(({ shot, points }) =>
               distanceSegments(points).map((segment) => ({

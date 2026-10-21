@@ -297,3 +297,24 @@ Full verification passed: TypeScript, ESLint, Prettier, **119 behavioral tests a
 - No owner records, credentials or cloud account were accessed. Field agreement,
   provider BC normalization and radar/muzzle offset semantics remain unverified.
   The owner's planned measurement date is 2026-10-25. No Pages deployment.
+
+## Automatic velocity atmosphere — 2026-10-21
+
+- Version 0.16.0 passed types, lint, formatting, **296 tests across 40 files**,
+  production/PWA build and the public-content guard after staging removed modules.
+- G1/G7 use a complete valid local pair, otherwise the complete standard pair.
+  Tests cover absent/invalid/cross-source inputs, independent analytic references,
+  local Mach validation, unchanged drop, units, source preservation and ignored offsets.
+- Notices/point/mean details cover dry/humid local conditions, estimated station
+  pressure, explicit fallback, missing raw-weather details and eligible-shot limits.
+- UI tests cover unified choices, historical local-ID normalization, duplicate-model
+  collapse and mixed string conditions. ZIP tests restore both historical and current
+  selections and reproduce the same numerical predictions.
+- An isolated production preview on port 4182 restored a legacy standard/local pair
+  as one automatic model, displayed “Same as primary quantity”, then plotted recorded
+  velocity against G7. The notice showed 30 °C, 951.53 hPa estimated station pressure
+  and 55% RH from invented data. Menus had only the two velocity models. No warnings
+  or errors were captured. The screenshot is ignored in .local/.
+- No owner data or cloud account was accessed. Field accuracy is not established;
+  no Pages deployment was triggered. Owner-confirmed VelociRadar zero-offset handling
+  is recorded in decision 019 and the unit reference.

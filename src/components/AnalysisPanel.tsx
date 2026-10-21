@@ -30,7 +30,11 @@ import { StringInfo } from './StringInfo';
 import { ShotTable } from './ShotTable';
 import { displayValue, formatValue, unitLabels } from '../domain/units';
 import type { ViewportMemory } from '../domain/chartViewport';
-import { distanceCurveRegistry, supportsDistanceCurve } from '../domain/distanceCurves/registry';
+import {
+  describeCurveConditions,
+  distanceCurveRegistry,
+  supportsDistanceCurve,
+} from '../domain/distanceCurves/registry';
 
 // Keep the chart library out of the initial workspace load until a selection needs it.
 const MeasurementChart = lazy(() => import('./MeasurementChart'));
@@ -398,7 +402,9 @@ export function AnalysisPanel({
                       {secondaryChoices.length > 0 &&
                         !secondaryChoices.some((q) => q.id === settings.secondary) && (
                           <option value={settings.secondary} disabled>
-                            Saved quantity — no readings
+                            {settings.secondary === settings.quantity
+                              ? 'Same as primary quantity'
+                              : 'Saved quantity — no readings'}
                           </option>
                         )}
                       {secondaryChoices.map((q) => (
@@ -510,11 +516,14 @@ export function AnalysisPanel({
                 ))}
               </div>
               {activeCurves.map((curve) => (
-                <p className="notice" key={curve.id}>
+                <div className="notice" key={curve.id}>
                   <strong>{curve.label(unitSystem)}</strong>
                   {' · '}
                   {curve.description}
-                </p>
+                  {describeCurveConditions(curve, sortedShots, curveData).map((description) => (
+                    <div key={description}>{description}</div>
+                  ))}
+                </div>
               ))}
               {derived && shots.filter((shot) => !shot.excluded).length > 100 && (
                 <p className="notice">

@@ -153,7 +153,22 @@ integrator takes optional fixed conditions and defaults to the original standard
 values, including for drop. Local sound speed also controls the Mach input domain.
 Standard/local metadata flows into individual and mean tooltips; local variants
 are experimental, without sample fitting or distance-offset correction. The owner
-confirmed the meaning of `distanceToChronograph`, with unit/sign/provider correction
-still awaiting field verification. Chart hover help moved from `title` to an
+initially identified `distanceToChronograph` as muzzle/radar displacement; the
+0.16 clarification below resolves its handling for VelociRadar. Chart hover help moved from `title` to an
 accessible description to avoid covering point details. Selections and inputs use
 the existing backup contract. No Pages deployment is part of this batch.
+
+## Automatic velocity atmosphere — 0.16.0
+
+Decision 019 supersedes 018's separate choices. The two canonical velocity definitions
+select the matching string's saved density/sound-speed pair or standard fallback.
+Keep calculation, availability and conditions metadata on that shared policy.
+The optional conditions callback feeds per-shot/mean tooltips and per-string chart
+notices. Recorded weather parsing is shared with import; descriptions reconstruct
+station pressure for display without changing stored estimates. Drop remains standard.
+Old local IDs normalize on chart read/save, including restored archives; duplicate
+family selections collapse. No schema/backup migration or Pages deployment.
+
+The owner clarified that VelociRadar always reports `distanceToChronograph = 0`.
+Muzzle alignment is beside the radar, aligned or at most 5 cm ahead. Preserve raw
+metadata but do not apply an offset; revisit only when supporting another device.

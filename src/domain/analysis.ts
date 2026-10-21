@@ -269,6 +269,12 @@ export function distanceQuantities(
 
 /** Changing axes fixes structurally invalid choices, independently of temporary missing data. */
 export function normalizeChart(settings: ChartSettings): ChartSettings {
+  // Version 0.15's separate local variants now share the automatic model's stable ID.
+  settings = {
+    ...settings,
+    quantity: automaticVelocityId(settings.quantity),
+    secondary: automaticVelocityId(settings.secondary),
+  };
   const available = axisQuantities(settings.axis);
   const quantity =
     (settings.axis === 'shot' && !isDistanceOnly(settings.quantity)) ||
@@ -284,6 +290,13 @@ export function normalizeChart(settings: ChartSettings): ChartSettings {
         ? quantity
         : (available.find((item) => item !== quantity) ?? quantity);
   return { ...settings, quantity, secondary };
+}
+
+/** Accept historical profile/backup choices without keeping duplicate menu entries or traces. */
+function automaticVelocityId(id: ChartQuantity): ChartQuantity {
+  if (id === 'curve:velocity-g1-local') return 'calculated:g1';
+  if (id === 'curve:velocity-g7-local') return 'calculated:g7';
+  return id;
 }
 
 /** Label units only for physical quantities; G1/G7 remain dimensionless. */

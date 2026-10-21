@@ -40,6 +40,12 @@ export interface DistanceCurveContext extends DistanceCurveInput {
   readonly tags: readonly CurveReadonly<Tag>[];
 }
 
+/** Conditions attached to the same source-scoped context used by a calculated curve. */
+export interface CurveConditions {
+  readonly atmosphere: 'standard' | 'local';
+  readonly description: string;
+}
+
 /** A compile-time extension; callbacks are synchronous and must be pure and bounded. */
 export interface CustomDistanceCurve {
   /** New IDs use curve:<name>; the two existing calculated IDs remain compatible with saved data. */
@@ -55,8 +61,8 @@ export interface CustomDistanceCurve {
   readonly usesForecast?: boolean;
   /** Optional legacy model identity for the existing G1/G7 tooltip and coefficient display. */
   readonly model?: DragModel;
-  /** Display provenance only; calculation callbacks must explicitly select their atmosphere. */
-  readonly atmosphere?: 'standard' | 'local';
+  /** Explain the actual per-string conditions; use the same selection policy as calculate/available. */
+  readonly conditions?: (input: DistanceCurveContext) => CurveConditions;
   /** Cheap input check; this must not perform the full calculation. */
   readonly available: (input: DistanceCurveContext) => boolean;
   /** Return ascending distinct distances, <=5,000 points, finite Y or null; zero/negative Y are valid. */

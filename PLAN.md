@@ -211,6 +211,15 @@ Release 0.14.0 implements decision 017. Existing G1/G7 calculations remain uncha
 - [x] Remove the competing general chart tooltip while retaining point details.
 - [x] Record the confirmed meaning of `distanceToChronograph`.
 - [ ] Compare local variants with the owner's field measurements.
-- [ ] Validate offset units/sign and provider distance correction after the planned 2026-10-25 measurements.
+- [x] Resolve VelociRadar offset handling: owner confirms a zero field and physical muzzle/radar alignment; no correction. Revisit only for another device type.
 
 Release 0.15.0 implements decision 018. Pages deployment remains separate.
+
+## Automatic velocity atmosphere — 2026-10-21
+
+- [x] Replace separate local choices with automatic G1/G7 velocity quantities.
+- [x] Select a complete local pair per string, otherwise the standard pair.
+- [x] Show actual conditions and standard fallback in notices and point/mean details.
+- [x] Preserve historical profile/backup selections and existing numerical boundaries.
+
+Release 0.16.0 implements decision 019. Field comparison remains pending. VelociRadar distance-offset handling is resolved.

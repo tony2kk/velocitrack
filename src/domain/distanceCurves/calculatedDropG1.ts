@@ -10,7 +10,7 @@ export function calculateG1Drop(input: DistanceCurveContext): readonly DistanceS
   return points.map(({ distance, drop }) => ({ distance, value: drop }));
 }
 
-/** Check the same supported muzzle velocity and G1 coefficient bounds as calculated velocity. */
+/** Check the same supported muzzle velocity and G1 coefficient bounds as the standard-atmosphere solver. */
 function hasG1Inputs(input: DistanceCurveContext): boolean {
   const model = 'g1'; // No fallback to G7 or downrange samples.
 
@@ -22,7 +22,7 @@ function defineG1DropCurve(): CustomDistanceCurve {
   const id = 'curve:drop-g1'; // Stable local profile/backup identity.
   const name = 'Calculated drop (G1)';
   const description =
-    'Theoretical drop below the horizontal muzzle axis, positive downward. G1 with the same muzzle velocity, BC and standard atmosphere as calculated velocity: 15 °C, 1013.25 hPa, dry air, no wind. Constant BC and small-deflection gravity approximation; no sight zero or local weather correction. Dashed curves are estimates, not measured impact offsets.';
+    "Theoretical drop below the horizontal muzzle axis, positive downward. G1 with the shot's muzzle velocity and matching BC. Atmosphere: 15 °C, 1013.25 hPa, dry air, no wind. Constant BC and small-deflection gravity approximation; no sight zero or local weather correction. Dashed curves are estimates, not measured impact offsets.";
   const tooltipNote =
     'Positive downward from the horizontal muzzle axis; small-deflection estimate.';
   const unavailableReason = 'missing or unsupported muzzle velocity / BC.';

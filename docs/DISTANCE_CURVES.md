@@ -156,3 +156,7 @@ They use the shared standard-atmosphere speed kernel with small-deflection gravi
 Optional `tooltipNote` adds a brief reference/sign explanation to single-shot and
 mean point tooltips. All callbacks still cross the same readonly context and output
 validation boundary. See [drop model](DROP_MODEL.md) for equations and tests.
+
+## Automatic velocity atmosphere — v0.16
+
+The G1/G7 velocity definitions select the matching string's saved density and sound speed together, otherwise the standard pair. There are no separate local menu entries. The optional `conditions(input)` callback returns `{ atmosphere: "local" | "standard", description: string }` from the same readonly context. Use the same policy as `available` and `calculate`. The registry adapts it for point/mean tooltips and summaries of plotted strings; differing conditions are named separately, not averaged. See [Atmosphere](ATMOSPHERE.md). Legacy local IDs are normalized when reading chart preferences, including restored backups. Drop continues using fixed standard conditions.

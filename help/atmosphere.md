@@ -24,33 +24,35 @@ range is −40 to +50 °C; humidity is 0–100 %, elevation −500 to 11,000 m.
 The values and chart/column choices are included in workspace backups. Restore
 preserves them; reimport recalculates them.
 
-## Compare experimental local velocity
+## Compare calculated velocity
 
 In **Dual chart → Over distance**, keep **Velocity** as the measured quantity and
-select **Calculated velocity (G1, local)** or **Calculated velocity (G7, local)**
-as the second quantity. The original **Calculated velocity (G1)/(G7)** choices
-still use standard atmosphere. You can also compare a standard and local variant
-directly; both share the velocity scale and retain your zoom.
+select **Calculated velocity (G1)** or **Calculated velocity (G7)** as the second
+quantity. There is only one choice per drag family. Each shot automatically uses
+its string's saved **Air density** and **Sound speed** when both are valid; otherwise
+it uses the standard pair (1.225 kg/m³, 340.294 m/s). A partial local pair never mixes
+with standard values. Refresh/reimport older strings to calculate missing estimates.
 
-Local variants use each string's saved **Air density** and **Sound speed** throughout
-the curve. They keep the shot's original muzzle velocity and matching BC. Refresh
-or reimport older strings first if these quantities are missing. A local choice is
-offered when at least one selected shot has the required inputs; unsupported shots
-are omitted with an explanation. Missing weather never silently selects standard
-conditions. A saved local selection survives temporarily unavailable weather.
+Below the chart and in point details, **Atmosphere: … °C, … hPa, … air** explains
+which conditions were selected. Local pressure is the estimated station pressure,
+not the sea-level pressure in the original weather record. Humid air includes % RH.
+A standard fallback is explicitly labeled. Different conditions across selected
+strings are listed with their string names. If an archive contains estimates without
+raw weather, their density/sound speed are shown instead of inventing weather values.
+The conditions note always uses °C and hPa; chart values follow profile units.
 
-These variants are **experimental**. They do not force the prediction through the
-recorded samples or change their values. A smaller difference is not guaranteed.
-They assume constant BC and still air; no wind, gravity or distance-offset correction
-is added to velocity. Existing calculated drop remains a standard-atmosphere model.
+The original muzzle velocity and matching source BC remain unchanged. These are
+model estimates, not fitted readings; a smaller difference is not guaranteed.
+Velocity assumes constant BC, fixed conditions and still air, without gravity or
+distance-offset correction. Calculated drop keeps its stated standard atmosphere.
 
-The owner identified `distanceToChronograph` as the axial muzzle displacement
-relative to the radar. Its unit, sign and any correction already performed by the
-provider are pending field verification; it is preserved but not applied here.
+For VelociRadar, the owner confirmed that `distanceToChronograph` is always zero.
+The muzzle should be beside the radar, aligned or at most 5 cm ahead. No distance
+correction is applied. A different device type would need its own validated convention.
 Hover a curve to inspect its values and standard/local label. The plot no longer
 opens a second general browser tooltip over the point-details window.
 
-Local-curve choices and their atmosphere inputs round-trip through workspace
-backups. Curves are recalculated from the restored values when viewed.
+Current choices and atmosphere inputs round-trip through workspace backups.
+Older separate local choices restore as the corresponding automatic G1/G7 model. Curves are recalculated from the restored values when viewed.
 
 [Equations, assumptions and source units](../docs/ATMOSPHERE.md) · [Backup](backup.md)

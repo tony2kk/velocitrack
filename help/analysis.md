@@ -57,7 +57,10 @@ For code-defined functions, see the contributor [Over distance extension guide](
 
 ## Calculated drop
 
-G1/G7 drop is now available over distance with vertical units **cm/in** and the same
-standard atmosphere as calculated velocity. It is positive downward from the
+G1/G7 drop is available over distance with vertical units **cm/in** and fixed
+standard atmosphere. Velocity selects local conditions automatically when available.
+Drop is positive downward from the
 horizontal muzzle axis and uses a small-deflection gravity approximation. See
 [Calculated drop](drop.md) for the reference, controls and limitations.
+
+For automatic local/standard velocity selection and the conditions shown below each chart, see [Air density and sound speed](atmosphere.md).

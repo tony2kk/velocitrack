@@ -57,6 +57,8 @@ Series-context coverage includes the additive v2 migration, custom field unit/va
 - `local-velocity.test.ts`: standard parity, independent analytic local-condition
   integration, density/sound-speed effects and Mach bounds, unavailable or unrelated
   inputs, unchanged source data/distances, shared axes, display units and per-string
-  tooltip/contributor provenance. Analysis controls verify local selection and
-  missing-weather explanations; atmosphere storage checks round-trip both local
-  curve IDs and reproduce their values after ZIP recovery.
+  tooltip/contributor provenance. Automatic selection checks cover complete standard
+  fallback, source isolation, dry/humid station descriptions, plotted-shot limits,
+  historical selection normalization and unchanged drop. Analysis controls verify
+  unified menus and mixed conditions; atmosphere storage checks restore historical
+  local choices as automatic models and reproduce values after ZIP recovery.

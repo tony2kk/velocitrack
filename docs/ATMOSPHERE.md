@@ -100,44 +100,50 @@ relaxation or frequency-dependent correction is applied. Sound propagation itsel
 is a small pressure perturbation; `Z = 1` does not mean an incompressible medium.
 
 Wind, spin drift, Coriolis effects, projectile configuration and other motion
-variables are not inputs to these ambient properties. The original G1/G7 velocity
-and drop curves retain their standard-atmosphere constants.
+variables are not inputs to these ambient properties. G1/G7 velocity uses automatic selection below; drop retains fixed standard conditions.
 
-## Experimental local velocity — 0.15.0
+## Automatic velocity atmosphere — 0.16.0
 
-Two additional custom catalog entries, `curve:velocity-g1-local` and
-`curve:velocity-g7-local`, read the matching string's saved density and sound speed.
-Each has its own definition/callback module. Both values must be positive finite
-numbers; missing context or either missing estimate makes the local variant
-unavailable. No raw-weather recomputation or standard fallback occurs during plotting.
+Only `calculated:g1` and `calculated:g7` are offered. Each definition stays in its own
+catalog module and selects both saved string estimates together when positive and
+finite. Missing/invalid values or a missing source-scoped parent select the complete
+standard pair (density 1.225 kg/m³, sound speed 340.294 m/s). Unsupported muzzle/BC
+inputs remain unavailable; changing atmosphere never substitutes another BC.
+Raw weather is not recalculated into stored attributes while plotting. Older imports
+still need refresh/reimport to populate these estimates.
 
-The existing drag integrator accepts an explicit `FlightAtmosphere`. Standard
-callers keep the same default constants and numerical path. Local density replaces
-the drag multiplier's density; local sound speed sets `Mach = v / soundSpeed` for
-the same G1/G7 reference table and input-domain check. Both properties are held
-constant along the curve. The drag/density relation and acoustic interpretation
+The drag integrator accepts explicit fixed `FlightAtmosphere`. Local density sets the
+drag multiplier and sound speed sets `Mach = v / soundSpeed` for the reference table
+and input-domain check. Both properties remain constant along the curve. Standard
+fallback preserves the original numerical path. The drag and acoustic relations
 follow the [NASA drag equation](https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-equation/)
 and [sound-speed derivation](https://www.grc.nasa.gov/www/k-12/BGP/snddrv.html),
-reviewed 2026-10-21. The existing equation and reference-table provenance are in
-[velocity research](VELOCITY_RESEARCH.md).
+reviewed 2026-10-21; reference provenance is in [velocity research](VELOCITY_RESEARCH.md).
 
-The muzzle velocity, matching source BC, distance coordinates, forecast limits,
-RK4 bounds and output units remain unchanged. No sample anchoring, BC fitting,
-wind, spin drift, Coriolis or radar/muzzle offset correction is introduced.
-G1/G7 drop retains standard conditions. The new variants are explicitly
-experimental: the provider's BC derivation and atmospheric normalization are not
-fully documented, so using local inputs does not establish better field agreement.
+The optional custom-curve `conditions(input)` callback uses the same selection policy.
+Individual/mean tooltips and chart descriptions identify local or standard fallback.
+The `Atmosphere: … °C, … hPa, … air` line reconstructs station pressure from original
+weather using the same validation/equations as import; it does not display sea-level
+pressure as station pressure. Humid air states % RH; pressure has two decimal places.
+Different plotted string conditions are listed separately, never averaged. Only
+eligible shots within the plotting cap contribute. An archive with valid saved
+estimates but missing/invalid raw weather shows the actual density/sound speed and
+states that weather details are unavailable. Source/derived data remain untouched.
 
-Simple/Dual/Compare share the normal velocity axis, unit conversion and viewport
-memory. Comparisons use each string's own atmosphere; unavailable shots are omitted
-through the existing availability and contributor pipeline. Curve metadata labels
-both individual and mean tooltips as local/experimental. Generic chart hover help
-is an accessible description rather than a competing native browser tooltip.
+Existing 0.15 local IDs normalize to their corresponding canonical G1/G7 choice in
+saved profiles and restored archives. A former standard/local pair of the same family
+collapses to one trace set. Forecast and unit/viewport behavior stay unchanged.
 
-On 2026-10-21 the owner confirmed `distanceToChronograph` means axial muzzle
-displacement relative to the radar. Its units, sign convention and any prior
-provider correction of exported distances remain unresolved. No distance correction
-is applied before the owner's planned 2026-10-25 measurements.
+Muzzle velocity, source BC, coordinates, RK4 bounds and output units are unchanged.
+No fitting, sample anchoring, wind, spin drift, Coriolis or radar offset is added.
+G1/G7 drop retains standard conditions. Provider BC normalization is not fully
+documented, so local inputs alone do not establish improved field accuracy.
+
+On 2026-10-21 the owner clarified that `distanceToChronograph` is always zero for
+VelociRadar. The muzzle must be beside the radar, aligned or at most 5 cm ahead.
+The field is preserved but deliberately ignored by these models. No offset feature
+is planned for VelociRadar; revisit the distance-origin contract only if another
+device type supplies data that requires it.
 
 ## Display, custom functions and persistence
 

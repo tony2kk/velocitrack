@@ -7,13 +7,109 @@ import {
 import {
   dispatchDistanceCurve,
   distanceCurveRegistry,
+  describeCurveConditions,
 } from '../src/domain/distanceCurves/registry';
-import { distanceQuantities } from '../src/domain/analysis';
+import { distanceQuantities, normalizeChart } from '../src/domain/analysis';
 import { buildAnalysisTraces, formatPointTooltip } from '../src/domain/chart';
 import { defaultAnalysis } from '../src/domain/model';
 import { series, shot } from './fixtures/synthetic';
+import { importedAtmosphere } from '../src/sources/atmosphere';
 
-describe('experimental local-atmosphere velocity', () => {
+describe('automatic velocity atmosphere', () => {
+  it('maps historical local selections without duplicate traces or lost forecast settings', () => {
+    const settings = {
+      axis: 'distance' as const,
+      quantity: 'calculated:g1',
+      secondary: 'curve:velocity-g1-local',
+      forecastDistance: 81,
+    };
+    expect(normalizeChart(settings)).toEqual({ ...settings, secondary: 'calculated:g1' });
+    expect(normalizeChart({ ...settings, quantity: 'curve:velocity-g7-local' })).toMatchObject({
+      quantity: 'calculated:g7',
+      secondary: 'calculated:g1',
+      forecastDistance: 81,
+    });
+    expect(
+      distanceCurveRegistry.definitions
+        .filter((curve) => curve.axisKey === 'velocity')
+        .map((curve) => curve.id),
+    ).toEqual(['velocity', 'calculated:g1', 'calculated:g7']);
+  });
+
+  it('describes estimated station pressure and humidity in notices and tooltips', () => {
+    const raw = {
+      altitude: 2000,
+      weatherData: { temperature: 68, humidity: 50, pressure: 1013.25 },
+    };
+    const parent = series({ raw, ...importedAtmosphere(raw) });
+    const input = shot({ muzzleVelocity: 1000, ballisticCoefficientG1: 0.3 });
+    const data = { series: [parent] };
+    const curve = distanceCurveRegistry.get('calculated:g1')!;
+    const descriptions = describeCurveConditions(curve, [input], data);
+    const expectedPressure =
+      1013.25 * Math.exp((-9.80665 * 609.6) / (287.05 * (293.15 + (0.0065 * 609.6) / 2)));
+    expect(descriptions).toEqual([
+      `Atmosphere: 20 °C, ${expectedPressure.toFixed(2)} hPa, humid air (50% RH) (local; estimated station pressure).`,
+    ]);
+    const settings = {
+      axis: 'distance' as const,
+      quantity: curve.id,
+      secondary: 'velocity',
+      forecastDistance: 100,
+    };
+    const traces = buildAnalysisTraces([input], [parent], 'simple', settings, 'imperial');
+    expect(formatPointTooltip(traces[0]!.data[0]!)).toContain(descriptions[0]);
+    // Numerical output must still use the saved canonical pair, without a display-unit conversion.
+    expect(traces[0]!.data.at(-1)!.value[1]).toBe(
+      calculatedVelocity(input, 'g1', 100, {
+        density: parent.airDensity!,
+        soundSpeed: parent.soundSpeed!,
+      }).at(-1)!.velocity,
+    );
+    const dryRaw = {
+      altitude: 0,
+      weatherData: { temperature: 59, humidity: 0, pressure: 1013.25 },
+    };
+    expect(
+      describeCurveConditions(curve, [input], {
+        series: [series({ raw: dryRaw, ...importedAtmosphere(dryRaw) })],
+      })[0],
+    ).toContain('dry air (local;');
+  });
+
+  it('summarizes only eligible plotted strings and respects the first 100 eligible shots', () => {
+    const curve = distanceCurveRegistry.get('calculated:g1')!;
+    const inputs = Array.from({ length: 100 }, (_, i) =>
+      shot({ id: String(i), muzzleVelocity: 1000, ballisticCoefficientG1: 0.3 }),
+    );
+    const local = shot({
+      id: 'local',
+      seriesId: 'local',
+      muzzleVelocity: 1000,
+      ballisticCoefficientG1: 0.3,
+    });
+    const data = { series: [series(), series({ id: 'local', airDensity: 1.1, soundSpeed: 345 })] };
+    expect(describeCurveConditions(curve, [...inputs, local], data)).toHaveLength(1);
+    expect(describeCurveConditions(curve, [...inputs.slice(0, 99), local], data)).toHaveLength(2);
+    expect(
+      describeCurveConditions(curve, [{ ...local, excluded: true }, ...inputs], data)[0],
+    ).toContain('standard fallback');
+    expect(describeCurveConditions(curve, [shot()], data)).toEqual([]);
+  });
+
+  it.each(['g1', 'g7'] as const)('leaves %s drop under its stated standard conditions', (model) => {
+    const input = shot({
+      muzzleVelocity: 1000,
+      ballisticCoefficientG1: 0.3,
+      ballisticCoefficientG7: 0.2,
+    });
+    const baseline = dispatchDistanceCurve(`curve:drop-${model}`, input, 100);
+    expect(
+      dispatchDistanceCurve(`curve:drop-${model}`, input, 100, distanceCurveRegistry, {
+        series: [series({ airDensity: 0.9, soundSpeed: 360 })],
+      }),
+    ).toEqual(baseline);
+  });
   it.each(['g1', 'g7'] as const)('preserves standard %s results and source data', (model) => {
     const input = shot({
       muzzleVelocity: 1800,
@@ -24,7 +120,7 @@ describe('experimental local-atmosphere velocity', () => {
     const before = structuredClone({ input, data });
     const standard = dispatchDistanceCurve(`calculated:${model}`, input, 100);
     const local = dispatchDistanceCurve(
-      `curve:velocity-${model}-local`,
+      `calculated:${model}`,
       input,
       100,
       distanceCurveRegistry,
@@ -37,10 +133,10 @@ describe('experimental local-atmosphere velocity', () => {
     data.series[0]!.airDensity = 0.95;
     expect(
       dispatchDistanceCurve(`calculated:${model}`, input, 100, distanceCurveRegistry, data),
-    ).toEqual(standard);
-    // Distance metadata has no established unit/sign convention yet; neither variant applies it.
+    ).not.toEqual(standard);
+    // VelociRadar uses physical muzzle/radar alignment; even unexpected raw offsets cannot shift curves.
     const baseline = dispatchDistanceCurve(
-      `curve:velocity-${model}-local`,
+      `calculated:${model}`,
       input,
       100,
       distanceCurveRegistry,
@@ -48,13 +144,7 @@ describe('experimental local-atmosphere velocity', () => {
     );
     data.series[0]!.raw.distanceToChronograph = 17;
     expect(
-      dispatchDistanceCurve(
-        `curve:velocity-${model}-local`,
-        input,
-        100,
-        distanceCurveRegistry,
-        data,
-      ),
+      dispatchDistanceCurve(`calculated:${model}`, input, 100, distanceCurveRegistry, data),
     ).toEqual(baseline);
   });
 
@@ -72,7 +162,7 @@ describe('experimental local-atmosphere velocity', () => {
         series: [series({ airDensity: atmosphere.density, soundSpeed: atmosphere.soundSpeed })],
       };
       const result = dispatchDistanceCurve(
-        `curve:velocity-${model}-local`,
+        `calculated:${model}`,
         input,
         100 / 0.3048,
         distanceCurveRegistry,
@@ -123,27 +213,28 @@ describe('experimental local-atmosphere velocity', () => {
     },
   );
 
-  it('rejects missing, invalid or unrelated atmosphere without silently using standard conditions', () => {
+  it('falls back to the complete standard pair for missing, invalid or unrelated atmosphere', () => {
     const input = shot({
       muzzleVelocity: 1000,
       ballisticCoefficientG1: 0.3,
       ballisticCoefficientG7: 0.2,
     });
-    for (const id of ['curve:velocity-g1-local', 'curve:velocity-g7-local']) {
-      expect(dispatchDistanceCurve(id, input, 100).issue).toBe('unavailable');
+    for (const id of ['calculated:g1', 'calculated:g7']) {
+      const standard = dispatchDistanceCurve(id, input, 100);
+      expect(standard.issue).toBeUndefined();
       for (const field of ['airDensity', 'soundSpeed'] as const) {
         for (const value of [undefined, null, 0, -1, NaN, Infinity]) {
           const data = { series: [series({ airDensity: 1.1, soundSpeed: 345, [field]: value })] };
-          expect(dispatchDistanceCurve(id, input, 100, distanceCurveRegistry, data).issue).toBe(
-            'unavailable',
+          expect(dispatchDistanceCurve(id, input, 100, distanceCurveRegistry, data)).toEqual(
+            standard,
           );
         }
       }
       const unrelated = {
         series: [series({ sourceId: 'another-source', airDensity: 1.1, soundSpeed: 345 })],
       };
-      expect(dispatchDistanceCurve(id, input, 100, distanceCurveRegistry, unrelated).issue).toBe(
-        'unavailable',
+      expect(dispatchDistanceCurve(id, input, 100, distanceCurveRegistry, unrelated)).toEqual(
+        standard,
       );
     }
     expect(distanceQuantities([input], 'metric').map((choice) => choice.id)).not.toContain(
@@ -168,7 +259,7 @@ describe('experimental local-atmosphere velocity', () => {
         ...defaultAnalysis().dual,
         axis: 'distance' as const,
         quantity: 'velocity',
-        secondary: `curve:velocity-${model}-local`,
+        secondary: `calculated:${model}`,
         forecastDistance: 100,
       };
       const imperial = buildAnalysisTraces([input], [parent], 'dual', settings, 'imperial');
@@ -183,13 +274,13 @@ describe('experimental local-atmosphere velocity', () => {
         10,
       );
       const tooltip = formatPointTooltip(metric[1]!.data[0]!);
-      expect(tooltip).toContain('local atmosphere (experimental)');
+      expect(tooltip).toContain('local atmosphere');
       expect(tooltip).toContain(`BC ${model === 'g1' ? '0.3' : '0.2'}`);
       expect(tooltip).not.toContain('standard atmosphere');
     },
   );
 
-  it('compares each string using its own weather and omits shots without local inputs', () => {
+  it('compares each string using its own weather with standard fallback for missing inputs', () => {
     const parents = [
       series({ airDensity: 1.1, soundSpeed: 345 }),
       series({ id: 'dense', airDensity: 1.3, soundSpeed: 320 }),
@@ -206,19 +297,18 @@ describe('experimental local-atmosphere velocity', () => {
     const settings = {
       ...defaultAnalysis().compare,
       axis: 'distance' as const,
-      quantity: 'curve:velocity-g1-local',
+      quantity: 'calculated:g1',
       forecastDistance: 100,
     };
     const traces = buildAnalysisTraces(rows, parents, 'compare', settings, 'imperial');
     const byId = new Map(traces.map((trace) => [trace.id, trace]));
-    expect(byId.get('missing')!.data).toEqual([]);
+    expect(byId.get('missing')!.data).toHaveLength(201);
+    expect(formatPointTooltip(byId.get('missing')!.data[0]!)).toContain('standard fallback');
     expect(byId.get('series')!.data.at(-1)!.value[1]).toBeGreaterThan(
       byId.get('dense')!.data.at(-1)!.value[1]!,
     );
     for (const id of ['series', 'dense']) {
-      expect(formatPointTooltip(byId.get(id)!.data[0]!)).toContain(
-        'local atmosphere (experimental)',
-      );
+      expect(formatPointTooltip(byId.get(id)!.data[0]!)).toContain('local atmosphere');
       expect(byId.get(id)!.data[0]!.contributors).toBe(1);
     }
   });
