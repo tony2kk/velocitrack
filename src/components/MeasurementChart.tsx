@@ -291,7 +291,13 @@ export default function MeasurementChart({
           splitLine: { show: index === 0, lineStyle: { color: dark ? '#34443e' : '#edf1ef' } },
           axisLabel: {
             hideOverlap: true,
-            formatter: (value: number) => formatValue(value, quantity === 'velocity' ? 2 : 6),
+            showMaxLabel: false,
+            // Exact viewport edges are not useful ticks. Keep a zero baseline, including on
+            // inverted drop axes; the formatter also handles new edges during live zoom.
+            formatter: (value: number, tickIndex: number) =>
+              tickIndex === 0 && value !== 0
+                ? ''
+                : formatValue(value, quantity === 'velocity' ? 2 : 6),
           },
         })),
         dataZoom: [

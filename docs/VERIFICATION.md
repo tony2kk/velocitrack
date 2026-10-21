@@ -260,3 +260,17 @@ Full verification passed: TypeScript, ESLint, Prettier, **119 behavioral tests a
 - No new live account import or interactive browser check was performed. Source
   sensor accuracy and the provider's original sea-level pressure reduction remain
   unverified. Existing G1/G7 calculations are unchanged. No Pages deployment.
+
+## Vertical axis labels — 2026-10-21
+
+- Version `0.14.1` hides exact vertical viewport endpoints, preserving ordinary
+  scale ticks and the zero baseline on an inverted drop axis.
+- Full verification passed: types, lint, formatting, **277 tests across 39 files**,
+  production/PWA build and the public-content guard. Tests ran outside the sandbox
+  because the public-content cases need temporary Git repositories.
+- A synthetic check extracted the component's actual label configuration and
+  rendered it with ECharts SVG. Both axes hid fractional endpoints, retained
+  regular labels and drop zero, and continued hiding new boundaries after a live
+  vertical `dataZoom` action. No owner data or cloud account was accessed.
+- Numerical ranges, point detail precision, local data and backups are unchanged.
+  No interactive browser check or Pages deployment was performed.

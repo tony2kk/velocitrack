@@ -138,3 +138,8 @@ every upsert without changing raw metadata or local annotations. No ISA fallback
 Display, scalar analysis and readonly custom context expose both. Older records
 need refresh/reimport; ZIP restore preserves values and validates optional positive
 finite numbers. No schema migration or changes to G1/G7 numerical models are included.
+
+Version 0.14.1 suppresses vertical viewport-boundary labels while retaining regular
+ticks and the zero baseline. The minimum-label formatter uses the current tick index
+so live vertical zoom also hides arbitrary new boundaries; the maximum label is
+disabled through ECharts. Numerical ranges, point details and backups are unchanged.
