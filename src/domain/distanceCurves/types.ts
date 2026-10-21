@@ -55,6 +55,8 @@ export interface CustomDistanceCurve {
   readonly usesForecast?: boolean;
   /** Optional legacy model identity for the existing G1/G7 tooltip and coefficient display. */
   readonly model?: DragModel;
+  /** Display provenance only; calculation callbacks must explicitly select their atmosphere. */
+  readonly atmosphere?: 'standard' | 'local';
   /** Cheap input check; this must not perform the full calculation. */
   readonly available: (input: DistanceCurveContext) => boolean;
   /** Return ascending distinct distances, <=5,000 points, finite Y or null; zero/negative Y are valid. */

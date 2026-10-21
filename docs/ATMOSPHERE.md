@@ -100,8 +100,44 @@ relaxation or frequency-dependent correction is applied. Sound propagation itsel
 is a small pressure perturbation; `Z = 1` does not mean an incompressible medium.
 
 Wind, spin drift, Coriolis effects, projectile configuration and other motion
-variables are not inputs to these ambient properties. Existing G1/G7 velocity and
-drop curves retain their standard-atmosphere constants in this release.
+variables are not inputs to these ambient properties. The original G1/G7 velocity
+and drop curves retain their standard-atmosphere constants.
+
+## Experimental local velocity — 0.15.0
+
+Two additional custom catalog entries, `curve:velocity-g1-local` and
+`curve:velocity-g7-local`, read the matching string's saved density and sound speed.
+Each has its own definition/callback module. Both values must be positive finite
+numbers; missing context or either missing estimate makes the local variant
+unavailable. No raw-weather recomputation or standard fallback occurs during plotting.
+
+The existing drag integrator accepts an explicit `FlightAtmosphere`. Standard
+callers keep the same default constants and numerical path. Local density replaces
+the drag multiplier's density; local sound speed sets `Mach = v / soundSpeed` for
+the same G1/G7 reference table and input-domain check. Both properties are held
+constant along the curve. The drag/density relation and acoustic interpretation
+follow the [NASA drag equation](https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-equation/)
+and [sound-speed derivation](https://www.grc.nasa.gov/www/k-12/BGP/snddrv.html),
+reviewed 2026-10-21. The existing equation and reference-table provenance are in
+[velocity research](VELOCITY_RESEARCH.md).
+
+The muzzle velocity, matching source BC, distance coordinates, forecast limits,
+RK4 bounds and output units remain unchanged. No sample anchoring, BC fitting,
+wind, spin drift, Coriolis or radar/muzzle offset correction is introduced.
+G1/G7 drop retains standard conditions. The new variants are explicitly
+experimental: the provider's BC derivation and atmospheric normalization are not
+fully documented, so using local inputs does not establish better field agreement.
+
+Simple/Dual/Compare share the normal velocity axis, unit conversion and viewport
+memory. Comparisons use each string's own atmosphere; unavailable shots are omitted
+through the existing availability and contributor pipeline. Curve metadata labels
+both individual and mean tooltips as local/experimental. Generic chart hover help
+is an accessible description rather than a competing native browser tooltip.
+
+On 2026-10-21 the owner confirmed `distanceToChronograph` means axial muzzle
+displacement relative to the radar. Its units, sign convention and any prior
+provider correction of exported distances remain unresolved. No distance correction
+is applied before the owner's planned 2026-10-25 measurements.
 
 ## Display, custom functions and persistence
 

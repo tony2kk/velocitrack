@@ -274,3 +274,26 @@ Full verification passed: TypeScript, ESLint, Prettier, **119 behavioral tests a
   vertical `dataZoom` action. No owner data or cloud account was accessed.
 - Numerical ranges, point detail precision, local data and backups are unchanged.
   No interactive browser check or Pages deployment was performed.
+
+## Experimental local-atmosphere velocity — 2026-10-21
+
+- Version `0.15.0` passed full verification: types, lint, formatting, **289 tests
+  across 40 files**, production/PWA build and the public-content guard.
+- Synthetic numerical checks cover exact standard/default parity for G1/G7,
+  independent analytic low-Mach integration under local conditions, density and
+  sound-speed effects, local Mach-domain validation, positive decreasing bounded
+  output, missing/invalid/cross-source context, unchanged raw inputs and no offset.
+- Chart checks cover shared velocity axes, one-time unit conversion, matching BCs,
+  standard/local tooltip provenance, per-string comparison conditions and omitted
+  unavailable shots. UI checks select both new choices, persist a local selection
+  and explain missing weather without replacing the saved preference.
+- ZIP recovery restores both local curve IDs, the forecast horizon and imported
+  atmosphere estimates, and reproduces both predictions from restored records.
+- A production preview on isolated port 4182 imported an invented file, offered
+  both local choices, rendered standard/local G1 together and retained the chart
+  range until Reset. Point details identified the local experimental model; the
+  chart element had no competing native title. No browser warnings/errors were
+  captured. A screenshot remains ignored in `.local/`.
+- No owner records, credentials or cloud account were accessed. Field agreement,
+  provider BC normalization and radar/muzzle offset semantics remain unverified.
+  The owner's planned measurement date is 2026-10-25. No Pages deployment.

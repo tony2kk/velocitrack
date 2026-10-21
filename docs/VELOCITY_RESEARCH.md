@@ -22,7 +22,16 @@ d(log v)/dx = -rho * pi * Cd(v/a) / (8 * BC_SI)
 
 Cd is linearly interpolated by Mach. RK4 integrates logarithmic speed to avoid negative velocities, with internal steps at most 1 m and at most 0.02 estimated log-speed change. Output has at most 201 positions. Inputs outside positive muzzle velocity/Mach 0–5 or BC 0.01–5 are unavailable, never clamped into valid data. The integration only clamps floating-point roundoff at the valid Mach-5 endpoint. Results start at muzzle zero and use canonical ft and ft/s at the domain boundary; profile units apply only when rendering.
 
-Conditions are deliberately explicit: 15 °C, 1013.25 hPa, dry still air, density 1.225 kg/m³ and sound speed 340.294 m/s. A constant BC and straight path omit gravity, wind and atmosphere changes. Caldwell pressure/other atmosphere-unit semantics and measured-distance origin remain unvalidated; they are not silently used. Predicted zero is the muzzle. The configurable horizon is at most 1 km, a bounded display limit rather than a claim of real-world validity at that distance.
+Standard variants use explicit conditions: 15 °C, 1013.25 hPa, dry still air,
+density 1.225 kg/m³ and sound speed 340.294 m/s. A constant BC and straight path
+omit gravity, wind and atmosphere changes along the path. Version 0.15.0 adds
+separate experimental local variants using the string's imported density and sound
+speed; see [atmosphere contract](ATMOSPHERE.md). They preserve muzzle zero and the
+original source BC. The configurable horizon is at most 1 km, a bounded display
+limit rather than a claim of real-world validity at that distance. The owner
+confirmed `distanceToChronograph` as axial muzzle displacement relative to the radar;
+its unit/sign and any existing correction to exported distances remain unverified,
+so no offset is applied.
 
 Every model uses each shot's own matching source BC and muzzle velocity. Simple/Dual can compare recorded and calculated curves on one velocity scale. Compare averages eligible predictions with contributor identities. Work is limited to the first 100 eligible shots per calculated quantity in current table order, including means; this is disclosed. Predicted curves/tooltips are identified and dashed, retain hover linkage, and never enter recorded summary statistics or overwrite samples. Range/quantity settings persist and round-trip through backups.
 

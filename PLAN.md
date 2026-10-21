@@ -202,3 +202,15 @@ Release 0.13.2 is presentation only; calculated values and backup contracts stay
 - [x] Preserve legacy records/archives and validate backup round trips.
 
 Release 0.14.0 implements decision 017. Existing G1/G7 calculations remain unchanged.
+
+## Experimental local velocity — 2026-10-21
+
+- [x] Add separate local-atmosphere G1/G7 velocity catalog entries.
+- [x] Require both string estimates and label local curves as experimental.
+- [x] Preserve standard results, source BCs, shared axes and backup compatibility.
+- [x] Remove the competing general chart tooltip while retaining point details.
+- [x] Record the confirmed meaning of `distanceToChronograph`.
+- [ ] Compare local variants with the owner's field measurements.
+- [ ] Validate offset units/sign and provider distance correction after the planned 2026-10-25 measurements.
+
+Release 0.15.0 implements decision 018. Pages deployment remains separate.

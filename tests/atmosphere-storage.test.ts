@@ -7,6 +7,10 @@ import { parseVelociRadarExport } from '../src/sources/velociradar';
 import { syntheticExport } from './fixtures/synthetic';
 import { defaultAnalysis } from '../src/domain/model';
 import { createDistanceCurveContext } from '../src/domain/distanceCurves/context';
+import {
+  dispatchDistanceCurve,
+  distanceCurveRegistry,
+} from '../src/domain/distanceCurves/registry';
 
 let database: WorkspaceDatabase;
 beforeEach(() => {
@@ -27,6 +31,50 @@ function weatherBundle() {
 }
 
 describe('derived string atmosphere persistence', () => {
+  it('restores local-curve selections and reproduces predictions from backed-up weather estimates', async () => {
+    const source = createSource('Synthetic local prediction', true);
+    await database.sources.add(source);
+    await importBundle(source.id, weatherBundle(), database);
+    await saveProfile(
+      {
+        analysis: {
+          ...defaultAnalysis(),
+          mode: 'dual',
+          dual: {
+            axis: 'distance',
+            quantity: 'curve:velocity-g1-local',
+            secondary: 'curve:velocity-g7-local',
+            forecastDistance: 100,
+          },
+        },
+      },
+      database,
+    );
+    const before = await loadWorkspace(database);
+    const input = before.shots.find((row) => row.remoteId === 'shot-a')!;
+    const ids = ['curve:velocity-g1-local', 'curve:velocity-g7-local'];
+    const expected = ids.map((id) =>
+      dispatchDistanceCurve(id, input, 100, distanceCurveRegistry, before),
+    );
+    expect(expected.every((result) => result.points.length === 201 && !result.issue)).toBe(true);
+    const archive = await createBackup(database);
+    await database.series.clear();
+    await restoreBackup(await prepareBackup(archive), database);
+    const after = await loadWorkspace(database);
+    expect(after.profile.analysis).toEqual(before.profile.analysis);
+    expect(after.series).toEqual(before.series);
+    expect(
+      ids.map((id) =>
+        dispatchDistanceCurve(
+          id,
+          after.shots.find((row) => row.id === input.id)!,
+          100,
+          distanceCurveRegistry,
+          after,
+        ),
+      ),
+    ).toEqual(expected);
+  });
   it.each(['velociradar-export', 'caldwell'] as const)(
     'computes and replaces both attributes atomically for %s',
     async (kind) => {

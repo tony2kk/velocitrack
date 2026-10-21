@@ -143,3 +143,17 @@ Version 0.14.1 suppresses vertical viewport-boundary labels while retaining regu
 ticks and the zero baseline. The minimum-label formatter uses the current tick index
 so live vertical zoom also hides arbitrary new boundaries; the maximum label is
 disabled through ECharts. Numerical ranges, point details and backups are unchanged.
+
+## Experimental local velocity — 0.15.0
+
+Read decision 018 and ATMOSPHERE.md. Separate `curve:velocity-g1-local` and
+`curve:velocity-g7-local` catalog modules use the matching string's saved density
+and sound speed. Both are required; older strings need refresh/reimport. The shared
+integrator takes optional fixed conditions and defaults to the original standard
+values, including for drop. Local sound speed also controls the Mach input domain.
+Standard/local metadata flows into individual and mean tooltips; local variants
+are experimental, without sample fitting or distance-offset correction. The owner
+confirmed the meaning of `distanceToChronograph`, with unit/sign/provider correction
+still awaiting field verification. Chart hover help moved from `title` to an
+accessible description to avoid covering point details. Selections and inputs use
+the existing backup contract. No Pages deployment is part of this batch.

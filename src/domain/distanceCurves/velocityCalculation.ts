@@ -8,6 +8,16 @@ export type DragModel = 'g1' | 'g7';
 export const STANDARD_DENSITY = 1.225;
 /** Existing reference sound speed in m/s; retained unchanged by the catalog refactor. */
 export const STANDARD_SOUND_SPEED = 340.294;
+/** Fixed still-air conditions for one curve; density in kg/m³ and sound speed in m/s. */
+export interface FlightAtmosphere {
+  readonly density: number;
+  readonly soundSpeed: number;
+}
+/** Preserve the original reference values when callers do not select local conditions. */
+export const STANDARD_ATMOSPHERE: FlightAtmosphere = Object.freeze({
+  density: STANDARD_DENSITY,
+  soundSpeed: STANDARD_SOUND_SPEED,
+});
 export const DEFAULT_FORECAST_DISTANCE = 1000; // ft; display conversion never changes stored preference.
 export const MAX_FORECAST_DISTANCE = 1000 / 0.3048; // 1 km, a bounded display horizon, not a validated accuracy range.
 /** Only these readonly scalar properties are consumed; the full callback context stays detached. */
@@ -49,17 +59,22 @@ export function dragCoefficient(model: DragModel, mach: number): number | null {
 export function predictionInputs(
   shot: VelocityInput,
   model: DragModel,
+  atmosphere: FlightAtmosphere = STANDARD_ATMOSPHERE,
 ): { velocity: number; bc: number } | null {
   // Existing conversion and accepted-input bounds; moving declarations does not change these limits.
   const feetToMeters = 0.3048; // Stored input speed to the existing internal unit.
   const maximumMach = 5; // Existing reference-domain input ceiling.
   const minimumCoefficient = 0.01; // Existing accepted coefficient lower bound.
   const maximumCoefficient = 5; // Existing accepted coefficient upper bound.
-  const soundSpeed = STANDARD_SOUND_SPEED; // m/s.
+  const soundSpeed = atmosphere.soundSpeed; // m/s; the Mach ceiling follows the selected conditions.
   const velocity = (shot.muzzleVelocity ?? 0) * feetToMeters; // m/s.
   const bc = model === 'g1' ? shot.ballisticCoefficientG1 : shot.ballisticCoefficientG7;
 
-  return Number.isFinite(velocity) &&
+  return Number.isFinite(atmosphere.density) &&
+    atmosphere.density > 0 &&
+    Number.isFinite(soundSpeed) &&
+    soundSpeed > 0 &&
+    Number.isFinite(velocity) &&
     velocity > 0 &&
     velocity <= maximumMach * soundSpeed &&
     typeof bc === 'number' &&
@@ -71,24 +86,25 @@ export function predictionInputs(
 }
 
 /**
- * Predict still-air speed and optionally first-order gravitational drop in standard atmosphere.
+ * Predict still-air speed and optionally first-order gravitational drop in fixed ambient conditions.
  * Integrate log(v) with RK4: d(log v)/dx = -rho*pi*Cd(v/a)/(8*BC_SI).
  * Small-deflection drop uses d(slope)/dx = g/v² and d(drop)/dx = slope, initially both zero.
  * Vertical drag cancels in the slope derivative; drop never feeds back into the original speed model.
  * Internal steps are <=1 m and <=0.02 estimated log-speed change; output has at most 201 points.
- * This constant-BC approximation does not reconstruct local weather or large-deflection flight.
+ * Supplied atmosphere is constant along the path; this approximation omits wind and large deflections.
  */
 export function calculatedFlight(
   shot: VelocityInput,
   model: DragModel,
   distanceFeet = DEFAULT_FORECAST_DISTANCE,
   includeDrop = false,
+  atmosphere: FlightAtmosphere = STANDARD_ATMOSPHERE,
 ): FlightPoint[] {
   // Existing constants, conversion factors and work limits; numerical values are unchanged.
   const feetToMeters = 0.3048; // Stored distance/speed to the existing internal units.
   const coefficientToSI = 0.45359237 / 0.0254 ** 2; // Conventional lb/in² to kg/m².
-  const density = STANDARD_DENSITY; // kg/m³.
-  const soundSpeed = STANDARD_SOUND_SPEED; // m/s.
+  const density = atmosphere.density; // kg/m³; scales drag without modifying the source BC.
+  const soundSpeed = atmosphere.soundSpeed; // m/s; sets Mach for the matching reference Cd table.
   const maximumDistance = MAX_FORECAST_DISTANCE; // ft.
   const outputIntervals = 200; // Existing evenly spaced output interval count.
   const maximumSteps = 10000; // Existing bound on internal work.
@@ -97,7 +113,7 @@ export function calculatedFlight(
   const minimumOutputVelocity = 1e-6; // ft/s; existing termination threshold.
   const gravity = 9.80665; // m/s², conventional standard gravity (NIST); no local adjustment.
   const metersToMillimeters = 1000; // Canonical drop output; display converts to cm/in.
-  const input = predictionInputs(shot, model);
+  const input = predictionInputs(shot, model, atmosphere);
   const result: FlightPoint[] = []; // ft, ft/s and mm.
 
   // Working variables are assigned only after validation, or at the start of each existing step.
@@ -174,8 +190,10 @@ export function calculatedVelocity(
   shot: VelocityInput,
   model: DragModel,
   distanceFeet = DEFAULT_FORECAST_DISTANCE,
+  atmosphere: FlightAtmosphere = STANDARD_ATMOSPHERE,
 ): { distance: number; velocity: number }[] {
-  const points = calculatedFlight(shot, model, distanceFeet); // Drop work is skipped for speed-only curves.
+  const includeDrop = false; // Skip gravitational calculations for speed-only curves.
+  const points = calculatedFlight(shot, model, distanceFeet, includeDrop, atmosphere);
 
   return points.map(({ distance, velocity }) => ({ distance, velocity }));
 }

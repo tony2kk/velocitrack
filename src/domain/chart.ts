@@ -60,6 +60,8 @@ export interface ChartPoint {
   quantityTitle?: string;
   quantityNote?: string;
   model?: DragModel;
+  /** Keep per-shot and mean tooltips consistent with the curve's stated conditions. */
+  atmosphere?: 'standard' | 'local';
   coefficient?: number;
   derived?: boolean;
 }
@@ -149,7 +151,7 @@ export function formatPointTooltip(point: ChartPoint): string {
       : []),
     ...(point.model
       ? [
-          `${point.model.toUpperCase()} model · standard atmosphere${point.coefficient ? ` · BC ${formatValue(point.coefficient)}` : ''}`,
+          `${point.model.toUpperCase()} model · ${point.atmosphere === 'local' ? 'local atmosphere (experimental)' : 'standard atmosphere'}${point.coefficient ? ` · BC ${formatValue(point.coefficient)}` : ''}`,
         ]
       : []),
     point.quantity && point.quantity !== 'velocity'
@@ -230,6 +232,7 @@ export function buildAnalysisTraces(
           sampleIndex: curve!.derived ? undefined : sample.sampleIndex,
           distance: true,
           model,
+          atmosphere: curve!.atmosphere,
           derived: curve!.derived,
           coefficient: model
             ? ((model === 'g1' ? shot.ballisticCoefficientG1 : shot.ballisticCoefficientG7) ??
@@ -258,6 +261,7 @@ export function buildAnalysisTraces(
             ).map((point) => ({
               ...point,
               model,
+              atmosphere: curve.atmosphere,
               derived: curve.derived,
               quantity,
               quantityTitle: curve.label(units),

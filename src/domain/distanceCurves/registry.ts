@@ -25,6 +25,7 @@ export interface DistanceCurve {
   readonly derived: boolean;
   readonly usesForecast: boolean;
   readonly model?: DragModel;
+  readonly atmosphere?: CustomDistanceCurve['atmosphere'];
   readonly available: (shot: Shot, data?: DistanceCurveData) => boolean;
   readonly calculate: (
     shot: Shot,

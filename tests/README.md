@@ -53,3 +53,10 @@ Series-context coverage includes the additive v2 migration, custom field unit/va
   rollback, annotations, legacy records, validated backup round trips and readonly context.
 - `atmosphere-ui.test.tsx`: density/sound-speed table and scalar charts, profile units,
   pressure/elevation units and unavailable/present String info values.
+
+- `local-velocity.test.ts`: standard parity, independent analytic local-condition
+  integration, density/sound-speed effects and Mach bounds, unavailable or unrelated
+  inputs, unchanged source data/distances, shared axes, display units and per-string
+  tooltip/contributor provenance. Analysis controls verify local selection and
+  missing-weather explanations; atmosphere storage checks round-trip both local
+  curve IDs and reproduce their values after ZIP recovery.

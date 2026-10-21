@@ -459,7 +459,7 @@ export default function MeasurementChart({
         ref={element}
         role="img"
         aria-label="Recorded measurement chart. Shot records below contain individual values."
-        title="Hover a point for details. Drag the bottom slider to change the horizontal range; use the right slider for vertical zoom."
+        aria-description="Hover a point for details. Drag the bottom slider to change the horizontal range; use the right slider for vertical zoom."
       />
       <button
         type="button"
