@@ -8,10 +8,10 @@ import type {
   Shot,
   Tag,
 } from '../domain/model';
-import { fieldDisplay, fieldUnit } from '../domain/customFields';
+import { fieldText, fieldUnit } from '../domain/customFields';
 import { availableQuantities, rawPath } from '../domain/analysis';
 import { projectileName } from '../domain/projectiles';
-import { formatValue } from '../domain/units';
+import { formatQuantity } from '../domain/units';
 import { TagLabels } from './CustomizationManager';
 import { providerTimestamp } from '../domain/providerData';
 
@@ -110,14 +110,14 @@ export function StringInfo({
                 : ''}
             </dt>
             <dd className="preserve-lines">
-              {fieldDisplay(annotation?.values?.[field.id], field.type, profile.unitSystem) || '—'}
+              {fieldText(annotation?.values?.[field.id], field.type, profile.unitSystem) || '—'}
             </dd>
           </div>
         ))}
         {quantities.map((item) => (
           <div className="info-entry" key={item.id}>
             <dt title={item.description}>{item.label}</dt>
-            <dd>{formatValue(item.read(context))}</dd>
+            <dd>{formatQuantity(item.read(context), item.id, item.unit)}</dd>
           </div>
         ))}
         {['cityName', 'weatherDescription', 'windSpeedDirection'].map((key) => {

@@ -1,4 +1,5 @@
 import type { FieldType, UnitSystem } from './model';
+import { formatQuantity } from './units';
 
 export const FIELD_TYPES: Record<FieldType, string> = {
   'short-text': 'Short text',
@@ -45,6 +46,18 @@ export function fieldDisplay(
   if (value === undefined) return '';
   return typeof value === 'number'
     ? String(Number((value * fieldFactor(type, units)).toPrecision(12)))
+    : value;
+}
+
+/** Read-only field text follows the shared precision policy; editors retain fieldDisplay precision. */
+export function fieldText(
+  value: string | number | undefined,
+  type: FieldType,
+  units: UnitSystem,
+): string {
+  if (value === undefined) return '';
+  return typeof value === 'number'
+    ? formatQuantity(value * fieldFactor(type, units), '', fieldUnit(type, units))
     : value;
 }
 

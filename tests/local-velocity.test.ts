@@ -49,7 +49,7 @@ describe('automatic velocity atmosphere', () => {
     const expectedPressure =
       1013.25 * Math.exp((-9.80665 * 609.6) / (287.05 * (293.15 + (0.0065 * 609.6) / 2)));
     expect(descriptions).toEqual([
-      `Atmosphere: 20 °C, ${expectedPressure.toFixed(2)} hPa, humid air (50% RH) (local; estimated station pressure).`,
+      `Atmosphere: 20.0 °C, ${expectedPressure.toFixed(2)} hPa, humid air (50% RH) (local; estimated station pressure).`,
     ]);
     const settings = {
       axis: 'distance' as const,

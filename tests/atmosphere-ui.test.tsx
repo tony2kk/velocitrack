@@ -27,8 +27,8 @@ describe('string atmosphere display', () => {
       within(screen.getByRole('columnheader', { name: 'Air density (kg/m³)' })).getByText('kg/m³'),
     ).toBeTruthy();
     expect(screen.getByRole('columnheader', { name: 'Sound speed (m/s)' })).toBeTruthy();
-    expect(screen.getByRole('cell', { name: '1.2' })).toBeTruthy();
-    expect(screen.getByRole('cell', { name: '340' })).toBeTruthy();
+    expect(screen.getByRole('cell', { name: '1.200' })).toBeTruthy();
+    expect(screen.getByRole('cell', { name: '340.0' })).toBeTruthy();
   });
 
   it.each(['metric', 'imperial'] as const)(
@@ -94,7 +94,7 @@ describe('string atmosphere display', () => {
         profile={{ ...defaultProfile(), unitSystem: 'metric' }}
       />,
     );
-    expect(screen.getByText('Air density (kg/m³)').nextElementSibling?.textContent).toBe('1.2');
-    expect(screen.getByText('Sound speed (m/s)').nextElementSibling?.textContent).toBe('340');
+    expect(screen.getByText('Air density (kg/m³)').nextElementSibling?.textContent).toBe('1.200');
+    expect(screen.getByText('Sound speed (m/s)').nextElementSibling?.textContent).toBe('340.0');
   });
 });

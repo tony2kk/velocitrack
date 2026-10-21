@@ -71,13 +71,13 @@ describe('display preferences', () => {
       screen
         .getByRole('row', { name: 'Shot 1 in Synthetic series' })
         .querySelector('.preferred-reading')?.textContent,
-    ).toBe('0.123456');
+    ).toBe('0.123');
     rerender(<ShotTable {...props} shotDetail="g7" />);
     expect(
       screen
         .getByRole('row', { name: 'Shot 1 in Synthetic series' })
         .querySelector('.preferred-reading')?.textContent,
-    ).toBe('0');
+    ).toBe('0.000');
     rerender(<ShotTable {...props} shots={[shot()]} shotDetail="g7" />);
     expect(
       screen
@@ -107,11 +107,11 @@ describe('display preferences', () => {
       within(screen.getByRole('row', { name: 'Shot 1 in Synthetic series' })).getByText('304.8'),
     ).toBeTruthy();
     const stats = within(container.querySelector('.statistics') as HTMLElement);
-    expect(stats.getByText('320.04')).toBeTruthy();
-    expect(stats.getByText('21.55')).toBeTruthy();
-    expect(stats.getByText('30.48')).toBeTruthy();
+    expect(stats.getByText('320.0')).toBeTruthy();
+    expect(stats.getByText('21.6')).toBeTruthy();
+    expect(stats.getByText('30.5')).toBeTruthy();
     rerender(<AnalysisPanel {...props} unitSystem="imperial" />);
     expect(screen.getByRole('columnheader', { name: 'Muzzle velocity (ft/s)' })).toBeTruthy();
-    expect(stats.getByText('1050')).toBeTruthy();
+    expect(stats.getByText('1050.0')).toBeTruthy();
   });
 });

@@ -13,12 +13,14 @@ The suggested name is `VelociTrack_YYYY-MM-DD_String-name.pdf`, using the earlie
 Open **Profile → Report**. **Every section is enabled by default.** Save changes with **Save report preferences**.
 
 - **String details:** date and place, firearm, projectile, weather, notes, local notes, tags and custom values. Missing details are omitted. Pressure is explicitly labeled as sea-level pressure.
-- **Target:** the active photo and its report crop, or the complete photo if no crop is saved. Saved group geometry appears over the photo, with group size and offsets below it. Without an active photo, the first attached photo is used.
+- **Target:** the active photo and its report crop, or the complete photo if no crop is saved. Saved group geometry uses thick white lines with a dark outline to stay visible on light and dark areas. H (horizontal offset), V (vertical offset) and G (group size) appear in separate high-contrast labels beside the photo, connected to their dimensions. Values are also centered below it. Without an active photo, the first attached photo is used.
 - **String statistics:** included valid muzzle readings, mean, minimum, maximum, sample SD and extreme spread, recalculated per string from the current shot selection.
 - **Chart:** the displayed chart with current horizontal/vertical zoom, units, colors, legend and model descriptions. A light background is used for printing. String info and point-table views produce a no-chart note; switch to a chart view first if you want a graph.
 - **Shot records:** selected valid shots in current table sort order, with visible columns in their saved order. All selected rows are included regardless of screen pagination. Source-excluded and locally invalid shots are omitted.
 
-Details and targets use portrait A4. Charts use landscape A4, as do tables with more than five columns. More than eight columns are split into successive bands with a repeated Row number for matching records. Headings repeat on continuation pages. Long notes and multiple strings may need extra pages.
+Details and targets use portrait A4. Charts and shot records use landscape A4. Every visible column stays together, in the same order as the workspace table. Column widths and type size adapt to the selection. A shot row is never split between pages; larger selections continue with complete rows and repeated headings. If too many columns or an exceptionally long note cannot fit legibly, the report asks you to hide some columns instead of dropping content. String notes can still be included in String details.
+
+Displayed numbers follow the same [precision rules](../docs/DISPLAY_FORMAT.md) as the application: velocity has one decimal place, G1/G7 three, and target measurements two, including trailing zeroes. Calculations, stored measurements and backups retain their full precision.
 
 ## Frame a target
 

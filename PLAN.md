@@ -234,3 +234,12 @@ Release 0.16.0 implements decision 019. Field comparison remains pending. Veloci
 - [x] Behavior tests, browser-generated PDF and rendered-page layout checks on synthetic data.
 
 Release 0.17.0 implements decision 020. Build the clean preview after committing; Pages deployment remains separate.
+
+## Report readability and display precision — 2026-10-21
+
+- [x] Strong two-tone target strokes, non-overlapping H/V/G callouts and centered captions.
+- [x] All selected shot columns together on landscape pages; continuation by whole rows.
+- [x] Shared fixed precision including trailing zeroes, without rounding stored/calculated values.
+- [x] Layout/format regression tests and rendered synthetic multipage PDF inspection.
+
+Release 0.17.1 implements decision 021. No backup/schema migration or Pages deployment.

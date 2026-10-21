@@ -66,3 +66,13 @@ Series-context coverage includes the additive v2 migration, custom field unit/va
 - `reports.test.ts`: section defaults, current column order/units, curated details, safe Unicode names, recorded min/max, crop bounds and real PDF generation with embedded fonts. Set VELOCI_REPORT_SAMPLE=1 to write an ignored synthetic PDF for visual QA.
 - `report-preferences.test.tsx`: local all-on defaults and save, native picker cancellation/success, fallback download lifecycle.
 - Existing chart, target-editor and backup suites verify a frozen zoom export, crop-only movement/save and recovery of report preferences plus crop geometry.
+
+- `display-format.test.ts`: fixed decimal places/trailing zeroes, negative zero,
+  missing readings and distinct readonly/editor precision. Existing UI/chart suites
+  verify converted output while preserving original sample coordinates.
+- `report-layout.test.ts`: target callouts outside the photo without overlap,
+  all-column landscape sizing, indivisible rows and actionable oversized-note errors.
+  An optional visual check uses `VELOCI_CANVAS_MODULE` (an absolute module URL for
+  `@napi-rs/canvas`) plus a synthetic `.local/report-target.png` to generate ignored
+  `.local/readability-preview.pdf` and `.local/target-contrast-preview.png`. Render
+  every PDF page and verify unique shot markers; keep real photos out of fixtures.

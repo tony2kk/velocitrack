@@ -34,6 +34,11 @@ For a new function, copy `template.ts` to a new module, rename the exported func
 
 ## Definition contract
 
+Optional `unit(units)` metadata selects the shared [display precision](DISPLAY_FORMAT.md)
+for curve ticks and point details after `displayScale` conversion. Supply the physical
+display unit (for example `m/s` or `ft/s`), not a precision encoded into the label.
+Unknown/unspecified units use two decimals. Calculation output remains unrounded.
+
 | Property              | Meaning                                                                                                                                                                               |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `id`                  | Stable `curve:<name>` identity. Use ASCII letters, digits, `_` or `-`; maximum total length 200. Saved settings and backups contain this ID. Do not reuse it for a different meaning. |

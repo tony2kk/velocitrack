@@ -3,6 +3,7 @@ import fonts from 'pdfmake/build/vfs_fonts';
 import { db } from '../storage/database';
 import { reportDocument } from './content';
 import type { ReportInput } from './types';
+import { targetFigureLayout, drawTargetFigure } from './targetFigure';
 
 pdfMake.addVirtualFileSystem(fonts);
 // Report content is local data only. No URL embedded in a field may trigger a network request.
@@ -41,44 +42,20 @@ export async function reportPhotos(input: ReportInput): Promise<Map<string, stri
         throw new Error(
           `Reopen the report crop for "${series.name}"; the photo dimensions have changed.`,
         );
-      const sx = crop?.x ?? 0;
-      const sy = crop?.y ?? 0;
-      const width = crop?.size ?? image.naturalWidth;
-      const height = crop?.size ?? image.naturalHeight;
-      const scale = Math.min(1, 1600 / Math.max(width, height));
+      const figure = targetFigureLayout(
+        image.naturalWidth,
+        image.naturalHeight,
+        measurement,
+        input.profile.unitSystem,
+      );
+      const scale = 1600 / Math.max(figure.width, figure.height);
       const canvas = document.createElement('canvas');
-      canvas.width = Math.max(1, Math.round(width * scale));
-      canvas.height = Math.max(1, Math.round(height * scale));
+      canvas.width = Math.ceil(figure.width * scale);
+      canvas.height = Math.ceil(figure.height * scale);
       const context = canvas.getContext('2d');
       if (!context) throw new Error('Target rendering is unavailable in this browser.');
-      context.fillStyle = '#ffffff';
-      context.fillRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(image, sx, sy, width, height, 0, 0, canvas.width, canvas.height);
-      const geometry = measurement?.geometry;
-      if (geometry) {
-        context.save();
-        context.scale(scale, scale);
-        context.translate(-sx, -sy);
-        context.lineWidth = 2 / scale;
-        context.strokeStyle = '#00a891';
-        context.beginPath();
-        context.arc(geometry.center.x, geometry.center.y, geometry.radius, 0, 2 * Math.PI);
-        context.stroke();
-        if (geometry.poa) {
-          context.setLineDash([5 / scale, 4 / scale]);
-          context.strokeRect(
-            geometry.poa.x,
-            geometry.poa.y,
-            geometry.center.x - geometry.poa.x,
-            geometry.center.y - geometry.poa.y,
-          );
-          context.setLineDash([]);
-          context.beginPath();
-          context.arc(geometry.poa.x, geometry.poa.y, 5 / scale, 0, 2 * Math.PI);
-          context.stroke();
-        }
-        context.restore();
-      }
+      context.scale(scale, scale);
+      drawTargetFigure(context, image, figure);
       result.set(series.id, canvas.toDataURL('image/jpeg', 0.92));
     } finally {
       URL.revokeObjectURL(url);

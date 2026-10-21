@@ -33,8 +33,8 @@ describe('display units', () => {
     expect(trace.data).toHaveLength(2);
     expect(trace.data[0]!.value).toEqual([0, 304.8]);
     expect(trace.data[1]!.value[0]).toBeCloseTo(30.48);
-    expect(formatPointTooltip(trace.data[1]!)).toContain('Distance: 30.48 m');
-    expect(formatPointTooltip(trace.data[1]!)).toContain('Velocity: 274.32 m/s');
+    expect(formatPointTooltip(trace.data[1]!)).toContain('Distance: 30.5 m');
+    expect(formatPointTooltip(trace.data[1]!)).toContain('Velocity: 274.3 m/s');
     expect(buildChartTraces([record], [series()], 'shot', 'metric')[0]!.data[0]!.value).toEqual([
       1, 304.8,
     ]);

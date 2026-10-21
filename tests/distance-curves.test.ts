@@ -146,7 +146,11 @@ describe('generic distance traces', () => {
       [6.096, -3.048],
     ]);
     expect(formatPointTooltip(traces[1]!.data[0]!)).toContain(
-      'Measured change from first sample (m/s): 0',
+      'Measured change from first sample (m/s): 0.0',
+    );
+    expect(traces[1]!.data[1]!.quantityUnit).toBe('m/s');
+    expect(formatPointTooltip(traces[1]!.data[1]!)).toContain(
+      'Measured change from first sample (m/s): -1.5',
     );
     expect(formatPointTooltip(traces[1]!.data[0]!)).not.toContain('G1 model');
     expect(findShotTargets(traces, input.id)).toHaveLength(2);

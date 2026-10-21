@@ -38,6 +38,7 @@ function defineG1Curve(): CustomDistanceCurve {
     conditions: velocityConditions,
     unavailableReason,
     axisKey,
+    unit: (units) => (units === 'metric' ? 'm/s' : 'ft/s'),
     model,
     displayScale: (units) => ({ factor: units === 'metric' ? metricFactor : 1, offset: 0 }),
     usesForecast: true,

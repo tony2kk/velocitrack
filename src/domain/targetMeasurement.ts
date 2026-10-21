@@ -1,5 +1,5 @@
 import type { UnitSystem } from './model';
-import { unitLabels } from './units';
+import { unitLabels, formatQuantity } from './units';
 import { validReportCrop, type ReportCrop } from './reportCrop';
 
 /** Target lengths are stored in mm; null means absent and signed offsets preserve zero. */
@@ -67,6 +67,15 @@ export function targetUnit(units: UnitSystem): { label: string; mm: number } {
 /** Round display text only; untouched inputs never write this rounded representation back. */
 export function targetText(value: number | null, units: UnitSystem): string {
   return value === null ? '' : String(Number((value / targetUnit(units).mm).toFixed(4)));
+}
+
+/** Read-only target lengths use two decimal places; editable inputs keep their separate precision. */
+export function targetDisplay(value: number | null, units: UnitSystem): string {
+  return formatQuantity(
+    value === null ? null : value / targetUnit(units).mm,
+    'target',
+    targetUnit(units).label,
+  );
 }
 
 /** Validate a user-entered length and convert it once to canonical mm. */

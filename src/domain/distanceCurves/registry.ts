@@ -22,6 +22,7 @@ export const MAX_DERIVED_SHOTS = 100;
 export interface DistanceCurve {
   readonly id: string;
   readonly label: (units: UnitSystem) => string;
+  readonly unit?: (units: UnitSystem) => string;
   readonly axisKey: string;
   readonly displayScale: (units: UnitSystem) => DisplayScale;
   readonly description: string;
@@ -62,6 +63,7 @@ function builtInCurves(): DistanceCurve[] {
     {
       id: 'velocity',
       label: (units) => `Velocity (${units === 'metric' ? 'm/s' : 'ft/s'})`,
+      unit: (units) => (units === 'metric' ? 'm/s' : 'ft/s'),
       axisKey: 'velocity',
       displayScale: velocityScale,
       description: 'Recorded distance/velocity samples.',

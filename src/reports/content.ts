@@ -1,15 +1,21 @@
-import type { Content, TDocumentDefinitions, TableCell } from 'pdfmake/interfaces';
+import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { defaultReportSettings, type Series, type Shot } from '../domain/model';
 import { availableQuantities } from '../domain/analysis';
-import { fieldDisplay, fieldUnit } from '../domain/customFields';
+import { fieldText, fieldUnit } from '../domain/customFields';
 import { inspectPoints, summarizeShots } from '../domain/measurements';
 import { providerTimestamp, rawPath } from '../domain/providerData';
 import { projectileName } from '../domain/projectiles';
 import { tableColumns, visibleColumns } from '../domain/table';
-import { TARGET_FIELDS, TARGET_LABELS, targetText, targetUnit } from '../domain/targetMeasurement';
-import { displayValue, formatValue, unitLabels } from '../domain/units';
+import {
+  TARGET_FIELDS,
+  TARGET_LABELS,
+  targetDisplay,
+  targetUnit,
+} from '../domain/targetMeasurement';
+import { displayValue, formatQuantity, unitLabels } from '../domain/units';
 import type { ReportInput } from './types';
 import { safeFilename } from './filename';
+import { recordTable } from './recordTable';
 
 /** Stable, filesystem-safe suggestion; the save dialog may replace it without changing the report. */
 export function reportFilename(input: Pick<ReportInput, 'series' | 'createdAt'>): string {
@@ -68,7 +74,7 @@ export function reportDetails(input: ReportInput, series: Series): [string, stri
     if (q && value !== null && value !== undefined)
       fields.push([
         id.endsWith('pressure') ? 'Pressure (sea level)' : q.label,
-        `${formatValue(value, 2)}${id.endsWith('pressure') ? ' hPa' : ''}`,
+        `${formatQuantity(value, q.id, q.unit)}${id.endsWith('pressure') ? ' hPa' : ''}`,
       ]);
   }
   fields.push(['Notes', text(series.raw.notes)], ['Local notes', annotation?.notes ?? '']);
@@ -80,7 +86,7 @@ export function reportDetails(input: ReportInput, series: Series): [string, stri
       .join(', '),
   ]);
   for (const field of input.fields) {
-    const value = fieldDisplay(annotation?.values?.[field.id], field.type, units);
+    const value = fieldText(annotation?.values?.[field.id], field.type, units);
     if (value)
       fields.push([
         field.name + (fieldUnit(field.type, units) ? ` (${fieldUnit(field.type, units)})` : ''),
@@ -111,7 +117,7 @@ export function reportRecords(input: ReportInput) {
     const parent = input.series.find((item) => item.id === shot.seriesId);
     const annotation = input.annotations.find((item) => item.entityId === shot.seriesId);
     const field = input.fields.find((item) => `field:${item.id}` === id);
-    if (field) return fieldDisplay(annotation?.values?.[field.id], field.type, units) || '—';
+    if (field) return fieldText(annotation?.values?.[field.id], field.type, units) || '—';
     switch (id) {
       case 'series':
         return parent?.name ?? '—';
@@ -143,7 +149,11 @@ export function reportRecords(input: ReportInput) {
             .join(', ') || '—'
         );
       default:
-        return formatValue(quantities.find((q) => q.id === id)?.read(shot) ?? null);
+        return formatQuantity(
+          quantities.find((q) => q.id === id)?.read(shot) ?? null,
+          id,
+          quantities.find((q) => q.id === id)?.unit,
+        );
     }
   }
   return {
@@ -172,9 +182,9 @@ function statistics(shots: Shot[], input: ReportInput): Content {
           stack: [
             { text: label, style: 'small' },
             {
-              text: formatValue(
+              text: formatQuantity(
                 label === 'Included shots' ? value : displayValue(value, 'velocity', units),
-                2,
+                label === 'Included shots' ? 'count' : 'velocity',
               ),
               fontSize: 17,
               bold: true,
@@ -252,7 +262,7 @@ export function reportDocument(
         stack: [
           { text: 'Target', style: 'section' },
           image
-            ? { image, fit: [260, 260], alignment: 'center', margin: [0, 6, 0, 8] }
+            ? { image, fit: [390, 260], alignment: 'center', margin: [0, 6, 0, 8] }
             : { text: 'No target photo attached.', style: 'small', margin: [0, 6, 0, 8] },
         ],
       });
@@ -263,10 +273,11 @@ export function reportDocument(
           text: TARGET_FIELDS.filter((key) => target.values[key] !== null)
             .map(
               (key) =>
-                `${TARGET_LABELS[key]}: ${targetText(target.values[key], input.profile.unitSystem)} ${targetUnit(input.profile.unitSystem).label}`,
+                `${TARGET_LABELS[key]}: ${targetDisplay(target.values[key], input.profile.unitSystem)} ${targetUnit(input.profile.unitSystem).label}`,
             )
             .join('   ·   '),
           fontSize: 10,
+          alignment: 'center',
           margin: [0, 8, 0, 8],
         });
     }
@@ -302,72 +313,18 @@ export function reportDocument(
       });
   }
   if (records) {
-    // Keep wide tables readable without shrinking type: repeat row identity across column bands.
-    const bands = Array.from({ length: Math.ceil(records.columns.length / 8) }, (_, i) =>
-      records.columns.slice(i * 8, i * 8 + 8),
-    );
-    for (const [bandIndex, band] of bands.entries()) {
-      const wide = records.columns.length > 5;
-      const indexes = band.map((column) => records.columns.indexOf(column));
-      const identity = bands.length > 1;
-      const compactWidths: Record<string, number> = {
-        shot: 28,
-        velocity: 62,
-        g1: 38,
-        g7: 38,
-        points: 32,
-        rawUnit: 40,
-        status: 48,
-      };
-      const hasFlexibleColumn = band.some((column) => !compactWidths[column.id]);
-      const headings: TableCell[] = [
-        ...(identity ? [{ text: 'Row', bold: true }] : []),
-        ...band.map((column) => ({
-          text: `${column.heading ?? column.label}${column.unit ? '\n' + column.unit : ''}`,
-          bold: true,
-        })),
-      ];
-      content.push({
-        text:
-          'Shot records' + (bands.length > 1 ? ` · Columns ${bandIndex + 1}/${bands.length}` : ''),
-        style: 'heading',
-        pageOrientation: wide ? 'landscape' : 'portrait',
-        ...(detailsEnabled || options.chart || bandIndex > 0
-          ? { pageBreak: 'before' as const }
-          : {}),
-      });
-      content.push({
-        text: 'Selected valid shots in workspace table order. All rows are included; screen pagination does not apply.',
-        style: 'small',
-        margin: [0, 0, 0, 10],
-      });
-      content.push({
-        table: {
-          headerRows: 1,
-          widths: [
-            ...(identity ? [25] : []),
-            ...band.map((column) => (hasFlexibleColumn ? (compactWidths[column.id] ?? '*') : '*')),
-          ],
-          body: [
-            headings,
-            ...records.rows.map((row, index) => [
-              ...(identity ? [String(index + 1)] : []),
-              ...indexes.map((i) => row[i]!),
-            ]),
-          ],
-        },
-        layout: {
-          fillColor: (row) => (row === 0 ? '#e1eee7' : row % 2 === 0 ? '#f5f8f6' : null),
-          hLineWidth: () => 0.4,
-          vLineWidth: () => 0,
-          hLineColor: () => '#dbe5df',
-          paddingTop: () => 5,
-          paddingBottom: () => 5,
-        },
-        fontSize: 9,
-        lineHeight: 1.05,
-      });
-    }
+    content.push({
+      text: 'Shot records',
+      style: 'heading',
+      pageOrientation: 'landscape',
+      ...(detailsEnabled || options.chart ? { pageBreak: 'before' as const } : {}),
+    });
+    content.push({
+      text: 'Selected valid shots in workspace table order. All visible columns stay together; complete rows continue onto further pages.',
+      style: 'small',
+      margin: [0, 0, 0, 10],
+    });
+    if (records.columns.length) content.push(recordTable(records.columns, records.rows));
     if (!records.columns.length)
       content.push({ text: 'No shot-record columns are selected.', style: 'small' });
   }
@@ -379,9 +336,7 @@ export function reportDocument(
   return {
     pageSize: 'A4',
     pageOrientation:
-      !detailsEnabled && (options.chart || (records?.columns.length ?? 0) > 5)
-        ? 'landscape'
-        : 'portrait',
+      !detailsEnabled && (options.chart || options.records) ? 'landscape' : 'portrait',
     pageMargins: [42, 38, 42, 44],
     info: {
       title: 'VelociTrack range report',

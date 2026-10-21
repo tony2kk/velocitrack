@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { SquarePen } from 'lucide-react';
 import type { Annotation, Tag, FieldDefinition, UnitSystem } from '../domain/model';
-import { fieldDisplay, fieldUnit } from '../domain/customFields';
+import { fieldText, fieldUnit } from '../domain/customFields';
 import { TagLabels } from './CustomizationManager';
 import type { Series, Shot } from '../domain/model';
-import { targetText, targetUnit } from '../domain/targetMeasurement';
+import { targetDisplay, targetUnit } from '../domain/targetMeasurement';
 
 /** Select series only; shot selection lives in the table below the chart. */
 export function SeriesNavigator({
@@ -112,7 +112,7 @@ export function SeriesNavigator({
                 <div title="Saved string-level diameter of the manually placed target circle.">
                   <dt>Group size</dt>
                   <dd>
-                    {targetText(groupSize, unitSystem)} {targetUnit(unitSystem).label}
+                    {targetDisplay(groupSize, unitSystem)} {targetUnit(unitSystem).label}
                   </dd>
                 </div>
               )}
@@ -125,7 +125,7 @@ export function SeriesNavigator({
                     <div key={field.id}>
                       <dt>{field.name}</dt>
                       <dd>
-                        {fieldDisplay(value, field.type, unitSystem)}{' '}
+                        {fieldText(value, field.type, unitSystem)}{' '}
                         {fieldUnit(field.type, unitSystem)}
                       </dd>
                     </div>

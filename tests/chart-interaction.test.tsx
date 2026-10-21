@@ -476,7 +476,7 @@ describe('chart hover bridge', () => {
         dataIndex: 1,
       }),
     );
-    expect(screen.getByRole('tooltip').textContent).toContain('Distance: 30.48 m');
+    expect(screen.getByRole('tooltip').textContent).toContain('Distance: 30.5 m');
     act(() => chart.on.mock.calls.find(([name]) => name === 'datazoom')![1]());
     expect(screen.queryByRole('tooltip')).toBeNull();
     expect(chart.init).toHaveBeenCalledTimes(1);
@@ -524,7 +524,7 @@ describe('chart hover bridge', () => {
       act(() => enter({ seriesIndex: 1, dataIndex: 0 }));
       expect(onHoverShot).toHaveBeenLastCalledWith('two');
       expect(screen.getByRole('tooltip').textContent).toContain(
-        mode === 'distance' ? 'Velocity: 310 ft/s' : 'Velocity: 10 ft/s',
+        mode === 'distance' ? 'Velocity: 310.0 ft/s' : 'Velocity: 10.0 ft/s',
       );
       act(() => chart.on.mock.calls.find(([name]) => name === 'globalout')![1]());
       expect(onHoverShot).toHaveBeenLastCalledWith(null);

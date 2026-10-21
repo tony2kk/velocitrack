@@ -4,6 +4,7 @@ import { Modal } from './Modal';
 import type { ReportInput } from '../reports/types';
 import { reportFilename } from '../reports/content';
 import { saveReport } from '../reports/save';
+import { ReportLayoutError } from '../reports/recordTable';
 
 /** Generate from one frozen selection; keep the result available after canceling a Save as dialog. */
 export function ReportDialog({ input, onClose }: { input: ReportInput; onClose: () => void }) {
@@ -22,10 +23,12 @@ export function ReportDialog({ input, onClose }: { input: ReportInput; onClose: 
         url = URL.createObjectURL(blob);
         setResult({ blob, url });
       })
-      .catch(() => {
+      .catch((cause: unknown) => {
         if (!cancelled)
           setError(
-            'The report could not be generated. Check target photos and available browser memory, then try again.',
+            cause instanceof ReportLayoutError
+              ? cause.message
+              : 'The report could not be generated. Check target photos and available browser memory, then try again.',
           );
       });
     return () => {

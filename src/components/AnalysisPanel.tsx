@@ -39,7 +39,7 @@ import { StringInfo } from './StringInfo';
 import { ShotTable } from './ShotTable';
 import type { MeasurementChartHandle } from './MeasurementChart';
 import type { ReportHandle } from '../reports/types';
-import { displayValue, formatValue, unitLabels } from '../domain/units';
+import { displayValue, formatValue, formatQuantity, unitLabels } from '../domain/units';
 import type { ViewportMemory } from '../domain/chartViewport';
 import {
   describeCurveConditions,
@@ -351,7 +351,12 @@ export function AnalysisPanel({
             }
           >
             <span>{label}</span>
-            <strong>{formatValue(value as number | null, 2)}</strong>
+            <strong>
+              {formatQuantity(
+                value as number | null,
+                label === 'Included shots' ? 'count' : 'velocity',
+              )}
+            </strong>
             <small>
               {label === 'Included shots'
                 ? 'Valid muzzle readings'
@@ -359,8 +364,10 @@ export function AnalysisPanel({
             </small>
             {label === 'Mean velocity' && (
               <small title="Lowest and highest included muzzle readings.">
-                Min {formatValue(displayValue(summary.minimum, 'velocity', unitSystem), 2)} · Max{' '}
-                {formatValue(displayValue(summary.maximum, 'velocity', unitSystem), 2)}
+                Min{' '}
+                {formatQuantity(displayValue(summary.minimum, 'velocity', unitSystem), 'velocity')}{' '}
+                · Max{' '}
+                {formatQuantity(displayValue(summary.maximum, 'velocity', unitSystem), 'velocity')}
               </small>
             )}
           </div>

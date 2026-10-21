@@ -1,6 +1,6 @@
 import type { CatalogItem, Series } from './model';
 import { finiteNumber, rawPath } from './providerData';
-import { formatValue } from './units';
+import { formatQuantity } from './units';
 
 /** Preserve the provider's chosen mass unit; unknown enum values stay explicitly unresolved. */
 export function projectileWeight(
@@ -26,7 +26,7 @@ export function projectileName(
   const name = catalogNames.get(series.projectileId) ?? 'Unknown projectile';
   const weight = showWeight ? projectileWeight(series) : null;
   return weight
-    ? `${name} ${formatValue(weight.value)}${weight.unit === 'grs' || weight.unit === 'g' ? weight.unit : ` (${weight.unit})`}`
+    ? `${name} ${formatQuantity(weight.value, 'projectileWeight', weight.unit)}${weight.unit === 'grs' || weight.unit === 'g' ? weight.unit : ` (${weight.unit})`}`
     : name;
 }
 

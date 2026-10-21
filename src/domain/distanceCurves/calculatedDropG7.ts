@@ -22,7 +22,7 @@ function defineG7DropCurve(): CustomDistanceCurve {
   const id = 'curve:drop-g7'; // Stable local profile/backup identity.
   const name = 'Calculated drop (G7)';
   const description =
-    "Theoretical drop below the horizontal muzzle axis, positive downward. G7 with the shot's muzzle velocity and matching BC. Atmosphere: 15 °C, 1013.25 hPa, dry air, no wind. Constant BC and small-deflection gravity approximation; no sight zero or local weather correction. Dashed curves are estimates, not measured impact offsets.";
+    "Theoretical drop below the horizontal muzzle axis, positive downward. G7 with the shot's muzzle velocity and matching BC. Atmosphere: 15.0 °C, 1013.25 hPa, dry air, no wind. Constant BC and small-deflection gravity approximation; no sight zero or local weather correction. Dashed curves are estimates, not measured impact offsets.";
   const tooltipNote =
     'Positive downward from the horizontal muzzle axis; small-deflection estimate.';
   const unavailableReason = 'missing or unsupported muzzle velocity / BC.';
@@ -38,6 +38,7 @@ function defineG7DropCurve(): CustomDistanceCurve {
     tooltipNote,
     unavailableReason,
     axisKey,
+    unit: (units) => (units === 'metric' ? 'cm' : 'in'),
     model,
     displayScale: (units) => ({
       factor: 1 / (units === 'metric' ? millimetersPerCentimeter : millimetersPerInch),

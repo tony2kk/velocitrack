@@ -70,4 +70,7 @@ See [target measurement contract](TARGET_MEASUREMENTS.md) for calibration and ma
 
 `DistanceSample.distance` is finite non-negative **ft**. `DistanceSample.value` uses the custom definition's chosen canonical unit, declared through its `axisKey`, label and `displayScale`. Do not apply profile conversion in the calculation and again in the renderer. The adapter does not automatically interpret weather, coefficients or other raw fields.
 
+Readonly output uses the shared [display precision policy](DISPLAY_FORMAT.md).
+Stored values, calculation inputs and backups are not rounded.
+
 [Data access](DATA_ACCESS.md) · [Custom distance functions](DISTANCE_CURVES.md) · [Import format](IMPORT_FORMAT.md)

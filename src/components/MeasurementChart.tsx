@@ -14,7 +14,7 @@ import { AriaComponent, GridComponent, DataZoomComponent } from 'echarts/compone
 import { CanvasRenderer } from 'echarts/renderers';
 import type { AnalysisMode, ChartSettings, Series, Shot, UnitSystem } from '../domain/model';
 import { quantityLabel, type Quantity } from '../domain/analysis';
-import { formatValue, unitLabels } from '../domain/units';
+import { formatQuantity, unitLabels } from '../domain/units';
 import { distanceCurveRegistry, distanceAxisIndex } from '../domain/distanceCurves/registry';
 import type { DistanceCurveData } from '../domain/distanceCurves/types';
 import {
@@ -325,7 +325,15 @@ export default function MeasurementChart({
           minInterval: mode === 'shot' ? 1 : undefined,
           axisLine: { lineStyle: { color: dark ? '#6b8078' : '#dae3df' } },
           splitLine: { show: false },
-          axisLabel: { hideOverlap: true, formatter: (value: number) => formatValue(value, 2) },
+          axisLabel: {
+            hideOverlap: true,
+            formatter: (value: number) =>
+              formatQuantity(
+                value,
+                mode === 'shot' ? 'count' : 'distance',
+                mode === 'distance' ? unitLabels[unitSystem].distance : '',
+              ),
+          },
         },
         yAxis: yQuantities.map((quantity, index) => ({
           type: 'value',
@@ -348,7 +356,13 @@ export default function MeasurementChart({
             formatter: (value: number, tickIndex: number) =>
               tickIndex === 0 && value !== 0
                 ? ''
-                : formatValue(value, quantity === 'velocity' ? 2 : 6),
+                : formatQuantity(
+                    value,
+                    quantity,
+                    mode === 'distance'
+                      ? distanceCurveRegistry.get(quantity)?.unit?.(unitSystem)
+                      : quantities?.find((item) => item.id === quantity)?.unit,
+                  ),
           },
         })),
         dataZoom: [

@@ -67,7 +67,7 @@ describe('series context UI', () => {
       />,
     );
     expect(screen.getByText('Sample mass')).toBeTruthy();
-    expect(screen.getByText('0 g')).toBeTruthy();
+    expect(screen.getByText('0.00 g')).toBeTruthy();
     expect(screen.queryByText('Hidden field')).toBeNull();
     expect(screen.queryByText('Empty field')).toBeNull();
     expect(screen.queryByText('Unset field')).toBeNull();

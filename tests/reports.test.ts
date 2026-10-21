@@ -81,12 +81,12 @@ describe('local PDF composition', () => {
     const records = reportRecords(input);
     expect(records.columns.map((column) => column.id)).toEqual(['shot', 'velocity', 'g1']);
     expect(records.rows).toHaveLength(65);
-    expect(records.rows[0]).toEqual(['1', '304.8', '0.15']);
+    expect(records.rows[0]).toEqual(['1', '304.8', '0.150']);
     input.profile.unitSystem = 'imperial';
-    expect(reportRecords(input).rows[0]).toEqual(['1', '1000', '0.15']);
+    expect(reportRecords(input).rows[0]).toEqual(['1', '1000.0', '0.150']);
     expect(reportDetails(input, input.series[0]!)).toContainEqual([
       'Pressure (sea level)',
-      '1018 hPa',
+      '1018.00 hPa',
     ]);
   });
   it('preserves readable Unicode names while removing unsafe filename characters', () => {

@@ -88,10 +88,10 @@ describe('persistent analysis controls', () => {
       'calculated:g1',
     );
     expect(
-      screen.getByText(/Local string — Atmosphere: 20 °C, 1010.00 hPa, humid air/),
+      screen.getByText(/Local string — Atmosphere: 20.0 °C, 1010.00 hPa, humid air/),
     ).toBeTruthy();
     expect(
-      screen.getByText(/Missing weather — Atmosphere: 15 °C, 1013.25 hPa, dry air/),
+      screen.getByText(/Missing weather — Atmosphere: 15.0 °C, 1013.25 hPa, dry air/),
     ).toBeTruthy();
     fireEvent.change(screen.getByLabelText('Second chart quantity'), {
       target: { value: 'calculated:g7' },
@@ -103,7 +103,7 @@ describe('persistent analysis controls', () => {
     view.rerender(
       <AnalysisPanel {...props} series={[series(), series({ id: 'missing' })]} profile={saved} />,
     );
-    expect(screen.getByText(/Atmosphere: 15 °C, 1013.25 hPa, dry air/)).toBeTruthy();
+    expect(screen.getByText(/Atmosphere: 15.0 °C, 1013.25 hPa, dry air/)).toBeTruthy();
     expect(screen.queryByText(/string air density or sound speed/)).toBeNull();
   });
   it('collapses an old standard/local pair without calling the shared quantity unavailable', () => {
@@ -128,7 +128,7 @@ describe('persistent analysis controls', () => {
     );
     expect(screen.getByText('Same as primary quantity')).toBeTruthy();
     expect(screen.queryByText('Saved quantity — no readings')).toBeNull();
-    expect(screen.getAllByText(/Atmosphere: 15 °C/)).toHaveLength(1);
+    expect(screen.getAllByText(/Atmosphere: 15.0 °C/)).toHaveLength(1);
   });
   it('keeps both drop choices when controls change before the profile has rerendered', async () => {
     const profile = defaultProfile();
@@ -606,7 +606,7 @@ describe('persistent analysis controls', () => {
     );
     expect(screen.getByText('Imported note')).toBeTruthy();
     expect(screen.getByText('Temperature (°C)')).toBeTruthy();
-    expect(screen.getByText('0')).toBeTruthy();
+    expect(screen.getByText('0.0')).toBeTruthy();
   });
   it('follows OS theme changes in Auto and honors an explicit theme', () => {
     let matches = false;

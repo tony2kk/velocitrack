@@ -15,11 +15,14 @@ Units update charts, tooltips, tables, and applicable custom fields. Originals s
 
 ## Display
 
-- **Projectile weight:** append original mass, such as `Example projectile 150grs` or `Example projectile 2g`.
+- **Projectile weight:** append original mass, such as `Example projectile 150.0grs` or `Example projectile 2.00g`.
 - **Theme:** Light, Dark, or Auto to follow your operating system.
 - **Show group size on string cards:** display each string's saved target diameter in cm/in. Starts off; missing values stay hidden and zero is shown. See [Target measurements](targets.md).
 
 Choose **Save display**. These choices are saved and included in backups.
+
+Readonly measurements use consistent [decimal places](../docs/DISPLAY_FORMAT.md),
+including trailing zeroes. This does not round your stored measurements or edits.
 
 Labels use each string's recorded projectile snapshot. If a Caldwell catalog edit does not update an old string's weight, assign the updated projectile to that string in Caldwell and refresh again.
 

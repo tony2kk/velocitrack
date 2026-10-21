@@ -11,10 +11,10 @@ import type {
   Profile,
 } from '../domain/model';
 import { ArrowDown, ArrowUp, ArrowUpDown, Undo2, X } from 'lucide-react';
-import { fieldDisplay } from '../domain/customFields';
+import { fieldText } from '../domain/customFields';
 import { TagLabels } from './CustomizationManager';
 import { inspectPoints } from '../domain/measurements';
-import { displayValue, formatValue, unitLabels } from '../domain/units';
+import { displayValue, formatQuantity, unitLabels } from '../domain/units';
 
 import { availableQuantities, rawPath } from '../domain/analysis';
 import { tableColumns, DEFAULT_COLUMNS } from '../domain/table';
@@ -244,15 +244,16 @@ export function ShotTable({
                       value = shot.number;
                       break;
                     case 'velocity':
-                      value = formatValue(
+                      value = formatQuantity(
                         displayValue(shot.muzzleVelocity, 'velocity', unitSystem),
+                        'velocity',
                       );
                       break;
                     case 'g1':
-                      value = formatValue(shot.ballisticCoefficientG1);
+                      value = formatQuantity(shot.ballisticCoefficientG1, 'g1');
                       break;
                     case 'g7':
-                      value = formatValue(shot.ballisticCoefficientG7);
+                      value = formatQuantity(shot.ballisticCoefficientG7, 'g7');
                       break;
                     case 'points':
                       value = inspectPoints(shot).points.length;
@@ -300,13 +301,15 @@ export function ShotTable({
                       break;
                     default:
                       value = field
-                        ? fieldDisplay(
+                        ? fieldText(
                             details.get(shot.seriesId)?.values?.[field.id],
                             field.type,
                             unitSystem,
                           ) || '—'
-                        : formatValue(
+                        : formatQuantity(
                             quantities.find((q) => q.id === column.id)?.read(shot) ?? null,
+                            column.id,
+                            column.unit,
                           );
                   }
                   const preferred =

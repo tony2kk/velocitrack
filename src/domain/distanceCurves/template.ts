@@ -21,6 +21,7 @@ export const centeredSamplesCurve: CustomDistanceCurve = {
   id: 'curve:centered-samples',
   label: (units) => `Measured change from first sample (${units === 'metric' ? 'm/s' : 'ft/s'})`,
   axisKey: 'centered-velocity',
+  unit: (units) => (units === 'metric' ? 'm/s' : 'ft/s'),
   displayScale: (units) => ({ factor: units === 'metric' ? 0.3048 : 1, offset: 0 }),
   description: 'Observed values minus the first recorded sample. No extrapolation.',
   available: ({ samples }) => samples.some((point) => point.value !== null),

@@ -97,6 +97,13 @@ Version 0.12.0 adds optional string `Annotation.target`: canonical-mm values, ma
 
 ## Local PDF reports (0.17)
 
+Version 0.17.1 adds pure `targetFigure` layout/rendering in print coordinates, with
+a two-tone stroke and a separate callout rail. `recordTable` fits all visible columns
+on landscape pages and forbids row splitting; impossible layouts report an actionable
+error. Shared `formatQuantity` formatting applies only at readonly display boundaries.
+Scalar/curve unit metadata drives precision, leaving chart coordinates, input editors,
+storage and backups unchanged. See decision 021 and docs/DISPLAY_FORMAT.md.
+
 `src/reports` separates the frozen workspace contract, pure PDF composition, local image rendering and Save as handling. `AnalysisPanel` captures selected strings/shots and current table order; `MeasurementChart` copies live zoom into a separate light canvas. `ReportDialog` lazy-loads pdfmake with bundled Roboto fonts, generates a local Blob, and offers a user-initiated file picker with download fallback. External PDF resource loading is denied.
 
 `Profile.report` defaults all five sections on when absent. `TargetMeasurement.reportCrop` stores an optional square in original-image pixels, independent of mm calibration and group geometry. Crop bounds and photo ownership are checked on save/recovery. Existing annotation and profile backup paths preserve both additions without a schema migration. Original photos remain unchanged. See [decision 020](docs/decisions/020-local-pdf-reports.md).

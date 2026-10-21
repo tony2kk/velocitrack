@@ -51,6 +51,8 @@ export interface CustomDistanceCurve {
   /** New IDs use curve:<name>; the two existing calculated IDs remain compatible with saved data. */
   readonly id: `curve:${string}` | 'calculated:g1' | 'calculated:g7';
   readonly label: (units: UnitSystem) => string;
+  /** Display unit for shared numeric formatting; omit for unitless or unspecified quantities. */
+  readonly unit?: (units: UnitSystem) => string;
   /** Share a key only when canonical units and physical meaning really agree. */
   readonly axisKey: string;
   readonly displayScale: (units: UnitSystem) => DisplayScale;

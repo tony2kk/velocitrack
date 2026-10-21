@@ -1,7 +1,7 @@
 import type { AnalysisMode, ChartQuantity, ChartSettings, Series, Shot, UnitSystem } from './model';
 import { quantityDisplay, quantityLabel, shotQuantity, type Quantity } from './analysis';
 import { inspectPoints } from './measurements';
-import { displayValue, formatValue, unitLabels } from './units';
+import { displayValue, formatQuantity, unitLabels } from './units';
 import type { DragModel } from './calculatedVelocity';
 import {
   dispatchDistanceCurve,
@@ -58,6 +58,7 @@ export interface ChartPoint {
   contributors?: number;
   distance?: boolean;
   quantityTitle?: string;
+  quantityUnit?: string;
   quantityNote?: string;
   model?: DragModel;
   /** Keep per-shot and mean tooltips consistent with the curve's stated conditions. */
@@ -147,16 +148,18 @@ export function formatPointTooltip(point: ChartPoint): string {
       ? `${point.model ? 'Mean prediction' : point.derived ? 'Mean derived curve' : 'Mean'} of ${point.contributors} shots`
       : `Shot ${point.shotNumber}${point.sampleIndex !== undefined ? ` · Sample ${point.sampleIndex + 1}` : ''}`,
     ...(distance
-      ? [`Distance: ${formatValue(point.value[0])} ${unitLabels[point.unitSystem].distance}`]
+      ? [
+          `Distance: ${formatQuantity(point.value[0], 'distance', unitLabels[point.unitSystem].distance)} ${unitLabels[point.unitSystem].distance}`,
+        ]
       : []),
     ...(point.model
       ? [
-          `${point.model.toUpperCase()} model · ${point.atmosphere === 'local' ? 'local atmosphere' : 'standard atmosphere'}${point.coefficient ? ` · BC ${formatValue(point.coefficient)}` : ''}`,
+          `${point.model.toUpperCase()} model · ${point.atmosphere === 'local' ? 'local atmosphere' : 'standard atmosphere'}${point.coefficient ? ` · BC ${formatQuantity(point.coefficient, 'g1')}` : ''}`,
         ]
       : []),
     point.quantity && point.quantity !== 'velocity'
-      ? `${point.quantityTitle ?? quantityLabel(point.quantity, point.unitSystem)}: ${formatValue(point.value[1])}`
-      : `Velocity: ${formatValue(point.value[1])} ${unitLabels[point.unitSystem].velocity}`,
+      ? `${point.quantityTitle ?? quantityLabel(point.quantity, point.unitSystem)}: ${formatQuantity(point.value[1], point.quantity, point.quantityUnit)}`
+      : `Velocity: ${formatQuantity(point.value[1], 'velocity')} ${unitLabels[point.unitSystem].velocity}`,
     ...(point.quantityNote ? [point.quantityNote] : []),
   ].join('\n');
 }
@@ -244,6 +247,7 @@ export function buildAnalysisTraces(
             : undefined,
           quantity,
           quantityTitle: curve!.label(units),
+          quantityUnit: curve!.unit?.(units),
           quantityNote: [conditions.get(shot.id)?.description, curve!.tooltipNote]
             .filter(Boolean)
             .join('\n'),
@@ -272,6 +276,7 @@ export function buildAnalysisTraces(
               derived: curve.derived,
               quantity,
               quantityTitle: curve.label(units),
+              quantityUnit: curve.unit?.(units),
               quantityNote: [meanConditions?.description, curve.tooltipNote]
                 .filter(Boolean)
                 .join('\n'),
@@ -313,6 +318,7 @@ export function buildAnalysisTraces(
           unitSystem: units,
           quantity,
           quantityTitle: definition?.label,
+          quantityUnit: definition?.unit,
         },
       ];
     });

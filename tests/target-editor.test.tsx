@@ -134,7 +134,7 @@ describe('target editor interaction', () => {
     expect(screen.getAllByText('Group size')).toHaveLength(1);
     expect(screen.getByText('2.54 cm')).toBeTruthy();
     view.rerender(<SeriesNavigator {...props} showGroupSize unitSystem="imperial" />);
-    expect(screen.getByText('1 in')).toBeTruthy();
+    expect(screen.getByText('1.00 in')).toBeTruthy();
   });
   it('draws, calibrates, overrides, recalculates, undoes, saves and reopens the exact geometry', async () => {
     const saved = vi.fn();
@@ -464,8 +464,8 @@ describe('target editor interaction', () => {
     );
     expect(screen.getByRole('columnheader', { name: 'String group size (cm)' })).toBeTruthy();
     const row = within(screen.getByRole('row', { name: 'Shot 1 in Synthetic series' }));
-    expect(row.getByText('0')).toBeTruthy();
-    expect(row.getByText('-2')).toBeTruthy();
-    expect(row.getByText('3')).toBeTruthy();
+    expect(row.getByText('0.00')).toBeTruthy();
+    expect(row.getByText('-2.00')).toBeTruthy();
+    expect(row.getByText('3.00')).toBeTruthy();
   });
 });
