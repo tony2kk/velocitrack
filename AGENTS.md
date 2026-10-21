@@ -85,6 +85,11 @@ functional batch, run the appropriate checks, review the public content,
 commit the batch with a descriptive English message and push it to
 `origin/main`. The owner authorized this ongoing workflow on 2026-10-18;
 do not ask for repeat approval for ordinary verified feature batches.
+On 2026-10-21, the owner extended this authorization to immediate GitHub Pages
+deployment after every completed, verified batch. Pushes to `main` now trigger
+the Pages workflow, which verifies the same commit before deployment. Wait for
+its result and verify the live release before reporting completion; do not ask
+for separate deployment approval. See decision 023.
 Do not force-push or include unrelated/private files. If a check or privacy
 gate fails, resolve it before publishing or report the concrete blocker.
 On 2026-10-18, after reviewing the available terms and their unresolved scope,
@@ -93,11 +98,11 @@ connector. That decision is recorded in `docs/TERMS_REVIEW.md`; do not reopen
 the same approval question for this batch or ordinary verified maintenance.
 It is not provider endorsement or legal clearance. The owner plans to contact
 Caldwell when the application is sufficiently functional; do not send a message
-on their behalf. Pages deployment still requires a separate instruction.
+on their behalf.
 
 `npm run check:public` is a basic pattern guard, not a proof of privacy.
-Review staged files and Git history before publication. GitHub Pages is
-manual; do not trigger deployment without the owner's instruction. Never
+Review staged files and Git history before publication. The Pages workflow also
+supports manual reruns on `main` when needed to finish an authorized release. Never
 publish cloud integration merely because its technical requests succeed.
 
 Use an unofficial community identity; do not claim Caldwell/AOB endorsement.

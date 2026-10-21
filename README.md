@@ -78,18 +78,20 @@ public/sources/      Shared public source-type metadata, never account settings
 tests/               Synthetic behavioral tests
 help/                User documentation
 docs/decisions/      Accepted decisions
-.github/workflows/   CI and manual Pages deployment
+.github/workflows/   CI and verified Pages deployment
 ```
 
 Read [ARCHITECTURE.md](ARCHITECTURE.md), [PLAN.md](PLAN.md), [AGENTS.md](AGENTS.md), [Codex handoff](docs/CODEX_HANDOFF.md) and [brand asset notes](docs/BRANDING.md). Keep private exports outside the repository. Authorized local experiments belong in ignored `.local/`.
 
 ## GitHub Pages
 
-Deployment is **manual**; pushing code does not deploy the site. After owner authorization and review of the exact public commit:
+Every push to `main` starts **Deploy GitHub Pages**. Its build job runs the full
+verification suite and public-content guard before deployment. The owner authorized
+this release workflow on 2026-10-21; see [decision 023](docs/decisions/023-publish-verified-batches.md).
+Review the exact public commit before pushing, then check the workflow and live release.
 
-1. In **Settings → Pages**, choose **GitHub Actions**.
-2. Run **Deploy GitHub Pages (manual)** on `main`.
-3. Check the workflow and deployed application.
+In **Settings → Pages**, the deployment source must be **GitHub Actions**. To retry
+a release, run **Deploy GitHub Pages** manually on `main`; the same checks apply.
 
 The published destination is `https://tony2kk.github.io/velocitrack/`. Only `dist/` is uploaded, including the standard public source-type configuration. No application secrets are needed. If the base path changes, update Vite base, manifest start/scope and service-worker navigation scope together. See [GitHub Pages documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
 

@@ -18,7 +18,9 @@
 - [x] Static PWA shell and owner-provided branding.
 - [x] Parser, statistics, filter and transactional storage tests.
 
-See `docs/VERIFICATION.md` for actual verification and remaining caveats. Local MVP work does not authorize a Pages deployment.
+See `docs/VERIFICATION.md` for actual verification and remaining caveats. The current
+release workflow in decision 023 supersedes deployment restrictions in historical
+release notes below.
 
 ## Next iteration
 
@@ -58,7 +60,7 @@ The private browser-only test and local product import passed on 2026-10-18; the
 
 ## Publication
 
-Review candidate files, built assets and history before publishing. The owner authorized committing and pushing each completed, verified functional batch to `origin/main` on 2026-10-18 and explicitly approved proceeding with the Caldwell connector after the terms review. Continue on `main` unless instructed otherwise. Pages deployment remains manual and requires a separate instruction.
+Review candidate files, built assets and history before publishing. The owner authorized committing and pushing each completed, verified functional batch to `origin/main` on 2026-10-18 and explicitly approved proceeding with the Caldwell connector after the terms review. Continue on `main` unless instructed otherwise. On 2026-10-21 the owner also authorized immediate Pages deployment after each verified batch. Pushes to `main` trigger a verified deployment; check the workflow and live release before reporting completion. See decision 023.
 
 ## Series context and portable workspace — 2026-10-19
 
