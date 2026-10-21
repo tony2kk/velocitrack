@@ -12,6 +12,7 @@ export interface TargetFigure {
   height: number;
   photo: { x: number; y: number; width: number; height: number };
   source: { x: number; y: number; width: number; height: number };
+  labelSide: 'left' | 'right';
   circle?: { center: ImagePoint; radius: number };
   poa?: ImagePoint;
   dimensions: {
@@ -20,6 +21,7 @@ export interface TargetFigure {
     value: string;
     from: ImagePoint;
     to: ImagePoint;
+    leader: ImagePoint[];
     label: { x: number; y: number; width: number; height: number };
   }[];
 }
@@ -40,9 +42,14 @@ export function targetFigureLayout(
   };
   const factor = 260 / Math.max(source.width, source.height);
   const geometry = target?.geometry;
+  const labelSide =
+    (target?.values.horizontalOffset ?? (geometry?.poa ? geometry.center.x - geometry.poa.x : 0)) <
+    0
+      ? 'left'
+      : 'right';
   const figureHeight = Math.max(source.height * factor + 16, geometry ? 190 : 0);
   const photo = {
-    x: 8,
+    x: geometry && labelSide === 'left' ? 136 : 8,
     y: (figureHeight - source.height * factor) / 2,
     width: source.width * factor,
     height: source.height * factor,
@@ -52,6 +59,7 @@ export function targetFigureLayout(
     height: figureHeight,
     photo,
     source,
+    labelSide,
     dimensions: [],
   };
   if (!geometry || !target) return result;
@@ -63,13 +71,19 @@ export function targetFigureLayout(
   const radius = geometry.radius * factor;
   const diagonal = radius / Math.sqrt(2);
   result.circle = { center, radius };
-  const label = { x: photo.x + photo.width + 18, y: 0, width: 102, height: 42 };
+  const label = {
+    x: labelSide === 'left' ? 8 : photo.x + photo.width + 18,
+    y: 0,
+    width: 102,
+    height: 42,
+  };
   result.dimensions.push({
     key: 'G',
     name: 'Group size',
     value: `${targetDisplay(target.values.groupSize, units)} ${targetUnit(units).label}`,
     from: { x: center.x - diagonal, y: center.y + diagonal },
     to: { x: center.x + diagonal, y: center.y - diagonal },
+    leader: [],
     label: { ...label },
   });
   if (geometry.poa) {
@@ -83,6 +97,7 @@ export function targetFigureLayout(
         value: `${targetDisplay(target.values.horizontalOffset, units)} ${targetUnit(units).label}`,
         from: poa,
         to: elbow,
+        leader: [],
         label: { ...label },
       },
       {
@@ -91,6 +106,7 @@ export function targetFigureLayout(
         value: `${targetDisplay(target.values.verticalOffset, units)} ${targetUnit(units).label}`,
         from: elbow,
         to: center,
+        leader: [],
         label: { ...label },
       },
     );
@@ -99,6 +115,28 @@ export function targetFigureLayout(
   result.dimensions.sort((a, b) => a.from.y + a.to.y - (b.from.y + b.to.y));
   result.dimensions.forEach((dimension, index) => {
     dimension.label.y = (figureHeight - result.dimensions.length * 58 + 16) / 2 + index * 58;
+    const direction = labelSide === 'left' ? -1 : 1;
+    const anchor = {
+      x: Math.max(
+        photo.x,
+        Math.min(photo.x + photo.width, (dimension.from.x + dimension.to.x) / 2),
+      ),
+      y: Math.max(
+        photo.y,
+        Math.min(photo.y + photo.height, (dimension.from.y + dimension.to.y) / 2),
+      ),
+    };
+    // Leave the dimension diagonally before travelling outward; never trace the H arrow itself.
+    const departure = { x: anchor.x + direction * 10, y: anchor.y - 10 };
+    dimension.leader = [
+      anchor,
+      departure,
+      { x: labelSide === 'left' ? photo.x - 8 : photo.x + photo.width + 8, y: departure.y },
+      {
+        x: label.x + (labelSide === 'left' ? label.width : 0),
+        y: dimension.label.y + label.height / 2,
+      },
+    ];
   });
   return result;
 }
@@ -183,20 +221,17 @@ export function drawTargetFigure(
     });
   context.restore();
   for (const dimension of figure.dimensions) {
-    const { from, to, label } = dimension;
-    const anchor = {
-      x: Math.max(photo.x, Math.min(photo.x + photo.width, (from.x + to.x) / 2)),
-      y: Math.max(photo.y, Math.min(photo.y + photo.height, (from.y + to.y) / 2)),
-    };
+    const { label, leader } = dimension;
+    context.setLineDash([3, 3]);
     ink(
       () => {
-        context.moveTo(anchor.x, anchor.y);
-        context.lineTo(photo.x + photo.width + 8, anchor.y);
-        context.lineTo(label.x, label.y + label.height / 2);
+        context.moveTo(leader[0]!.x, leader[0]!.y);
+        for (const point of leader.slice(1)) context.lineTo(point.x, point.y);
       },
       2.5,
       1,
     );
+    context.setLineDash([]);
     context.fillStyle = '#142722';
     context.fillRect(label.x, label.y, label.width, label.height);
     context.fillStyle = '#ffffff';

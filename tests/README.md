@@ -76,3 +76,11 @@ Series-context coverage includes the additive v2 migration, custom field unit/va
   `@napi-rs/canvas`) plus a synthetic `.local/report-target.png` to generate ignored
   `.local/readability-preview.pdf` and `.local/target-contrast-preview.png`. Render
   every PDF page and verify unique shot markers; keep real photos out of fixtures.
+
+- Multi-string report regressions cover one overview, one target per string,
+  Simple/Dual/Compare views and full String info JSON for every selected string.
+  The optional visual test also writes `.local/multiple-{simple,dual,compare,info}.pdf`
+  using two/three invented strings and both H signs. JSON retains nested values and
+  precision; ordinary curated reports still omit raw records. UI coverage verifies
+  all selected String info sections, default Group + offset, repeated calibration
+  from H, V and diameter, undo/save, and circle-only independent offsets.

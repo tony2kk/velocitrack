@@ -157,7 +157,6 @@ export function AnalysisPanel({
     [allShots, series, fields, annotations, unitSystem],
   );
   const availableColumns = tableColumns(fields, tableQuantities, unitSystem);
-  const infoSeries = series.find((item) => item.id === profile?.infoSeriesId) ?? series[0];
   const sortedRows = useMemo(
     () =>
       sortShots(allShots, series, profile?.tableSort, {
@@ -378,34 +377,23 @@ export function AnalysisPanel({
           Combined statistics are unavailable across different sources or unit codes.
         </p>
       )}
-      {kind === 'info' && infoSeries ? (
+      {kind === 'info' ? (
         <div className="chart-panel">
-          {series.length > 1 && (
-            <label className="field">
-              String
-              <select
-                value={infoSeries.id}
-                onChange={(event) => void columns({ infoSeriesId: event.target.value })}
-              >
-                {series.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <StringInfo
-            series={infoSeries}
-            shots={allShots.filter((shot) => shot.seriesId === infoSeries.id)}
-            profile={profile ?? defaultProfile()}
-            fields={fields}
-            annotations={annotations}
-            tags={tags}
-            catalog={catalog}
-            photos={attachments.filter((photo) => photo.seriesId === infoSeries.id)}
-            onDetails={onDetails}
-          />
+          <h3>String info</h3>
+          {series.map((infoSeries) => (
+            <StringInfo
+              key={infoSeries.id}
+              series={infoSeries}
+              shots={allShots.filter((shot) => shot.seriesId === infoSeries.id)}
+              profile={profile ?? defaultProfile()}
+              fields={fields}
+              annotations={annotations}
+              tags={tags}
+              catalog={catalog}
+              photos={attachments.filter((photo) => photo.seriesId === infoSeries.id)}
+              onDetails={onDetails}
+            />
+          ))}
         </div>
       ) : (
         <div className="chart-panel">

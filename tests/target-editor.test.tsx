@@ -64,8 +64,11 @@ afterEach(async () => {
 
 /** Pointer events use the SVG fallback's original pixel coordinate system in this DOM test. */
 async function draw(editor = 'group') {
-  if (editor === 'offset')
-    fireEvent.click(screen.getByRole('button', { name: 'Group size + offset' }));
+  fireEvent.click(
+    screen.getByRole('button', {
+      name: editor === 'offset' ? 'Group size + offset' : 'Group size',
+    }),
+  );
   const canvas = await screen.findByRole('group', { name: 'Target photo measurement canvas' });
   fireEvent.pointerDown(canvas, { clientX: 400, clientY: 400, pointerId: 1, button: 0 });
   fireEvent.pointerMove(canvas, { clientX: 500, clientY: 300, pointerId: 1 });
@@ -80,6 +83,42 @@ function enter(label: string, value: string) {
 }
 
 describe('target editor interaction', () => {
+  it('defaults new drawings to Group + offset and keeps H, V and diameter mutually linked', async () => {
+    const saved = vi.fn();
+    render(
+      <TargetEditor
+        photo={photo}
+        initial={emptyTarget()}
+        units="metric"
+        onClose={vi.fn()}
+        onSaved={saved}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: 'Group size + offset' }).getAttribute('aria-pressed'),
+    ).toBe('true');
+    await draw('offset');
+    const panel = within(screen.getByRole('complementary'));
+    enter('Horizontal offset (cm)', '10');
+    enter('Vertical offset (cm)', '5');
+    expect((panel.getByLabelText('Horizontal offset (cm)') as HTMLInputElement).value).toBe('5');
+    expect((panel.getByLabelText('Group size (cm)') as HTMLInputElement).value).toBe('8');
+    enter('Group size (cm)', '16');
+    expect((panel.getByLabelText('Horizontal offset (cm)') as HTMLInputElement).value).toBe('10');
+    expect((panel.getByLabelText('Vertical offset (cm)') as HTMLInputElement).value).toBe('10');
+    enter('Horizontal offset (cm)', '2');
+    expect((panel.getByLabelText('Vertical offset (cm)') as HTMLInputElement).value).toBe('2');
+    expect((panel.getByLabelText('Group size (cm)') as HTMLInputElement).value).toBe('3.2');
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect((panel.getByLabelText('Vertical offset (cm)') as HTMLInputElement).value).toBe('10');
+    fireEvent.click(screen.getByRole('button', { name: 'Save measurement' }));
+    await waitFor(() => expect(saved).toHaveBeenCalledOnce());
+    expect((await db.annotations.get('series'))!.target).toMatchObject({
+      values: { horizontalOffset: 100, verticalOffset: 100, groupSize: 160 },
+      manual: [],
+      mmPerPixel: 1,
+    });
+  });
   it('moves and saves a report crop without inventing or changing a group measurement', async () => {
     const saved = vi.fn();
     render(
@@ -110,6 +149,26 @@ describe('target editor interaction', () => {
       width: 1200,
       height: 800,
     });
+  });
+  it('keeps standalone offsets independent of linked circle-only measurements', async () => {
+    render(
+      <TargetEditor
+        photo={photo}
+        initial={emptyTarget()}
+        units="metric"
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+    await draw();
+    enter('Group size (cm)', '4');
+    enter('Horizontal offset (cm)', '-2');
+    enter('Vertical offset (cm)', '0');
+    enter('Group size (cm)', '8');
+    const panel = within(screen.getByRole('complementary'));
+    expect((panel.getByLabelText(/Horizontal offset \(cm\)/) as HTMLInputElement).value).toBe('-2');
+    expect((panel.getByLabelText(/Vertical offset \(cm\)/) as HTMLInputElement).value).toBe('0');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
   it('shows group size on cards only when enabled, with correct units and no missing-value placeholder', () => {
     const props = {
@@ -152,6 +211,7 @@ describe('target editor interaction', () => {
     const panel = within(screen.getByRole('complementary'));
     expect((panel.getByLabelText('Vertical offset (cm)') as HTMLInputElement).value).toBe('10');
     expect((panel.getByLabelText('Group size (cm)') as HTMLInputElement).value).toBe('16');
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Link dimensions to drawing' }));
     enter('Group size (cm)', '99');
     expect((panel.getByLabelText(/Group size/) as HTMLInputElement).value).toBe('99');
     fireEvent.pointerDown(document.querySelector('[data-handle="edge"]')!, {

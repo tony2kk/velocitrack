@@ -76,19 +76,16 @@ export function TargetConnections({
       document.removeEventListener('scroll', measure, true);
     };
   }, [canvasRef, panelRef, geometry, field]);
+  // A short diagonal departure keeps the leader off the horizontal dimension itself.
+  const path = line
+    ? `M${line.x} ${line.y} l${line.endX >= line.x ? 12 : -12} -12 L${line.endX} ${line.endY}`
+    : '';
   return (
     <svg ref={overlayRef} className="target-connections" aria-hidden="true">
       {line && field && (
         <g fill="none" stroke={TARGET_COLORS[field]}>
-          <path
-            className="target-connector-halo"
-            d={'M' + line.x + ' ' + line.y + ' L' + line.endX + ' ' + line.endY}
-          />
-          <path
-            d={'M' + line.x + ' ' + line.y + ' L' + line.endX + ' ' + line.endY}
-            strokeWidth="1.5"
-            strokeDasharray="5 4"
-          />
+          <path className="target-connector-halo" d={path} strokeDasharray="5 4" />
+          <path d={path} strokeWidth="1.5" strokeDasharray="5 4" />
           <circle cx={line.x} cy={line.y} r="4" fill={TARGET_COLORS[field]} stroke="white" />
         </g>
       )}

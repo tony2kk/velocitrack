@@ -94,7 +94,9 @@ export function TargetEditor({
   const latest = useRef(draft);
   const gestureStart = useRef<TargetMeasurement | null>(null);
   const [history, setHistory] = useState<TargetMeasurement[]>([]);
-  const [mode, setMode] = useState<'group' | 'offset'>(draft.geometry?.poa ? 'offset' : 'group');
+  const [mode, setMode] = useState<'group' | 'offset'>(
+    draft.geometry && !draft.geometry.poa ? 'group' : 'offset',
+  );
   const [pan, setPan] = useState(false);
   const [cropMode, setCropMode] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -104,7 +106,7 @@ export function TargetEditor({
   const [hoveredField, setHoveredField] = useState<TargetField | null>(null);
   const [focusedField, setFocusedField] = useState<TargetField | null>(null);
   const activeField = hoveredField ?? focusedField;
-  const [calibrating, setCalibrating] = useState(!draft.mmPerPixel);
+  const [linked, setLinked] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const { image, error: imageError } = useTargetPhoto(photo);
@@ -133,19 +135,20 @@ export function TargetEditor({
   function cropChanged(reportCrop: ReportCrop) {
     update({ ...latest.current, photoId: photo.id, reportCrop });
   }
-  /** First nonzero length establishes scale; later edits become explicit overrides until geometry moves. */
+  /** Linked dimensions share one scale after every edit; independent overrides require an explicit choice. */
   function valueChanged(field: TargetField, text: string) {
     try {
       const value = parseTargetValue(text, field, editorUnits);
       const current = latest.current;
+      // Circle-only drawings have no offset dimensions; those values remain independent.
+      const represented = current.geometry && targetPixels(current.geometry)[field] !== null;
       const next =
-        !current.mmPerPixel || calibrating
+        !current.mmPerPixel || (linked && represented)
           ? calibrateTarget(current, field, value)
           : overrideTargetValues(current, { [field]: value });
       remember(current);
       update(next);
       setError('');
-      setCalibrating(false);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'The value could not be applied.');
     }
@@ -206,8 +209,7 @@ export function TargetEditor({
             const previous = history.at(-1);
             if (previous) {
               update(previous);
-              setMode(previous.geometry?.poa ? 'offset' : 'group');
-              setCalibrating(!previous.mmPerPixel);
+              setMode(previous.geometry && !previous.geometry.poa ? 'group' : 'offset');
               setHistory((items) => items.slice(0, -1));
               setError('');
             }
@@ -228,7 +230,7 @@ export function TargetEditor({
               manual: TARGET_FIELDS.filter((field) => draft.values[field] !== null),
               ...(draft.reportCrop ? { reportCrop: draft.reportCrop, photoId: photo.id } : {}),
             });
-            setCalibrating(true);
+            setLinked(true);
             setPan(false);
             setError('');
           }}
@@ -392,9 +394,9 @@ export function TargetEditor({
             <p className="muted">
               {!draft.geometry
                 ? 'Draw a circle to begin.'
-                : calibrating || !draft.mmPerPixel
-                  ? 'Enter one known nonzero dimension to set the photo scale. Its sign must agree with the drawing.'
-                  : 'Scale set. Manual overrides are replaced when the corresponding geometry changes.'}
+                : linked || !draft.mmPerPixel
+                  ? 'Changing any nonzero dimension updates the photo scale and all other dimensions. Its sign must agree with the drawing.'
+                  : 'Independent values. Manual overrides are replaced when the corresponding geometry changes.'}
             </p>
             {TARGET_FIELDS.map((field) => (
               <div
@@ -417,7 +419,7 @@ export function TargetEditor({
                   manual={draft.manual.includes(field)}
                   onCommit={valueChanged}
                 />
-                {(calibrating || !draft.mmPerPixel) && pixels?.[field] && draft.values[field] ? (
+                {!draft.mmPerPixel && pixels?.[field] && draft.values[field] ? (
                   <button
                     className="target-use-scale"
                     title="Use this existing value as the known dimension for the photo scale."
@@ -426,7 +428,6 @@ export function TargetEditor({
                         const next = calibrateTarget(latest.current, field, draft.values[field]);
                         remember(latest.current);
                         update(next);
-                        setCalibrating(false);
                         setError('');
                       } catch (cause) {
                         setError(cause instanceof Error ? cause.message : 'Calibration failed.');
@@ -438,13 +439,15 @@ export function TargetEditor({
                 ) : null}
               </div>
             ))}
-            <button
-              disabled={!draft.geometry || busy}
-              onClick={() => setCalibrating((value) => !value)}
-              title="Explicitly replace the photo scale using the next known nonzero dimension."
-            >
-              {calibrating && draft.mmPerPixel ? 'Keep current scale' : 'Recalibrate'}
-            </button>
+            <label className="check-field">
+              <input
+                type="checkbox"
+                checked={linked}
+                disabled={busy || !draft.mmPerPixel}
+                onChange={(event) => setLinked(event.target.checked)}
+              />
+              <span>Link dimensions to drawing</span>
+            </label>
             <p className="muted">
               Use a front-facing, upright photo. The circle and its center are placed manually.
               Circle-only edits preserve separately entered offsets.
@@ -476,8 +479,8 @@ export function TargetEditor({
             busy ||
             !image ||
             !!mismatch ||
-            (!draft.reportCrop && (!draft.geometry || !draft.mmPerPixel || calibrating)) ||
-            (!!draft.geometry && (!draft.mmPerPixel || calibrating))
+            (!draft.reportCrop && (!draft.geometry || !draft.mmPerPixel)) ||
+            (!!draft.geometry && !draft.mmPerPixel)
           }
           onClick={async () => {
             setBusy(true);

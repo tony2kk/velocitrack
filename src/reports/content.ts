@@ -16,6 +16,52 @@ import { displayValue, formatQuantity, unitLabels } from '../domain/units';
 import type { ReportInput } from './types';
 import { safeFilename } from './filename';
 import { recordTable } from './recordTable';
+import { reportStringInfo } from './stringInfo';
+
+/** Compare up to three strings per block without repeating a cover or forcing one page per string. */
+function overview(input: ReportInput, details: boolean, stats: boolean): Content[] {
+  const blocks: Content[] = [];
+  for (let start = 0; start < input.series.length; start += 3) {
+    const strings = input.series.slice(start, start + 3);
+    const columns = strings.map((series) => {
+      const values = details ? reportDetails(input, series) : [];
+      if (stats) {
+        const summary = summarizeShots(input.shots.filter((shot) => shot.seriesId === series.id));
+        values.push(['Included shots', String(summary.count)]);
+        for (const [label, value] of [
+          ['Mean velocity', summary.mean],
+          ['Min velocity', summary.minimum],
+          ['Max velocity', summary.maximum],
+          ['Sample SD', summary.sd],
+          ['Extreme spread', summary.spread],
+        ] as const)
+          values.push([
+            `${label} (${unitLabels[input.profile.unitSystem].velocity})`,
+            formatQuantity(displayValue(value, 'velocity', input.profile.unitSystem), 'velocity'),
+          ]);
+      }
+      return new Map(values);
+    });
+    const labels = [...new Set(columns.flatMap((column) => [...column.keys()]))];
+    blocks.push({
+      table: {
+        headerRows: 1,
+        widths: [110, ...strings.map(() => '*' as const)],
+        body: [
+          [
+            { text: 'String', bold: true },
+            ...strings.map((series) => ({ text: series.name, bold: true })),
+          ],
+          ...labels.map((label) => [label, ...columns.map((column) => column.get(label) ?? '—')]),
+        ],
+      },
+      layout: 'lightHorizontalLines',
+      fontSize: 9,
+      margin: [0, 0, 0, 18],
+    });
+  }
+  return blocks;
+}
 
 /** Stable, filesystem-safe suggestion; the save dialog may replace it without changing the report. */
 export function reportFilename(input: Pick<ReportInput, 'series' | 'createdAt'>): string {
@@ -212,7 +258,8 @@ export function reportDocument(
   photos: ReadonlyMap<string, string> = new Map(),
 ): TDocumentDefinitions {
   const options = { ...defaultReportSettings(), ...input.profile.report };
-  const detailsEnabled = options.details || options.target || options.statistics;
+  const detailsEnabled = options.details || options.statistics;
+  const infoMode = input.profile.analysis?.mode === 'info';
   const records = options.records ? reportRecords(input) : undefined;
   const content: Content[] = [
     { text: 'VELOCITRACK', color: '#08796e', bold: true, characterSpacing: 2, fontSize: 11 },
@@ -223,12 +270,13 @@ export function reportDocument(
       margin: [0, 0, 0, 16],
     },
   ];
-  for (const [index, series] of input.series.entries()) {
+  if (detailsEnabled && input.series.length > 1)
+    content.push(...overview(input, options.details, options.statistics));
+  for (const series of input.series.length === 1 ? input.series : []) {
     if (!detailsEnabled) break;
     content.push({
       text: series.name,
       style: 'heading',
-      ...(index > 0 ? { pageBreak: 'before' as const } : {}),
     });
     if (options.details)
       content.push({
@@ -249,47 +297,62 @@ export function reportDocument(
           input,
         ),
       );
-    if (options.target) {
+  }
+  if (options.target) {
+    content.push({
+      text: 'Targets',
+      style: 'heading',
+      ...(detailsEnabled ? { pageBreak: 'before' as const } : {}),
+    });
+    for (const series of input.series) {
       const target = input.annotations.find((item) => item.entityId === series.id)?.target;
       const photo =
         input.attachments.find(
           (item) => item.id === target?.photoId && item.seriesId === series.id,
         ) ?? input.attachments.find((item) => item.seriesId === series.id);
       const image = photos.get(series.id);
-      // Keep the label with the image when a long string description pushes it to the next page.
-      content.push({
-        unbreakable: true,
-        stack: [
-          { text: 'Target', style: 'section' },
-          image
-            ? { image, fit: [390, 260], alignment: 'center', margin: [0, 6, 0, 8] }
-            : { text: 'No target photo attached.', style: 'small', margin: [0, 6, 0, 8] },
-        ],
-      });
-      if (photo && image)
-        content.push({ text: photo.caption || photo.name, style: 'small', alignment: 'center' });
-      if (target)
-        content.push({
-          text: TARGET_FIELDS.filter((key) => target.values[key] !== null)
+      const caption = target
+        ? TARGET_FIELDS.filter((key) => target.values[key] !== null)
             .map(
               (key) =>
                 `${TARGET_LABELS[key]}: ${targetDisplay(target.values[key], input.profile.unitSystem)} ${targetUnit(input.profile.unitSystem).label}`,
             )
-            .join('   ·   '),
-          fontSize: 10,
-          alignment: 'center',
-          margin: [0, 8, 0, 8],
-        });
+            .join('   ·   ')
+        : '';
+      // Each named target stays with its image and dimensions; the overview no longer competes for space.
+      content.push({
+        unbreakable: true,
+        stack: [
+          { text: series.name, style: 'section' },
+          image
+            ? { image, fit: [390, 235], alignment: 'center', margin: [0, 6, 0, 8] }
+            : { text: 'No target photo attached.', style: 'small', margin: [0, 6, 0, 8] },
+          ...(photo && image
+            ? [{ text: photo.caption || photo.name, style: 'small', alignment: 'center' as const }]
+            : []),
+          ...(caption
+            ? [
+                {
+                  text: caption,
+                  fontSize: 9,
+                  alignment: 'center' as const,
+                  margin: [0, 6, 0, 12] as [number, number, number, number],
+                },
+              ]
+            : []),
+        ],
+      });
     }
   }
   if (options.chart) {
     content.push({
-      text: 'Analysis chart',
+      text: infoMode ? 'String info' : 'Analysis chart',
       style: 'heading',
-      pageOrientation: 'landscape',
-      ...(detailsEnabled ? { pageBreak: 'before' as const } : {}),
+      pageOrientation: infoMode ? 'portrait' : 'landscape',
+      ...(detailsEnabled || options.target ? { pageBreak: 'before' as const } : {}),
     });
-    if (input.chart) {
+    if (infoMode) content.push(...reportStringInfo(input));
+    else if (input.chart) {
       content.push({ image: input.chart.image, width: 750, margin: [0, 6, 0, 8] });
       content.push({
         text: input.chart.legend.flatMap((item) => [
@@ -317,7 +380,9 @@ export function reportDocument(
       text: 'Shot records',
       style: 'heading',
       pageOrientation: 'landscape',
-      ...(detailsEnabled || options.chart ? { pageBreak: 'before' as const } : {}),
+      ...(detailsEnabled || options.target || options.chart
+        ? { pageBreak: 'before' as const }
+        : {}),
     });
     content.push({
       text: 'Selected valid shots in workspace table order. All visible columns stay together; complete rows continue onto further pages.',
@@ -336,7 +401,11 @@ export function reportDocument(
   return {
     pageSize: 'A4',
     pageOrientation:
-      !detailsEnabled && (options.chart || options.records) ? 'landscape' : 'portrait',
+      !detailsEnabled &&
+      !options.target &&
+      ((options.chart && !infoMode) || (!options.chart && options.records))
+        ? 'landscape'
+        : 'portrait',
     pageMargins: [42, 38, 42, 44],
     info: {
       title: 'VelociTrack range report',

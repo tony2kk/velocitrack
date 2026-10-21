@@ -24,7 +24,7 @@ Target values save separately from the custom fields and tags saved by **Save de
 
 1. Add a photo in the string's **Photos** section, or use one already attached.
 2. Choose **Target photo**, then **Measure photo**.
-3. Choose one of the two tool buttons and draw:
+3. Choose one of the two tool buttons and draw. New drawings default to **Group + offset**; reopening preserves the saved drawing's tool:
    - **Group size:** press at the desired circle center and drag to its edge.
    - **Group size + offset:** press at POA and drag to the desired circle center. A rectangle joins the two points; a circle appears around the center.
 4. Drag the center to move the circle, its edge to resize it, or the POA cross to move the aiming point.
@@ -39,9 +39,11 @@ Use an actual known dimension to establish scale; photo pixels alone do not esta
 
 If a known value was entered before opening the photo, draw the geometry, then choose **Use this value for scale** beside it. Existing numeric values do not silently calibrate a different photo.
 
-Once calibrated, subsequent numeric edits are marked **Manual**. They override individual values without moving the drawing or changing its scale. The next geometry edit recalculates the dimensions represented by that drawing and replaces their overrides. A circle without POA preserves separately entered offsets.
+**Link dimensions to drawing** starts enabled. Changing any represented nonzero H, V or group-size value updates the scale and immediately recalculates the other dimensions. The drawing stays in place. Signs must agree with the geometry; a zero or empty value cannot define a scale.
 
-Use **Recalibrate** to explicitly change the scale from a new known dimension. The **Undo** arrow restores the last completed gesture or numeric edit. The **trash** button (**Clear drawing**) removes the draft geometry and scale while retaining its numbers as manual values.
+To enter independent values after calibration, turn off **Link dimensions to drawing**. Those edits are marked **Manual** and do not change the scale. A later geometry edit recalculates represented dimensions and replaces their overrides. A circle without POA keeps separately entered H/V offsets independent. Re-enabling the link affects the next numeric edit; it does not silently rewrite current values.
+
+The **Undo** arrow restores the last completed gesture or numeric edit. The **trash** button (**Clear drawing**) removes the draft geometry and scale while retaining its numbers as manual values.
 
 ## Several targets on one photo
 

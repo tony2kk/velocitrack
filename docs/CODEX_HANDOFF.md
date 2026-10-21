@@ -184,8 +184,17 @@ custom output without parsing labels. Storage, calculations and backups are unch
 See DISPLAY_FORMAT.md for the complete precision table. Full verification and an
 optional synthetic PDF layout check cover 11 columns and 55 unique shot rows.
 
-Read decision 020 and help/reports.md. Profile.report is optional; absence means all sections enabled. Reports freeze the current selection and retain chart zoom via a separate light ECharts instance. pdfmake/Roboto load lazily but are precached for offline use. The save picker is called only by a fresh user click; fall back to a named download. Do not serialize sources, credentials or arbitrary raw records into PDF details.
+Read decisions 020–022 and help/reports.md. Profile.report is optional; absence means all sections enabled. Reports freeze the current selection and retain chart zoom via a separate light ECharts instance. pdfmake/Roboto load lazily but are precached for offline use. The save picker is called only by a fresh user click; fall back to a named download. Curated PDF details omit arbitrary raw fields. The explicitly selected String info view exports complete string-scoped records, annotations and field/tag definitions through domain/stringInformation.ts; never add source connections, profile credentials or authentication sessions.
 
 TargetMeasurement.reportCrop uses original-image pixels (x/y/size/width/height), requires a photo owned by the string and remains independent of physical values. Crop-only targets are valid without geometry/calibration. Save and backup validators cover the addition. Removing a photo removes its framing/provenance while retaining numeric target values. Original image bytes are never overwritten.
 
 Verification: full npm run verify passed (307 tests across 42 files), including real PDF bytes, selected column/unit rendering, min/max, crop-only editing and backup round trips. A browser PDF with a local synthetic target crop and live chart was downloaded, rendered and inspected; multipage records and Czech text were checked separately. Native Save as is unit-tested; the embedded browser's PDF was obtained through its download capability. No Pages deployment is included.
+
+Follow-up 0.17.2 implements decision 022. Multi-string reports have one shared
+overview and separate Targets. String info renders all selected strings and their
+complete local JSON in the workspace and PDF; it no longer depends on infoSeriesId.
+The legacy preference is accepted for archive compatibility. New target drawings
+default to Group + offset. Linked numeric edits recalibrate from any represented
+nonzero dimension; explicit unlinking permits manual overrides. The editor-only
+link flag is not persisted; physical values, geometry and crop keep existing backup
+semantics. H-sign callout placement and dashed departures improve report legibility.

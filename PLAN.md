@@ -243,3 +243,13 @@ Release 0.17.0 implements decision 020. Build the clean preview after committing
 - [x] Layout/format regression tests and rendered synthetic multipage PDF inspection.
 
 Release 0.17.1 implements decision 021. No backup/schema migration or Pages deployment.
+
+## Report selection and target calibration — 2026-10-21
+
+- [x] One shared overview for multiple strings, followed by separate named Targets.
+- [x] Complete String info for every selected string, including unrounded JSON in PDF.
+- [x] Negative/positive H callout rails and dashed diagonal leader departures.
+- [x] Default Group + offset and mutually linked H/V/diameter edits with explicit overrides.
+- [x] Regression coverage and rendered two/three-string report inspection.
+
+Release 0.17.2 implements decision 022. Existing backups remain compatible; Pages deployment is separate.

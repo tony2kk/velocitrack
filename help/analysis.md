@@ -13,6 +13,11 @@ Choose a view in **Analysis**, between Filters and Tools.
 
 ## Choose an axis and quantity
 
+**String info** lists all selected strings, including strings without shots. Expand
+**Complete string data (JSON)** for every stored attribute, original provider field
+and local annotation in its stored units and precision. The PDF's **Chart / String
+info** section includes these complete records for all selected strings as well.
+
 **By shot** shows one reading per shot: velocity, Caldwell G1/G7, recorded conditions, known projectile mass, or a numeric custom field. Only supported choices are offered.
 
 **Over distance** shows recorded velocity samples or a calculated G1/G7 velocity curve when inputs exist. A custom application build can also register additional curves. Each selected function has its own description below the chart; Dual shows both. Simple/Dual recorded views show the first 100 selected shot traces. String compare averages traces within their non-null returned ranges.

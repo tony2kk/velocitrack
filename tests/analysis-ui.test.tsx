@@ -41,6 +41,34 @@ afterEach(async () => {
 });
 
 describe('persistent analysis controls', () => {
+  it('shows every selected string and complete original data in String info, including zero-shot strings', () => {
+    const profile = defaultProfile();
+    profile.analysis!.mode = 'info';
+    profile.infoSeriesId = 'one'; // Older profiles must not hide the other selected strings.
+    const parents = [
+      series({ id: 'one', name: 'First context', raw: { unknownReading: 1.234567 } }),
+      series({
+        id: 'two',
+        name: 'Second context',
+        raw: { nested: { note: 'Complete second data' } },
+      }),
+    ];
+    render(
+      <AnalysisPanel
+        shots={[]}
+        series={parents}
+        profile={profile}
+        view="chart"
+        activeShotId={null}
+        onHoverShot={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('region', { name: 'String info: First context' })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'String info: Second context' })).toBeTruthy();
+    expect(screen.getByText(/"unknownReading": 1.234567/)).toBeTruthy();
+    expect(screen.getByText(/Complete second data/)).toBeTruthy();
+    expect(screen.getAllByText('Complete string data (JSON)')).toHaveLength(2);
+  });
   it('restores legacy local choices as automatic models and explains mixed conditions', async () => {
     const profile = defaultProfile();
     profile.analysis!.mode = 'dual';

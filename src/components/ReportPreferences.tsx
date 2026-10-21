@@ -31,8 +31,8 @@ export function ReportPreferences({
     },
     {
       id: 'chart',
-      label: 'Chart',
-      help: 'The current analysis, selected shots and zoom, on a landscape page.',
+      label: 'Chart / String info',
+      help: 'The current chart and zoom, or all selected string attributes and original JSON in String info mode.',
     },
     {
       id: 'records',

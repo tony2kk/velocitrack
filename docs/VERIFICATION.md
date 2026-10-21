@@ -318,3 +318,23 @@ Full verification passed: TypeScript, ESLint, Prettier, **119 behavioral tests a
 - No owner data or cloud account was accessed. Field accuracy is not established;
   no Pages deployment was triggered. Owner-confirmed VelociRadar zero-offset handling
   is recorded in decision 019 and the unit reference.
+
+## Report selection and target calibration — 2026-10-21
+
+- Version 0.17.2 passed full verification: types, lint, formatting, **320 tests
+  across 44 files**, production/PWA build and the public-content guard. The optional
+  canvas layout case was also run separately; the default full suite skips only
+  this optional renderer.
+- Synthetic PDFs cover two strings in Compare and three in Simple, Dual and String
+  info. Rendered pages were visually inspected. Each has one introduction, a separate
+  Targets section, both H label directions and landscape whole-row records. Extracted
+  text verifies every expected unique shot marker (37 or 55) and three complete JSON
+  records in String info, including nested unrounded values and final record fields.
+- An isolated preview on port 4182 verified Group + offset as the new-drawing default,
+  H-to-V/G, V-to-H/G and G-to-H/V recalibration, saved geometry, full JSON inspection
+  and successful String info PDF generation. Browser logs contained no warnings or
+  errors. Screenshots and rendered PDFs remain ignored in `.local/`.
+- Existing backup tests passed; there is no new stored preference or schema change.
+  The owner's supplied PDF was inspected locally, never copied into fixtures or
+  published. No cloud account or production browser data was changed. Pages
+  deployment remains separate from this maintenance batch.

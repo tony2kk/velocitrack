@@ -2112,6 +2112,11 @@
   .info-entry {
     display: contents;
   }
+  .string-info + .string-info {
+    border-top: 1px solid var(--border);
+    margin-top: 28px;
+    padding-top: 24px;
+  }
   .preserve-lines,
   .provider-info {
     white-space: pre-wrap;

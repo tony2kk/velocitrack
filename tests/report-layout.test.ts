@@ -5,6 +5,7 @@ import { targetFigureLayout, drawTargetFigure } from '../src/reports/targetFigur
 import { emptyTarget, type TargetMeasurement } from '../src/domain/targetMeasurement';
 import { defaultProfile } from '../src/domain/model';
 import { reportDocument } from '../src/reports/content';
+import type { ReportInput } from '../src/reports/types';
 import { series, shot } from './fixtures/synthetic';
 import { writeFileSync } from 'node:fs';
 import pdfMake from 'pdfmake/build/pdfmake';
@@ -33,7 +34,7 @@ describe('print readability', () => {
       const figure = targetFigureLayout(1000, 800, { ...target, reportCrop: crop }, 'metric');
       expect(figure.dimensions.map((d) => d.key).sort()).toEqual(['G', 'H', 'V']);
       for (const [index, item] of figure.dimensions.entries()) {
-        expect(item.label.x).toBeGreaterThan(figure.photo.x + figure.photo.width);
+        expect(item.label.x + item.label.width).toBeLessThan(figure.photo.x);
         expect(item.label.x + item.label.width).toBeLessThanOrEqual(figure.width);
         expect(item.label.y).toBeGreaterThanOrEqual(0);
         expect(item.label.y + item.label.height).toBeLessThanOrEqual(figure.height);
@@ -48,6 +49,24 @@ describe('print readability', () => {
     ).toBe('2.80 cm');
     expect(target).toEqual(before);
     expect(targetFigureLayout(1000, 800, undefined, 'imperial').dimensions).toHaveLength(0);
+  });
+  it('routes negative H labels left and nonnegative H labels right with a diagonal departure', () => {
+    for (const horizontalOffset of [-15, 0, 15]) {
+      const figure = targetFigureLayout(
+        1000,
+        800,
+        { ...target, values: { ...target.values, horizontalOffset } },
+        'metric',
+      );
+      expect(figure.labelSide).toBe(horizontalOffset < 0 ? 'left' : 'right');
+      for (const item of figure.dimensions) {
+        if (horizontalOffset < 0)
+          expect(item.label.x + item.label.width).toBeLessThan(figure.photo.x);
+        else expect(item.label.x).toBeGreaterThan(figure.photo.x + figure.photo.width);
+        expect(item.leader[1]!.x).not.toBe(item.leader[0]!.x);
+        expect(item.leader[1]!.y).not.toBe(item.leader[0]!.y);
+      }
+    }
   });
   it('fits 14 columns into one landscape table and prevents row splitting', () => {
     const columns = Array.from({ length: 14 }, (_, i) => ({
@@ -82,9 +101,10 @@ describe('print readability', () => {
       const canvas = createCanvas(figure.width * 4, figure.height * 4);
       const ctx = canvas.getContext('2d');
       ctx.scale(4, 4);
-      drawTargetFigure(ctx, await loadImage('.local/report-target.png'), figure);
+      const canvasImage = await loadImage('.local/report-target.png');
+      drawTargetFigure(ctx, canvasImage, figure);
       writeFileSync('.local/target-contrast-preview.png', canvas.toBuffer('image/png'));
-      const input = {
+      const input: ReportInput = {
         profile: {
           ...defaultProfile(),
           unitSystem: 'metric' as const,
@@ -128,6 +148,90 @@ describe('print readability', () => {
         .getBuffer();
       writeFileSync('.local/readability-preview.pdf', bytes);
       expect(bytes.length).toBeGreaterThan(30_000);
+      const multi = structuredClone(input);
+      multi.series = ['Alpha', 'Beta', 'Gamma'].map((name, index) =>
+        series({
+          id: `series-${index}`,
+          name: `Synthetic ${name}`,
+          raw: {
+            location: 'Invented range',
+            notes: `${name} context`,
+            altitude: 800,
+            weatherData: {
+              temperature: 63,
+              pressure: 1018,
+              humidity: 45,
+              cityName: 'Example location',
+              weatherDescription: 'Cloudy',
+            },
+            nestedExample: { precise: 1.23456789, retained: true },
+          },
+        }),
+      );
+      multi.shots = input.shots.map((item, index) => ({
+        ...item,
+        seriesId: multi.series[index % 3]!.id,
+      }));
+      const photos = new Map<string, string>();
+      multi.annotations = multi.series.map((item, index) => {
+        const measurement = structuredClone(target);
+        measurement.photoId = `photo-${index}`;
+        if (index === 1) {
+          measurement.values.horizontalOffset = 15;
+          measurement.geometry!.poa!.x = 350;
+        }
+        const layout = targetFigureLayout(1000, 800, measurement, 'metric');
+        const targetCanvas = createCanvas(layout.width * 4, layout.height * 4);
+        const targetContext = targetCanvas.getContext('2d');
+        targetContext.scale(4, 4);
+        drawTargetFigure(targetContext, canvasImage, layout);
+        photos.set(item.id, targetCanvas.toDataURL('image/jpeg'));
+        return {
+          entityId: item.id,
+          notes: `${item.name} local note`,
+          fields: {},
+          target: measurement,
+        };
+      });
+      multi.attachments = multi.series.map((item, index) => ({
+        id: `photo-${index}`,
+        seriesId: item.id,
+        name: `Invented target ${index + 1}`,
+        caption: '',
+        mime: 'image/jpeg',
+        size: 100,
+        createdAt: multi.createdAt,
+      }));
+      const chartCanvas = createCanvas(800, 260);
+      const chartContext = chartCanvas.getContext('2d');
+      chartContext.fillStyle = 'white';
+      chartContext.fillRect(0, 0, 800, 260);
+      chartContext.strokeStyle = '#08796e';
+      chartContext.lineWidth = 3;
+      chartContext.beginPath();
+      chartContext.moveTo(40, 45);
+      chartContext.lineTo(750, 200);
+      chartContext.stroke();
+      chartContext.fillStyle = '#263e35';
+      chartContext.font = '16px Arial';
+      chartContext.fillText('Synthetic chart for layout verification', 40, 240);
+      multi.chart = {
+        image: chartCanvas.toDataURL('image/jpeg'),
+        legend: [{ label: 'Synthetic curve', color: '#08796e' }],
+        descriptions: ['Invented layout fixture.'],
+      };
+      for (const mode of ['simple', 'dual', 'compare', 'info'] as const) {
+        const sample = structuredClone(multi);
+        sample.profile.analysis!.mode = mode;
+        if (mode === 'compare') {
+          sample.series = sample.series.slice(0, 2);
+          sample.shots = sample.shots.filter((item) =>
+            sample.series.some((parent) => parent.id === item.seriesId),
+          );
+        }
+        const pdf = await pdfMake.createPdf(reportDocument(sample, photos)).getBuffer();
+        writeFileSync(`.local/multiple-${mode}.pdf`, pdf);
+      }
     },
     30_000,
   );

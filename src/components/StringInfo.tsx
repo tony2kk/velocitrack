@@ -14,6 +14,7 @@ import { projectileName } from '../domain/projectiles';
 import { formatQuantity } from '../domain/units';
 import { TagLabels } from './CustomizationManager';
 import { providerTimestamp } from '../domain/providerData';
+import { stringInformation } from '../domain/stringInformation';
 
 /** Read a provider timestamp without assuming every numeric metadata field is a timestamp. */
 export function providerTime(value: unknown): string {
@@ -63,9 +64,9 @@ export function StringInfo({
         item.read(context) !== null),
   );
   return (
-    <section className="string-info">
+    <section className="string-info" aria-label={`String info: ${series.name}`}>
       <header className="chart-heading">
-        <h3>String info</h3>
+        <h3>{series.name}</h3>
         <button onClick={() => onDetails?.(series.id)}>
           Edit details / Photos ({photos.length})
         </button>
@@ -131,12 +132,15 @@ export function StringInfo({
         })}
       </dl>
       <details className="quality">
-        <summary>Original Caldwell information</summary>
+        <summary>Complete string data (JSON)</summary>
         <p className="muted">
-          Original provider fields, including source statistics and technical metadata. Source units
-          are shown where their meaning has not been confirmed.
+          All stored string attributes, original provider JSON and local annotations. Numbers retain
+          their stored precision and original units here. Source connections and credentials are not
+          included.
         </p>
-        <pre className="provider-info">{JSON.stringify(series.raw, null, 2)}</pre>
+        <pre className="provider-info">
+          {JSON.stringify(stringInformation(series, annotations, fields, tags), null, 2)}
+        </pre>
       </details>
       {shots.some((shot) => shot.raw.timestamp !== undefined || shot.raw.notes) && (
         <details className="quality">

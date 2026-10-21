@@ -55,6 +55,62 @@ export function reportFixture(): ReportInput {
 }
 
 describe('local PDF composition', () => {
+  it.each(['simple', 'dual', 'compare'] as const)(
+    'uses one overview for three strings in %s mode, with each target exactly once',
+    (mode) => {
+      const input = reportFixture();
+      input.profile.analysis!.mode = mode;
+      input.series = Array.from({ length: 3 }, (_, index) =>
+        series({
+          id: `series-${index}`,
+          name: `Distinct ${index}`,
+          raw: { notes: `Context ${index}` },
+        }),
+      );
+      input.shots = input.series.map((item, index) =>
+        shot({ id: `shot-${index}`, seriesId: item.id }),
+      );
+      const content = reportDocument(
+        input,
+        new Map(input.series.map((item) => [item.id, `image-${item.id}`])),
+      ).content as unknown as Record<string, unknown>[];
+      expect(content.filter((item) => item.text === 'Range report')).toHaveLength(1);
+      const targets = content.findIndex((item) => item.text === 'Targets');
+      expect(targets).toBeGreaterThan(0);
+      expect(JSON.stringify(content.slice(0, targets))).not.toContain('pageBreak');
+      for (const item of input.series)
+        expect(JSON.stringify(content).split(`"image":"image-${item.id}"`)).toHaveLength(2);
+      expect(JSON.stringify(content.slice(0, targets))).toContain('Context 2');
+    },
+  );
+  it('exports full information for every selected string only in String info mode', () => {
+    const input = reportFixture();
+    input.profile.analysis!.mode = 'info';
+    input.series.push(
+      series({
+        id: 'second',
+        name: 'Second context',
+        airDensity: 1.123456,
+        raw: { nested: { reading: 2.345678, extra: 'original second value' } },
+      }),
+    );
+    const text = JSON.stringify(reportDocument(input));
+    expect(text).toContain('NEVER_SERIALIZE_THIS'); // Explicit String info includes otherwise hidden original fields.
+    expect(text).toContain('original second value');
+    expect(text).toContain('2.345678');
+    expect(text).toContain('1.123456');
+    expect(text).not.toContain('No chart is displayed');
+    input.profile.report = {
+      details: false,
+      target: false,
+      statistics: false,
+      chart: true,
+      records: false,
+    };
+    expect(reportDocument(input).pageOrientation).toBe('portrait');
+    input.profile.report.chart = false;
+    expect(JSON.stringify(reportDocument(input))).not.toContain('original second value');
+  });
   it('enables every section by default and can produce a chart-only page without an empty cover', () => {
     expect(Object.values(defaultReportSettings())).toEqual([true, true, true, true, true]);
     const input = reportFixture();
