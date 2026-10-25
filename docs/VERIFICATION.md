@@ -355,3 +355,20 @@ Full verification passed: TypeScript, ESLint, Prettier, **119 behavioral tests a
   using an invented target. Browser logs contained no warnings or errors. Screenshots
   remain ignored in `.local/`; no personal target or connected account was used.
 - Public delivery follows the existing verified-main Pages workflow (decision 023).
+
+## Update discovery — 2026-10-25
+
+- Maintenance 0.18.1 passes full verification: **337 tests across 47 files**, types,
+  lint, formatting, production/PWA build and public-content review. The existing
+  optional PDF renderer remains skipped; reports are unchanged.
+- A separate loopback test server served two app-shell revisions. Without reloading
+  the open first revision, the footer check discovered the second and showed Reload.
+  Later hid the prompt, a new manual check restored it, and Reload activated the
+  second revision. The synthetic string/profile persisted. This also exercises rapid
+  update classification, with no cache deletion or registration removal.
+- The actual 4180 server was initially unreachable although its cached app could
+  still run. It was restarted as a hidden production preview; HTTP availability was
+  confirmed. The public 0.18.0 build was already current before this repair.
+- Focus/visibility/reconnect, periodic polling, offline/server failure recovery,
+  first-install distinction, external activation, cleanup and overlapping requests
+  have behavior tests. The browser screenshot remains ignored in `.local/`.

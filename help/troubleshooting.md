@@ -35,6 +35,26 @@ Finish imports, then select **Reload**. Saved data/preferences remain; temporary
 
 If Reload fails, retry or refresh the browser once. Do not clear site data to fix an update.
 
+## A new release exists, but Reload is missing
+
+From version 0.18.1, the application checks on startup, on returning to a visible tab,
+after reconnecting, and every five minutes while visible. Click the **version number
+with the refresh icon in the footer** to check immediately. This reports whether the
+app is current, offline, downloading an update, or unable to reach the server. Checks
+never reload an open form automatically. **Later** dismisses the prompt; a manual
+check can show it again.
+
+An older open tab cannot run the new checking logic until it loads the update once.
+Finish edits/imports, then refresh the browser; if it still serves the old version,
+use **Ctrl + F5** on Windows. Confirm the version in the footer. This does not clear
+saved measurements or preferences, but unsaved edits/session choices can be lost.
+
+At `127.0.0.1:4180`, the local preview server must be running. The offline app can
+still open while that server is stopped, but cannot download new assets. Run the
+production build and preview commands in the [project README](../README.md), then
+refresh the browser. Keep the same hostname and port to retain access to local data.
+Development mode uses browser reload/hot updates rather than the production Reload prompt.
+
 ## Report a problem
 
 Include the footer's version/revision, your steps, and the visible error category. Avoid credentials, private exports, or account identifiers. A `-dirty` suffix identifies a build with uncommitted changes.

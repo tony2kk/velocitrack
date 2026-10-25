@@ -212,3 +212,11 @@ The owner explicitly deferred that visual change; it is not part of 0.18.0.
 Also deferred: omit the Targets report page/section when no targets are provided.
 Also deferred: String compare / Over distance / Velocity detail, showing individual
 recorded shot curves as in Simple/Dual with colors distinguishing their strings.
+
+Maintenance 0.18.1 adds update discovery for long-lived tabs (decision 025): native
+waiting/installing/controller observation, startup/focus/visibility/reconnect and
+five-minute visible checks, plus a manual check on the footer version. Registration
+and per-tab Reload remain separate; no automatic navigation or storage clearing.
+Older running tabs need one refresh to load this fix. Port 4180 must serve the current
+production build; offline startup alone does not prove that its server is running.
+The three deferred requests above remain out of scope for this maintenance release.

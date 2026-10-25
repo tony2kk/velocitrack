@@ -434,9 +434,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
             ? `Last import ${new Date(lastUpdate).toLocaleString('en-GB')}`
             : 'No imports yet'}
         </span>
-        <span className="app-version" title="Application version and source revision">
-          v{__APP_VERSION__} · {__BUILD_REVISION__}
-        </span>
+        <UpdateNotice />
         <span className="unofficial">Unofficial community project</span>
       </footer>
       {message && (
@@ -451,7 +449,6 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           </button>
         </div>
       )}
-      <UpdateNotice />
       {detailSeries && (
         <SeriesDetails
           key={detailSeries.id}

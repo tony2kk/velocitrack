@@ -954,6 +954,19 @@
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
   }
+  .update-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+  }
+  .update-check:hover {
+    color: var(--accent);
+  }
 }
 
 @layer components {
@@ -1440,6 +1453,7 @@
     background: #365749;
   }
   .update-notice {
+    color: var(--text);
     position: fixed;
     right: 20px;
     bottom: 80px;

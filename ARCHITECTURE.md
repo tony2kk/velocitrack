@@ -123,3 +123,12 @@ See decision 022.
 Optional `TargetMeasurement.calibration` stores an independent known-length segment in original-image pixels and canonical mm. `domain/targetCalibration` validates it and computes scale/ruler intervals; target editor gestures reuse the existing snapshot, cancellation and undo boundary. Save/restore require matching image frames, coherent mm/pixel scale and photo ownership. A reference can exist without group geometry. Manual edits clear its provenance, and photo deletion clears it alongside geometry/crop. Existing backup paths preserve these optional fields without migration.
 
 `Profile.showCaldwellNotes` defaults true and controls plain-text imported notes on cards, independently of local notes. Ctrl-click replaces the session string selection with one ID; it does not persist a new preference or affect the details button. See decision 024.
+
+## Update discovery (0.18.1)
+
+`pwa/updates.ts` observes native registration/worker state and checks on visible-page
+resume, reconnect and five-minute intervals. It coalesces requests and cleans up
+listeners/timers. `UpdateNotice` now owns the footer version/check control as well
+as the fixed Reload prompt. Only an explicit Reload action activates the waiting
+worker or navigates. Background discovery and manual checks never touch workspace
+data. See decision 025 and troubleshooting help for older tabs and stopped previews.

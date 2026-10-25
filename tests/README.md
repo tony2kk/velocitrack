@@ -93,3 +93,9 @@ Series-context coverage includes the additive v2 migration, custom field unit/va
   invalid references; photo deletion retains numbers but removes provenance.
 - Navigator tests cover default-on imported notes, hidden blank notes, exclusive
   Ctrl-click on card/checkbox, ordinary toggling and independent details controls.
+
+- `pwa-updates.test.ts`: periodic/resume checks, focus throttling, offline/server
+  recovery, waiting/external update detection, first-install distinction, another
+  tab's activation, request coalescing and listener/timer cleanup. `update-notice.test.tsx`
+  covers manual-check feedback and Later without automatic activation. Existing
+  `pwa-reload.test.ts` covers the separate explicit activation/reload lifecycle.

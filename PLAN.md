@@ -265,6 +265,15 @@ Release 0.17.2 implements decision 022. Existing backups remain compatible; Page
 
 Release 0.18.0 implements decision 024. Publish verified main automatically under decision 023.
 
+## Reliable update discovery — 2026-10-25
+
+- [x] Restart the local production preview on port 4180.
+- [x] Check long-lived visible tabs periodically and on resume/reconnect.
+- [x] Manual update check on the footer version, with connectivity/install status.
+- [x] Preserve explicit Reload and local data; test detection and cleanup.
+
+Maintenance release 0.18.1 implements decision 025 independently of deferred features.
+
 ## Next batch — requested 2026-10-25
 
 - [ ] Add a space between projectile weight and its unit in display labels. Explicitly deferred by the owner; do not include in 0.18.0.
