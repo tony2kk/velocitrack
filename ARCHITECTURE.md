@@ -117,3 +117,9 @@ the H sign, with dashed diagonal departures. TargetEditor links numeric dimensio
 to one scale by default; independent overrides are an explicit session-only choice.
 These changes reuse existing records, report preferences and backup validation.
 See decision 022.
+
+## Reference calibration and string cards (0.18)
+
+Optional `TargetMeasurement.calibration` stores an independent known-length segment in original-image pixels and canonical mm. `domain/targetCalibration` validates it and computes scale/ruler intervals; target editor gestures reuse the existing snapshot, cancellation and undo boundary. Save/restore require matching image frames, coherent mm/pixel scale and photo ownership. A reference can exist without group geometry. Manual edits clear its provenance, and photo deletion clears it alongside geometry/crop. Existing backup paths preserve these optional fields without migration.
+
+`Profile.showCaldwellNotes` defaults true and controls plain-text imported notes on cards, independently of local notes. Ctrl-click replaces the session string selection with one ID; it does not persist a new preference or affect the details button. See decision 024.

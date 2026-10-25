@@ -489,6 +489,9 @@ describe('persistent analysis controls', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Display' }));
     fireEvent.click(screen.getByRole('checkbox', { name: /Projectile weight/ }));
     fireEvent.click(screen.getByRole('checkbox', { name: /Show group size on string cards/ }));
+    const notes = screen.getByRole('checkbox', { name: /Show Caldwell string notes/ });
+    expect((notes as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(notes);
     fireEvent.change(screen.getByLabelText('Theme'), { target: { value: 'dark' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save display' }));
     await waitFor(() => expect(close).toHaveBeenCalledOnce());
@@ -496,6 +499,7 @@ describe('persistent analysis controls', () => {
       theme: 'dark',
       showProjectileWeight: true,
       showGroupSize: true,
+      showCaldwellNotes: false,
     });
     expect(await db.shots.get(original.id)).toEqual(original);
   });

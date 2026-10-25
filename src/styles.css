@@ -2052,6 +2052,13 @@
     margin: 8px 12px;
     font-size: 12px;
   }
+  .navigator-note {
+    margin: 8px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
   .navigator-fields:empty {
     display: none;
   }
@@ -2131,5 +2138,14 @@
   }
   .profile-tabs {
     flex-wrap: wrap;
+  }
+}
+
+@layer components {
+  .target-calibration-panel {
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 16px;
   }
 }

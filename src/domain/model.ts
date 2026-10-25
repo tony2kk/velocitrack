@@ -193,6 +193,8 @@ export interface Profile {
   showProjectileWeight?: boolean;
   /** Optional local target diameter on each string card; unset values stay hidden. */
   showGroupSize?: boolean;
+  /** Show imported string notes on cards; older profiles default to enabled. */
+  showCaldwellNotes?: boolean;
   visibleFieldIds?: string[];
   showTags?: boolean;
   id: 'local';
@@ -244,6 +246,7 @@ export function defaultProfile(): Profile {
     theme: 'auto',
     showProjectileWeight: false,
     showGroupSize: false,
+    showCaldwellNotes: true,
     filters: structuredClone(EMPTY_FILTERS),
   };
 }

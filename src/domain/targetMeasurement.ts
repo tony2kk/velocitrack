@@ -1,6 +1,7 @@
 import type { UnitSystem } from './model';
 import { unitLabels, formatQuantity } from './units';
 import { validReportCrop, type ReportCrop } from './reportCrop';
+import { calibrationScale, validCalibration, type TargetCalibration } from './targetCalibration';
 
 /** Target lengths are stored in mm; null means absent and signed offsets preserve zero. */
 export interface TargetValues {
@@ -27,6 +28,8 @@ export interface TargetGeometry {
 export interface TargetMeasurement {
   /** Optional report framing; it never changes the measurement or original photo. */
   reportCrop?: ReportCrop;
+  /** Known reference length, independent of the measured group and report crop. */
+  calibration?: TargetCalibration;
   values: TargetValues;
   manual: TargetField[];
   photoId?: string;
@@ -122,6 +125,7 @@ export function overrideTargetValues(
   patch: Partial<TargetValues>,
 ): TargetMeasurement {
   const next = structuredClone(measurement);
+  if (TARGET_FIELDS.some((field) => Object.hasOwn(patch, field))) removeCalibration(next);
   for (const field of TARGET_FIELDS) {
     if (!Object.hasOwn(patch, field)) continue;
     next.values[field] = patch[field] ?? null;
@@ -129,6 +133,32 @@ export function overrideTargetValues(
     if (next.values[field] !== null) next.manual.push(field);
   }
   return next;
+}
+
+/** Clear reference provenance after an explicit manual edit, retaining an existing group's legacy scale. */
+function removeCalibration(measurement: TargetMeasurement): void {
+  delete measurement.calibration;
+  if (!measurement.geometry) {
+    delete measurement.mmPerPixel;
+    if (!measurement.reportCrop) delete measurement.photoId;
+  }
+}
+
+/** Apply an independent reference and recalculate represented dimensions without moving the group. */
+export function changeTargetCalibration(
+  measurement: TargetMeasurement,
+  calibration: TargetCalibration,
+): TargetMeasurement {
+  if (
+    Math.hypot(calibration.end.x - calibration.start.x, calibration.end.y - calibration.start.y) < 1
+  )
+    return measurement;
+  const next = structuredClone(measurement);
+  next.calibration = structuredClone(calibration);
+  const scale = calibrationScale(calibration);
+  if (scale === null) return next;
+  next.mmPerPixel = scale;
+  return next.geometry ? changeTargetGeometry(next, next.geometry) : next;
 }
 
 /** Establish a uniform photo scale from a known nonzero dimension, then recompute represented values. */
@@ -146,7 +176,9 @@ export function calibrateTarget(
   const scale = millimeters / pixels;
   if (!Number.isFinite(scale) || scale <= 0)
     throw new Error('This dimension cannot define a valid photo scale.');
-  return changeTargetGeometry({ ...measurement, mmPerPixel: scale }, geometry);
+  const next = { ...measurement, mmPerPixel: scale };
+  delete next.calibration;
+  return changeTargetGeometry(next, geometry);
 }
 
 /** Keep editable anchor points on the original image; the enclosing circle may extend outside it. */
@@ -185,11 +217,19 @@ export function validTargetMeasurement(value: unknown): value is TargetMeasureme
     (!Number.isFinite(target.mmPerPixel) || target.mmPerPixel <= 0)
   )
     return false;
+  if (target.calibration !== undefined) {
+    const c = target.calibration;
+    if (!target.photoId || !validCalibration(c) || target.mmPerPixel === undefined) return false;
+    const scale = calibrationScale(c)!;
+    if (Math.abs(target.mmPerPixel / scale - 1) > 1e-10) return false;
+    for (const frame of [target.geometry, target.reportCrop])
+      if (frame && (frame.width !== c.width || frame.height !== c.height)) return false;
+  }
   if (!target.geometry)
     return (
       target.geometry === undefined &&
-      target.mmPerPixel === undefined &&
-      (target.photoId === undefined || !!target.reportCrop)
+      (target.mmPerPixel === undefined || !!target.calibration) &&
+      (target.photoId === undefined || !!target.reportCrop || !!target.calibration)
     );
   const g = target.geometry;
   if (

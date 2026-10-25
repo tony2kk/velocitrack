@@ -255,3 +255,18 @@ Release 0.17.1 implements decision 021. No backup/schema migration or Pages depl
 - [x] Regression coverage and rendered two/three-string report inspection.
 
 Release 0.17.2 implements decision 022. Existing backups remain compatible; Pages deployment is separate.
+
+## Reference calibration and string cards — 2026-10-25
+
+- [x] Imported Caldwell notes on string cards, with a default-on Display preference.
+- [x] Independent known-length reference, movable endpoints and cm/in ruler.
+- [x] Reference-only save/reopen, manual replacement, undo and reimport/backup preservation.
+- [x] Ctrl-click selects only the clicked string; ordinary selection remains additive.
+
+Release 0.18.0 implements decision 024. Publish verified main automatically under decision 023.
+
+## Next batch — requested 2026-10-25
+
+- [ ] Add a space between projectile weight and its unit in display labels. Explicitly deferred by the owner; do not include in 0.18.0.
+- [ ] Omit the Targets report page/section when no targets are provided. Explicitly deferred by the owner; do not include in 0.18.0.
+- [ ] Add String compare → Over distance → Velocity detail: individual recorded shot curves as in Simple/Dual, colored by string. Explicitly deferred by the owner; do not include in 0.18.0.

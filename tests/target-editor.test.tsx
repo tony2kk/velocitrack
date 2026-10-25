@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import 'fake-indexeddb/auto';
+import { useState } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { TargetEditor } from '../src/components/target/TargetEditor';
@@ -83,6 +84,179 @@ function enter(label: string, value: string) {
 }
 
 describe('target editor interaction', () => {
+  it('keeps checkbox state synchronized when Ctrl-click selects a checked or unchecked card', () => {
+    /** Exercise the real controlled-state boundary, including native checkbox default behavior. */
+    function Selection() {
+      const [selected, setSelected] = useState(['first', 'second']);
+      return (
+        <SeriesNavigator
+          series={[
+            series({ id: 'first', name: 'First' }),
+            series({ id: 'second', name: 'Second' }),
+          ]}
+          shots={[]}
+          selected={selected}
+          catalogNames={new Map()}
+          sourceNames={new Map()}
+          onSelectOnly={(id) => setSelected([id])}
+          onToggleSeries={(id, checked) =>
+            setSelected((current) =>
+              checked ? [...current, id] : current.filter((value) => value !== id),
+            )
+          }
+        />
+      );
+    }
+    render(<Selection />);
+    const first = screen.getByRole('checkbox', { name: 'Select series First' }) as HTMLInputElement;
+    const second = screen.getByRole('checkbox', {
+      name: 'Select series Second',
+    }) as HTMLInputElement;
+    fireEvent.click(first, { ctrlKey: true });
+    expect(first.checked).toBe(true);
+    expect(second.checked).toBe(false);
+    fireEvent.click(second, { ctrlKey: true });
+    expect(second.checked).toBe(true);
+    expect(first.checked).toBe(false);
+    fireEvent.click(screen.getByText('First'), { ctrlKey: true });
+    expect(first.checked).toBe(true);
+    expect(second.checked).toBe(false);
+    fireEvent.click(first, { ctrlKey: true });
+    expect(first.checked).toBe(true);
+    fireEvent.click(first);
+    expect(first.checked).toBe(false);
+  });
+  it('calibrates by moving both reference ends, recalculates a group, undoes manual replacement and preserves scale after clearing the group', async () => {
+    const saved = vi.fn();
+    render(
+      <TargetEditor
+        photo={photo}
+        initial={emptyTarget()}
+        units="metric"
+        onClose={vi.fn()}
+        onSaved={saved}
+      />,
+    );
+    const canvas = await screen.findByRole('group', { name: 'Target photo measurement canvas' });
+    fireEvent.click(screen.getByRole('button', { name: 'Calibrate scale' }));
+    expect(
+      (screen.getByRole('button', { name: 'Save measurement' }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    for (const [key, from, to] of [
+      ['start', 400, 200],
+      ['end', 800, 600],
+    ] as const) {
+      fireEvent.pointerDown(document.querySelector(`[data-handle="calibration-${key}"]`)!, {
+        clientX: from,
+        clientY: 400,
+        button: 0,
+      });
+      fireEvent.pointerMove(canvas, { clientX: to, clientY: 400 });
+      fireEvent.pointerUp(canvas, { clientX: to, clientY: 400 });
+    }
+    enter('Reference length (cm)', '5');
+    expect(screen.getByRole('img', { name: /Image scale/ })).toBeTruthy();
+    await draw('offset'); // 100 px offsets; 160 px group diameter
+    expect((screen.getByLabelText('Horizontal offset (cm)') as HTMLInputElement).value).toBe(
+      '1.25',
+    );
+    expect((screen.getByLabelText('Group size (cm)') as HTMLInputElement).value).toBe('2');
+    enter('Vertical offset (cm)', '2.5');
+    expect(screen.queryByRole('img', { name: /Image scale/ })).toBeNull();
+    expect(screen.queryByLabelText('Reference length (cm)')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByRole('img', { name: /Image scale/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Clear drawing' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save measurement' }));
+    await waitFor(() => expect(saved).toHaveBeenCalledOnce());
+    const target = (await db.annotations.get('series'))!.target!;
+    expect(target.geometry).toBeUndefined();
+    expect(target.mmPerPixel).toBe(0.125);
+    expect(target.calibration).toMatchObject({
+      start: { x: 200, y: 400 },
+      end: { x: 600, y: 400 },
+      lengthMm: 50,
+    });
+    cleanup();
+    render(
+      <TargetEditor
+        photo={photo}
+        initial={target}
+        units="imperial"
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+    await screen.findByLabelText('Reference length (in)');
+    await draw('offset');
+    expect((screen.getByLabelText('Group size (in)') as HTMLInputElement).value).toBe('0.7874');
+  });
+  it('cancels a reference endpoint gesture without changing the stored scale and supports inch calibration', async () => {
+    const saved = vi.fn();
+    render(
+      <TargetEditor
+        photo={photo}
+        initial={emptyTarget()}
+        units="imperial"
+        onClose={vi.fn()}
+        onSaved={saved}
+      />,
+    );
+    const canvas = await screen.findByRole('group', { name: 'Target photo measurement canvas' });
+    fireEvent.click(screen.getByRole('button', { name: 'Calibrate scale' }));
+    enter('Reference length (in)', '0');
+    expect(screen.getByRole('alert').textContent).toMatch(/positive/);
+    enter('Reference length (in)', '5');
+    fireEvent.pointerDown(document.querySelector('[data-handle="calibration-start"]')!, {
+      clientX: 400,
+      clientY: 400,
+      button: 0,
+    });
+    fireEvent.pointerMove(canvas, { clientX: 500, clientY: 500 });
+    fireEvent.pointerCancel(canvas);
+    fireEvent.click(screen.getByRole('button', { name: 'Save measurement' }));
+    await waitFor(() => expect(saved).toHaveBeenCalledOnce());
+    expect((await db.annotations.get('series'))!.target).toMatchObject({
+      mmPerPixel: 127 / 400,
+      calibration: { start: { x: 400, y: 400 }, lengthMm: 127 },
+    });
+  });
+  it('shows imported notes by default and handles exclusive card/checkbox selection without toggling or opening details', () => {
+    const toggle = vi.fn();
+    const only = vi.fn();
+    const details = vi.fn();
+    const props = {
+      series: [
+        series({ name: 'First', raw: { notes: 'Imported <note>' } }),
+        series({ id: 'second', name: 'Second', raw: { notes: '  ' } }),
+      ],
+      shots: [],
+      selected: ['series', 'second'],
+      catalogNames: new Map<string, string>(),
+      sourceNames: new Map<string, string>(),
+      onToggleSeries: toggle,
+      onSelectOnly: only,
+      onDetails: details,
+    };
+    const view = render(<SeriesNavigator {...props} />);
+    expect(screen.getAllByLabelText('Caldwell string note')).toHaveLength(1);
+    fireEvent.click(screen.getByText('Imported <note>'), { ctrlKey: true });
+    expect(only).toHaveBeenLastCalledWith('series');
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Select series Second' }), {
+      ctrlKey: true,
+    });
+    expect(only).toHaveBeenLastCalledWith('second');
+    expect(toggle).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText('First'), { ctrlKey: true });
+    expect(only).toHaveBeenCalledTimes(3);
+    fireEvent.click(screen.getByRole('button', { name: 'Details for First' }), { ctrlKey: true });
+    expect(details).toHaveBeenCalledWith('series');
+    expect(only).toHaveBeenCalledTimes(3);
+    fireEvent.click(screen.getByText('First'));
+    expect(toggle).toHaveBeenCalledOnce();
+    view.rerender(<SeriesNavigator {...props} showCaldwellNotes={false} />);
+    expect(screen.queryByLabelText('Caldwell string note')).toBeNull();
+  });
   it('defaults new drawings to Group + offset and keeps H, V and diameter mutually linked', async () => {
     const saved = vi.fn();
     render(

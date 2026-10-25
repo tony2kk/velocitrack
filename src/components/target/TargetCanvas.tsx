@@ -15,6 +15,9 @@ import {
   type TargetMeasurement,
 } from '../../domain/targetMeasurement';
 import { TargetDrawing } from './TargetDrawing';
+import type { UnitSystem } from '../../domain/model';
+import type { TargetCalibration } from '../../domain/targetCalibration';
+import { TargetCalibrationDrawing, TargetRuler } from './TargetCalibrationDrawing';
 import { constrainCrop, type ReportCrop } from '../../domain/reportCrop';
 import {
   constrainView,
@@ -30,7 +33,8 @@ export interface TargetCanvasHandle {
   fit: () => void;
 }
 /** The selected handle remains keyboard-adjustable after a pointer gesture. */
-type Handle = 'center' | 'edge' | 'poa' | 'crop-move' | 'crop-resize';
+type Handle =
+  'center' | 'edge' | 'poa' | 'crop-move' | 'crop-resize' | 'calibration-start' | 'calibration-end';
 /** A single-pointer edit or pan uses an immutable starting snapshot to avoid movement drift. */
 interface Gesture {
   id: number;
@@ -39,6 +43,7 @@ interface Gesture {
   client: ImagePoint;
   geometry?: TargetGeometry;
   crop?: ReportCrop;
+  calibration?: TargetCalibration;
   view: TargetView;
   grabbed: boolean;
 }
@@ -67,6 +72,9 @@ export function TargetCanvas({
   onZoom,
   cropMode = false,
   onCropChange,
+  calibrationMode = false,
+  onCalibrationChange,
+  units,
 }: {
   ref: Ref<TargetCanvasHandle>;
   canvasRef: RefObject<SVGSVGElement | null>;
@@ -84,6 +92,9 @@ export function TargetCanvas({
   onZoom: (zoom: number) => void;
   cropMode?: boolean;
   onCropChange?: (crop: ReportCrop) => void;
+  calibrationMode?: boolean;
+  onCalibrationChange?: (reference: TargetCalibration) => void;
+  units: UnitSystem;
 }) {
   const gesture = useRef<Gesture | null>(null);
   const contacts = useRef(new Map<number, ImagePoint>());
@@ -123,9 +134,14 @@ export function TargetCanvas({
             x: measurement.reportCrop.x + measurement.reportCrop.size / 2,
             y: measurement.reportCrop.y + measurement.reportCrop.size / 2,
           }
-        : factor > 1 && measurement.geometry && !pan
-          ? measurement.geometry.center
-          : imageAtClient(client, current, box);
+        : factor > 1 && calibrationMode && measurement.calibration && !pan
+          ? {
+              x: (measurement.calibration.start.x + measurement.calibration.end.x) / 2,
+              y: (measurement.calibration.start.y + measurement.calibration.end.y) / 2,
+            }
+          : factor > 1 && measurement.geometry && !pan
+            ? measurement.geometry.center
+            : imageAtClient(client, current, box);
     updateView(zoomView(current, factor, anchor, client, box, width, height));
   }
   useImperativeHandle(ref, () => ({
@@ -222,8 +238,21 @@ export function TargetCanvas({
     }
     return initial;
   }
-  /** A fixed square uses the original grab point; resize anchors the top-left corner. */
+  /** Edit only the selected tool, preserving its original grab offset throughout a gesture. */
   function applyGesture(g: Gesture, point: ImagePoint) {
+    if (g.calibration && (g.action === 'calibration-start' || g.action === 'calibration-end')) {
+      const key = g.action === 'calibration-start' ? 'start' : 'end';
+      const anchor = g.calibration[key];
+      onCalibrationChange?.({
+        ...g.calibration,
+        [key]: imagePoint(
+          { x: anchor.x + point.x - g.start.x, y: anchor.y + point.y - g.start.y },
+          width,
+          height,
+        ),
+      });
+      return;
+    }
     if (g.crop && (g.action === 'crop-move' || g.action === 'crop-resize')) {
       const dx = point.x - g.start.x;
       const dy = point.y - g.start.y;
@@ -282,11 +311,15 @@ export function TargetCanvas({
     const action =
       event.ctrlKey || pan
         ? 'pan'
-        : cropMode
-          ? hit?.startsWith('crop-')
+        : calibrationMode
+          ? hit?.startsWith('calibration-')
             ? hit
             : 'pan'
-          : (hit ?? 'draw');
+          : cropMode
+            ? hit?.startsWith('crop-')
+              ? hit
+              : 'pan'
+            : (hit ?? 'draw');
     if (action !== 'pan' && (point.x < 0 || point.x > width || point.y < 0 || point.y > height))
       return;
     selected.current = hit;
@@ -298,6 +331,7 @@ export function TargetCanvas({
       view: current,
       geometry: measurement.geometry ? structuredClone(measurement.geometry) : undefined,
       crop: measurement.reportCrop ? { ...measurement.reportCrop } : undefined,
+      calibration: measurement.calibration ? structuredClone(measurement.calibration) : undefined,
       grabbed: !!hit,
     };
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -384,6 +418,19 @@ export function TargetCanvas({
       return;
     }
     const handle = selected.current;
+    const reference = measurement.calibration;
+    if (calibrationMode) {
+      if (!reference || (handle !== 'calibration-start' && handle !== 'calibration-end')) return;
+      const key = handle === 'calibration-start' ? 'start' : 'end';
+      const point = reference[key];
+      onBegin();
+      onCalibrationChange?.({
+        ...reference,
+        [key]: imagePoint({ x: point.x + dx, y: point.y + dy }, width, height),
+      });
+      onEnd();
+      return;
+    }
     const crop = measurement.reportCrop;
     if (cropMode && crop && handle?.startsWith('crop-')) {
       onBegin();
@@ -401,7 +448,8 @@ export function TargetCanvas({
       return;
     }
     const g = measurement.geometry;
-    if (!g || !handle || handle === 'crop-move' || handle === 'crop-resize') return;
+    if (cropMode || !g || !handle || (handle !== 'center' && handle !== 'edge' && handle !== 'poa'))
+      return;
     const next = structuredClone(g);
     if (handle === 'edge')
       next.radius = Math.min(Math.hypot(width, height), Math.max(1, next.radius + dx - dy));
@@ -457,7 +505,7 @@ export function TargetCanvas({
         }}
       >
         <image href={url} width={width} height={height} />
-        <g pointerEvents={cropMode ? 'none' : undefined}>
+        <g pointerEvents={cropMode || calibrationMode ? 'none' : undefined}>
           <TargetDrawing
             measurement={measurement}
             pixelSize={pixelSize}
@@ -520,15 +568,28 @@ export function TargetCanvas({
               </g>
             );
           })()}
+        {calibrationMode && measurement.calibration && (
+          <TargetCalibrationDrawing reference={measurement.calibration} pixelSize={pixelSize} />
+        )}
+        {measurement.calibration && (
+          <TargetRuler
+            reference={measurement.calibration}
+            view={view}
+            pixelSize={pixelSize}
+            units={units}
+          />
+        )}
       </svg>
       <p className="muted target-canvas-help">
-        {cropMode && !pan
-          ? 'Drag the report square to move; drag the bottom-right corner to resize. Arrow keys fine-tune the selected handle.'
-          : pan
-            ? 'Drag to pan.'
-            : mode === 'offset'
-              ? 'Drag from POA to group center; drag the circle edge to resize.'
-              : 'Drag from group center to circle edge.'}{' '}
+        {calibrationMode && !pan
+          ? 'Drag A and B onto the ends of a known length. Enter its size in Reference scale. Arrow keys fine-tune the selected endpoint.'
+          : cropMode && !pan
+            ? 'Drag the report square to move; drag the bottom-right corner to resize. Arrow keys fine-tune the selected handle.'
+            : pan
+              ? 'Drag to pan.'
+              : mode === 'offset'
+                ? 'Drag from POA to group center; drag the circle edge to resize.'
+                : 'Drag from group center to circle edge.'}{' '}
         Ctrl + drag to pan · Ctrl + wheel to zoom · Two fingers to pan or pinch.
       </p>
     </div>

@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   calibrateTarget,
   changeTargetGeometry,
+  changeTargetCalibration,
   emptyTarget,
   overrideTargetValues,
   parseTargetValue,
@@ -167,6 +168,33 @@ async function seed() {
 }
 
 describe('target persistence and portability', () => {
+  it('preserves reference scale and note display preference through reimport, ZIP recovery and photo deletion', async () => {
+    const { item, source, bundle } = await seed();
+    const measurement = changeTargetCalibration(drawing(), {
+      width: 1200,
+      height: 800,
+      start: { x: 200, y: 400 },
+      end: { x: 600, y: 400 },
+      lengthMm: 50,
+    });
+    await saveTargetMeasurement(item.id, measurement, database);
+    await saveProfile({ showCaldwellNotes: false }, database);
+    await importBundle(source.id, bundle, database);
+    const prepared = await prepareBackup(await createBackup(database));
+    await database.annotations.clear();
+    await restoreBackup(prepared, database);
+    expect((await database.annotations.get(item.id))?.target).toEqual(measurement);
+    expect((await loadWorkspace(database)).profile.showCaldwellNotes).toBe(false);
+    const corrupt = await loadWorkspace(database);
+    corrupt.annotations[0]!.target!.calibration!.lengthMm = 0;
+    expect(() => validateBackup(corrupt)).toThrow();
+    await removePhoto('synthetic-photo', database);
+    const target = (await database.annotations.get(item.id))!.target!;
+    expect(target.calibration).toBeUndefined();
+    expect(target.mmPerPixel).toBeUndefined();
+    expect(target.values).toEqual(measurement.values);
+    expect(validTargetMeasurement(target)).toBe(true);
+  });
   it('saves one active result, preserves annotations and survives reimport and a ZIP round trip', async () => {
     const { item, source, bundle } = await seed();
     const measurement = calibrateTarget(drawing(), 'groupSize', 12.3456789);

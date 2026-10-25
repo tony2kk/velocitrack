@@ -15,16 +15,19 @@ export function SeriesNavigator({
   projectileNames,
   sourceNames,
   onToggleSeries,
+  onSelectOnly,
   annotations = [],
   tags = [],
   onDetails,
   fields = [],
   unitSystem = 'imperial',
   showGroupSize = false,
+  showCaldwellNotes = true,
 }: {
   fields?: FieldDefinition[];
   unitSystem?: UnitSystem;
   showGroupSize?: boolean;
+  showCaldwellNotes?: boolean;
   annotations?: Annotation[];
   tags?: Tag[];
   onDetails?: (id: string) => void;
@@ -35,6 +38,7 @@ export function SeriesNavigator({
   projectileNames?: Map<string, string>;
   sourceNames: Map<string, string>;
   onToggleSeries: (id: string, checked: boolean) => void;
+  onSelectOnly?: (id: string) => void;
 }) {
   const grouped = useMemo(() => {
     const groups = new Map<string, Shot[]>();
@@ -53,19 +57,37 @@ export function SeriesNavigator({
         const expanded = selected.includes(item.id);
         const records = grouped.get(item.id) ?? [];
         const groupSize = annotations.find((a) => a.entityId === item.id)?.target?.values.groupSize;
+        const note = typeof item.raw.notes === 'string' ? item.raw.notes.trim() : '';
         return (
           <section
             className={`series-group ${expanded ? 'selected' : ''}`}
             key={item.id}
             aria-label={item.name}
+            title="Ctrl + click to select only this string."
+            onClick={(event) => {
+              // Cancel label forwarding so a Ctrl-click never toggles the sole selection back off.
+              if (!event.ctrlKey || !onSelectOnly || (event.target as Element).closest('button, a'))
+                return;
+              if (!(event.target instanceof HTMLInputElement)) event.preventDefault();
+              onSelectOnly(item.id);
+            }}
           >
             <label className={`series-card ${expanded ? 'selected' : ''}`}>
               <input
                 type="checkbox"
                 checked={expanded}
                 aria-label={`Select series ${item.name}`}
-                title="Include or remove this string from the current workspace selection."
-                onChange={(event) => onToggleSeries(item.id, event.target.checked)}
+                title="Include or remove this string. Ctrl + click selects only this string."
+                onChange={(event) => {
+                  // React checkbox changes use the native click; exclusive selection is handled by the card.
+                  if (
+                    onSelectOnly &&
+                    event.nativeEvent instanceof MouseEvent &&
+                    event.nativeEvent.ctrlKey
+                  )
+                    return;
+                  onToggleSeries(item.id, event.target.checked);
+                }}
               />
               <div className="series-card-content">
                 <div className="series-meta">
@@ -101,6 +123,15 @@ export function SeriesNavigator({
               >
                 <SquarePen size={15} aria-hidden="true" />
               </button>
+            )}
+            {showCaldwellNotes && note && (
+              <p
+                className="navigator-note"
+                title="Original Caldwell string note"
+                aria-label="Caldwell string note"
+              >
+                {note}
+              </p>
             )}
             <TagLabels
               tags={tags.filter((tag) =>

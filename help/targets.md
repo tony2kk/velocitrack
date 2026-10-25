@@ -18,6 +18,8 @@ Open a string's **pencil** button. **Target measurement** contains three optiona
 
 Type any known values and select **Save target values**. No photo is required. Clear a field and save to remove that value. **Cancel edits** discards pending numeric changes.
 
+Changing a numeric H/V/group value clears any saved reference-arrow calibration. Saving untouched fields preserves it.
+
 Target values save separately from the custom fields and tags saved by **Save details**.
 
 ## Measure a photo
@@ -35,6 +37,14 @@ The diagonal double arrow measures the circle's diameter. The other arrows measu
 
 ### Calibration and manual overrides
 
+**Calibrate from the target itself:** choose **Calibrate** in the toolbar. Drag both ends **A** and **B** of the double arrow onto a known length, such as opposite edges of a target circle. Enter its actual size in **Reference length (cm/in)** and press Enter or leave the field. A circle must be measured across its diameter, through its center.
+
+Then choose **Group size** or **Group + offset** and position the group. Its size and offsets are calculated from the reference, so you do not need to measure the physical group. Moving either reference endpoint or editing its known length updates all dimensions represented by the group drawing. Arrow keys fine-tune the last selected endpoint; Shift moves ten original-image pixels.
+
+A contrasted ruler appears at the photo's lower right whenever reference calibration is set, including outside the Calibrate tool. It adapts to zoom and uses cm or in, with unlabeled subdivisions. Its main line occupies at most 30% of the visible image width and never represents more than the reference length. A reference alone can be saved before drawing a group. Unknown or zero reference lengths cannot be saved.
+
+Typing a group-size or H/V value explicitly **removes the reference arrow and ruler**, returning to the existing manual-dimension workflow below. Undo can restore the reference. Clearing only the group drawing keeps its reference calibration, ready for a new drawing. Calibration belongs to this string's active photo; it is not automatically shared with other strings or other photos.
+
 Use an actual known dimension to establish scale; photo pixels alone do not establish centimeters or inches. An offset used for calibration must have the same sign as the drawing. A zero offset cannot calibrate the photo.
 
 If a known value was entered before opening the photo, draw the geometry, then choose **Use this value for scale** beside it. Existing numeric values do not silently calibrate a different photo.
@@ -43,13 +53,13 @@ If a known value was entered before opening the photo, draw the geometry, then c
 
 To enter independent values after calibration, turn off **Link dimensions to drawing**. Those edits are marked **Manual** and do not change the scale. A later geometry edit recalculates represented dimensions and replaces their overrides. A circle without POA keeps separately entered H/V offsets independent. Re-enabling the link affects the next numeric edit; it does not silently rewrite current values.
 
-The **Undo** arrow restores the last completed gesture or numeric edit. The **trash** button (**Clear drawing**) removes the draft geometry and scale while retaining its numbers as manual values.
+The **Undo** arrow restores the last completed gesture or numeric edit. The **trash** button (**Clear drawing**) removes the group geometry while retaining its numbers as manual values. An independent reference calibration is retained; otherwise the group's scale is removed too.
 
 ## Several targets on one photo
 
 Each string has its own active measurement. Attach the same sheet to the relevant strings and place each string's circle on its corresponding target. The original image stays unchanged.
 
-The toolbar stays in one row. The two measurement buttons select circle-only or circle-plus-offset drawing. The remaining icons are Undo, Clear drawing, Pan image, Zoom in, Zoom out and Fit image. Hover an icon for its name and shortcut; on narrow screens the row can scroll horizontally.
+The toolbar stays in one row. The measurement buttons select circle-only, circle-plus-offset, or reference calibration. The remaining icons are Undo, Clear drawing, Report crop, Pan image, Zoom in, Zoom out and Fit image. Hover an icon for its name and shortcut; on narrow screens the row can scroll horizontally.
 
 **Mouse:** hold **Ctrl and drag** to pan. Use **Ctrl + mouse wheel** over the photo to zoom around the pointer. Plain wheel scrolling keeps its normal behavior. The **hand** button also enables drag-to-pan without holding Ctrl. Choose a measurement button to return to drawing.
 

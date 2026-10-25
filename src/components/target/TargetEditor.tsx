@@ -5,6 +5,7 @@ import {
   Crosshair,
   Hand,
   Maximize,
+  Ruler,
   Trash2,
   Undo2,
   ZoomIn,
@@ -13,6 +14,7 @@ import {
 import type { Attachment, UnitSystem } from '../../domain/model';
 import {
   calibrateTarget,
+  changeTargetCalibration,
   changeTargetGeometry,
   overrideTargetValues,
   parseTargetValue,
@@ -30,6 +32,12 @@ import { TargetCanvas, type TargetCanvasHandle } from './TargetCanvas';
 import { TargetConnections } from './TargetConnections';
 import { TARGET_COLORS } from './TargetDrawing';
 import { initialReportCrop, type ReportCrop } from '../../domain/reportCrop';
+import {
+  calibrationScale,
+  initialCalibration,
+  type TargetCalibration,
+} from '../../domain/targetCalibration';
+import { CalibrationInput } from './CalibrationInput';
 
 /** Load the local original only while its editor is open; revoke blob URLs on completion/unmount. */
 function useTargetPhoto(photo: Attachment) {
@@ -99,6 +107,7 @@ export function TargetEditor({
   );
   const [pan, setPan] = useState(false);
   const [cropMode, setCropMode] = useState(false);
+  const [calibrationMode, setCalibrationMode] = useState(false);
   const [zoom, setZoom] = useState(1);
   const canvas = useRef<TargetCanvasHandle>(null);
   const canvasElement = useRef<SVGSVGElement>(null);
@@ -115,7 +124,9 @@ export function TargetEditor({
     ((draft.geometry &&
       (image.width !== draft.geometry.width || image.height !== draft.geometry.height)) ||
       (draft.reportCrop &&
-        (image.width !== draft.reportCrop.width || image.height !== draft.reportCrop.height)));
+        (image.width !== draft.reportCrop.width || image.height !== draft.reportCrop.height)) ||
+      (draft.calibration &&
+        (image.width !== draft.calibration.width || image.height !== draft.calibration.height)));
   const pixels = draft.geometry ? targetPixels(draft.geometry) : undefined;
 
   /** Keep a synchronous gesture snapshot beside React state so release events cannot use a stale draft. */
@@ -135,6 +146,26 @@ export function TargetEditor({
   function cropChanged(reportCrop: ReportCrop) {
     update({ ...latest.current, photoId: photo.id, reportCrop });
   }
+  /** Reference edits share one scale without changing the circle, POA or report framing. */
+  function calibrationChanged(reference: TargetCalibration) {
+    update(changeTargetCalibration({ ...latest.current, photoId: photo.id }, reference));
+  }
+  /** A positive known length makes the independent reference usable for every subsequent group edit. */
+  function referenceLengthChanged(text: string) {
+    try {
+      const lengthMm = parseTargetValue(text, 'groupSize', editorUnits);
+      if (!lengthMm) throw new Error('Enter a positive reference length.');
+      if (!latest.current.calibration) return;
+      remember(latest.current);
+      calibrationChanged({ ...latest.current.calibration, lengthMm });
+      setLinked(true);
+      setError('');
+    } catch (cause) {
+      setError(
+        cause instanceof Error ? cause.message : 'The reference length could not be applied.',
+      );
+    }
+  }
   /** Linked dimensions share one scale after every edit; independent overrides require an explicit choice. */
   function valueChanged(field: TargetField, text: string) {
     try {
@@ -148,6 +179,7 @@ export function TargetEditor({
           : overrideTargetValues(current, { [field]: value });
       remember(current);
       update(next);
+      setCalibrationMode(false);
       setError('');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'The value could not be applied.');
@@ -170,7 +202,7 @@ export function TargetEditor({
               key={tool}
               type="button"
               className="target-tool-button"
-              aria-pressed={mode === tool && !pan && !cropMode}
+              aria-pressed={mode === tool && !pan && !cropMode && !calibrationMode}
               aria-label={tool === 'group' ? 'Group size' : 'Group size + offset'}
               title={
                 tool === 'group'
@@ -180,6 +212,7 @@ export function TargetEditor({
               disabled={busy}
               onClick={() => {
                 setCropMode(false);
+                setCalibrationMode(false);
                 setPan(false);
                 if (tool === mode) return;
                 setMode(tool);
@@ -197,6 +230,27 @@ export function TargetEditor({
               <span>{tool === 'group' ? 'Group size' : 'Group + offset'}</span>
             </button>
           ))}
+          <button
+            type="button"
+            className="target-tool-button"
+            aria-label="Calibrate scale"
+            aria-pressed={calibrationMode && !pan}
+            disabled={busy || !image}
+            title="Place both ends of the reference arrow on a known length, then enter its dimension."
+            onClick={() => {
+              if (!image) return;
+              if (!latest.current.calibration) {
+                remember(latest.current);
+                calibrationChanged(initialCalibration(image.width, image.height));
+              }
+              setCalibrationMode(true);
+              setCropMode(false);
+              setPan(false);
+            }}
+          >
+            <Ruler size={19} />
+            <span>Calibrate</span>
+          </button>
         </div>
         <span className="target-toolbar-divider" aria-hidden="true" />
         <button
@@ -210,6 +264,7 @@ export function TargetEditor({
             if (previous) {
               update(previous);
               setMode(previous.geometry && !previous.geometry.poa ? 'group' : 'offset');
+              if (!previous.calibration) setCalibrationMode(false);
               setHistory((items) => items.slice(0, -1));
               setError('');
             }
@@ -222,13 +277,20 @@ export function TargetEditor({
           className="icon-button"
           aria-label="Clear drawing"
           disabled={!draft.geometry || busy}
-          title="Clear this draft's drawing and scale; keep numeric values as manual entries."
+          title="Clear the group drawing; keep numeric values and any reference calibration."
           onClick={() => {
             remember(latest.current);
             update({
               values: { ...draft.values },
               manual: TARGET_FIELDS.filter((field) => draft.values[field] !== null),
               ...(draft.reportCrop ? { reportCrop: draft.reportCrop, photoId: photo.id } : {}),
+              ...(draft.calibration
+                ? {
+                    calibration: draft.calibration,
+                    mmPerPixel: draft.mmPerPixel,
+                    photoId: photo.id,
+                  }
+                : {}),
             });
             setLinked(true);
             setPan(false);
@@ -260,6 +322,7 @@ export function TargetEditor({
             }
             setPan(false);
             setCropMode((value) => !value);
+            setCalibrationMode(false);
           }}
         >
           <Crop size={20} />
@@ -333,6 +396,9 @@ export function TargetEditor({
             mode={mode}
             pan={pan}
             cropMode={cropMode}
+            calibrationMode={calibrationMode}
+            onCalibrationChange={calibrationChanged}
+            units={editorUnits}
             onCropChange={cropChanged}
             activeField={activeField}
             onZoom={setZoom}
@@ -355,6 +421,25 @@ export function TargetEditor({
             }}
           />
           <aside ref={valuesPanel} className="target-editor-values">
+            {draft.calibration && (
+              <section className="target-calibration-panel" aria-label="Reference calibration">
+                <h3>Reference scale</h3>
+                <p className="muted">
+                  Move A and B onto a known length, such as the target diameter. Then enter its
+                  size.
+                </p>
+                <CalibrationInput
+                  value={draft.calibration.lengthMm}
+                  units={editorUnits}
+                  onCommit={referenceLengthChanged}
+                />
+                <p className="muted">
+                  {calibrationScale(draft.calibration)
+                    ? 'Scale set. Use Group + offset to measure the group. Manual H, V or group size entry clears this reference.'
+                    : 'Enter the reference length before saving.'}
+                </p>
+              </section>
+            )}
             <label className="check-field">
               <input
                 type="checkbox"
@@ -372,11 +457,12 @@ export function TargetEditor({
                       ),
                     );
                     setCropMode(true);
+                    setCalibrationMode(false);
                     setPan(false);
                   } else {
                     const next = { ...latest.current };
                     delete next.reportCrop;
-                    if (!next.geometry) delete next.photoId;
+                    if (!next.geometry && !next.calibration) delete next.photoId;
                     update(next);
                     setCropMode(false);
                   }
@@ -392,11 +478,13 @@ export function TargetEditor({
             <h3>Dimensions</h3>
             <p className="muted">Hover or focus a value to locate its dimension on the photo.</p>
             <p className="muted">
-              {!draft.geometry
-                ? 'Draw a circle to begin.'
-                : linked || !draft.mmPerPixel
-                  ? 'Changing any nonzero dimension updates the photo scale and all other dimensions. Its sign must agree with the drawing.'
-                  : 'Independent values. Manual overrides are replaced when the corresponding geometry changes.'}
+              {draft.calibration && calibrationScale(draft.calibration)
+                ? 'Dimensions follow the reference scale. Manual entry clears reference calibration.'
+                : !draft.geometry
+                  ? 'Draw a circle to begin.'
+                  : linked || !draft.mmPerPixel
+                    ? 'Changing any nonzero dimension updates the photo scale and all other dimensions. Its sign must agree with the drawing.'
+                    : 'Independent values. Manual overrides are replaced when the corresponding geometry changes.'}
             </p>
             {TARGET_FIELDS.map((field) => (
               <div
@@ -479,7 +567,8 @@ export function TargetEditor({
             busy ||
             !image ||
             !!mismatch ||
-            (!draft.reportCrop && (!draft.geometry || !draft.mmPerPixel)) ||
+            (!draft.reportCrop && !draft.calibration && (!draft.geometry || !draft.mmPerPixel)) ||
+            (!!draft.calibration && calibrationScale(draft.calibration) === null) ||
             (!!draft.geometry && !draft.mmPerPixel)
           }
           onClick={async () => {

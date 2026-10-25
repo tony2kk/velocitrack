@@ -28,6 +28,7 @@ export function ProfileDialog({
   );
   const [nickname, setNickname] = useState(profile.nickname);
   const [showGroupSize, setShowGroupSize] = useState(profile.showGroupSize ?? false);
+  const [showCaldwellNotes, setShowCaldwellNotes] = useState(profile.showCaldwellNotes ?? true);
   const [remember, setRemember] = useState(profile.rememberSignIn);
   const [refresh, setRefresh] = useState(profile.refreshOnStart);
   const [unitSystem, setUnitSystem] = useState(profile.unitSystem ?? 'imperial');
@@ -66,7 +67,7 @@ export function ProfileDialog({
             setBusy(true);
             setError('');
             try {
-              await saveProfile({ theme, showProjectileWeight, showGroupSize });
+              await saveProfile({ theme, showProjectileWeight, showGroupSize, showCaldwellNotes });
               onClose();
             } catch {
               setError('Display preferences could not be saved.');
@@ -113,6 +114,18 @@ export function ProfileDialog({
               <small>
                 Use the profile's units. Only strings with a saved value display a group size.
               </small>
+            </span>
+          </label>
+          <label className="check-field">
+            <input
+              type="checkbox"
+              checked={showCaldwellNotes}
+              title="Show the original Caldwell string note on its card. Empty notes remain hidden."
+              onChange={(event) => setShowCaldwellNotes(event.target.checked)}
+            />
+            <span>
+              Show Caldwell string notes on cards
+              <small>Enabled by default. Imported notes stay separate from local notes.</small>
             </span>
           </label>
           {error && (

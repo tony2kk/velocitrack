@@ -198,3 +198,17 @@ default to Group + offset. Linked numeric edits recalibrate from any represented
 nonzero dimension; explicit unlinking permits manual overrides. The editor-only
 link flag is not persisted; physical values, geometry and crop keep existing backup
 semantics. H-sign callout placement and dashed departures improve report legibility.
+
+Release 0.18.0 implements decision 024: optional reference calibration on target annotations,
+saved in original-image pixels plus lengthMm, default-on Caldwell notes on string cards,
+and Ctrl-click exclusive string selection. Manual numeric edits clear the reference;
+empty patches preserve it, and clearing group geometry keeps it. Reference-only saved
+targets are valid. Backups and reimports preserve the optional fields; photo deletion
+removes reference provenance. See TARGET_MEASUREMENTS.md for scale/frame validation.
+Pages delivery follows decision 023 after verification, commit and push.
+
+Next requested batch: insert a space between displayed projectile weight and unit.
+The owner explicitly deferred that visual change; it is not part of 0.18.0.
+Also deferred: omit the Targets report page/section when no targets are provided.
+Also deferred: String compare / Over distance / Velocity detail, showing individual
+recorded shot curves as in Simple/Dual with colors distinguishing their strings.

@@ -338,3 +338,20 @@ Full verification passed: TypeScript, ESLint, Prettier, **119 behavioral tests a
   The owner's supplied PDF was inspected locally, never copied into fixtures or
   published. No cloud account or production browser data was changed. Pages
   deployment remains separate from this maintenance batch.
+
+## Reference calibration and string cards — 2026-10-25
+
+- Version 0.18.0 passes full `npm run verify`: types, lint, formatting, **330 tests
+  across 45 files**, production/PWA build and public-content guard. One existing
+  optional PDF renderer is skipped; this batch does not change PDF rendering.
+- Tests cover diagonal reference scaling, both draggable endpoints, cancellation,
+  undo, manual replacement, group-clear reuse, reference-only save/reopen, cm/in
+  conversion, ruler bounds, invalid scale/frame rejection, reimport, ZIP recovery
+  and photo-deletion cleanup. Note display and Ctrl selection include controlled
+  checkbox-state regressions and preservation of ordinary selection/details behavior.
+- An isolated browser preview on port 4182 verified both endpoint drags, live values,
+  a zoom-adaptive ruler, save/reopen and unit switching, plus the default-enabled
+  note checkbox in an older profile. Desktop and 390-pixel-wide layouts were inspected
+  using an invented target. Browser logs contained no warnings or errors. Screenshots
+  remain ignored in `.local/`; no personal target or connected account was used.
+- Public delivery follows the existing verified-main Pages workflow (decision 023).

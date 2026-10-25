@@ -17,8 +17,11 @@ Version 0.12.0 adds one optional active target result per string, stored as `Ann
 | `geometry.center`, `geometry.poa` | Original-image `{ x, y }` coordinates in pixels, inside image bounds. POA may be null. Image Y increases downwards. |
 | `geometry.radius` | Positive radius in original-image pixels, bounded by the image diagonal. The circle may extend beyond an image edge. |
 | `mmPerPixel` | Optional finite positive uniform image scale, in **mm/pixel**. |
+| `calibration.width`, `calibration.height` | Optional reference's original-image dimensions, pixels; same frame as geometry/crop. |
+| `calibration.start`, `calibration.end` | Bounded original-image `{ x, y }` endpoints in **pixels**, at least one pixel apart. |
+| `calibration.lengthMm` | Known reference length in **mm**, finite and strictly positive when saved. Null is permitted only in an unsaved editor draft. |
 
-No geometry means no photo reference or scale. Geometry requires a photo reference. The editor saves photo results only after successful calibration; manually entered results need no photo. Null and zero have distinct meanings. The validator is shared by local writes and backup validation.
+Geometry requires a photo reference. A complete reference calibration may also have a photo reference and scale without group geometry; an independent report crop may have a photo reference without scale. Other results without geometry have neither photo reference nor scale. The editor saves group results only after successful calibration; manually entered results need no photo. Null and zero have distinct meanings. The validator is shared by local writes and backup validation.
 
 Target lengths intentionally use canonical **mm**, independently of the existing ft-based recorded-distance contract. Display divides by **10** for cm or **25.4** for inches. Profile changes never rewrite stored values or geometry. Rounded editor text is not written back unless the field was changed.
 
@@ -31,6 +34,10 @@ Given radius `r`, center `(cx, cy)` and POA `(px, py)`, pixel dimensions are:
 - Vertical offset: `py - cy`.
 
 Calibrating from a represented, nonzero dimension `d` sets `mmPerPixel = knownMillimeters / d`. Signs must agree so the scale is positive. Every represented dimension is then multiplied by that scale. The model assumes an upright image with uniform scale; there is no perspective correction or automated target analysis.
+
+Since 0.18.0, the optional independent `calibration` segment sets `mmPerPixel = lengthMm / hypot(end.x - start.x, end.y - start.y)`. Moving endpoints or changing the known length recalculates represented group dimensions without moving group geometry. Reference-only results can be saved. Changing a manual H/V/group value removes this reference provenance; existing linked/independent dimension semantics continue. An empty manual patch preserves calibration. Clearing group geometry retains an independent reference and scale. The editor ruler chooses a readable cm/in interval no longer than the reference length or 30% of visible image width, and follows the viewport without changing storage.
+
+Validation rejects incomplete/degenerate references, inconsistent scale, mismatched image frames, and foreign/missing photo references before save/recovery. Reference geometry and physical length are included automatically in annotation backups, imports preserve them, and photo deletion drops them while retaining numeric results. No schema or backup-format migration is needed; older records remain valid. Reference calibration is per string/photo, not propagated between identical image attachments.
 
 Since 0.17.2, the editor defaults new drawings to Group + offset and links numeric edits to geometry. Every represented nonzero H/V/diameter edit recalibrates the common scale and recomputes represented dimensions. The session-only Link dimensions to drawing checkbox can be disabled after calibration for independent manual overrides. Re-enabling it affects the next edit, not existing values. A later geometry change recomputes represented dimensions and clears those overrides. Circle-only geometry has no POA and preserves independently entered H/V offsets. Existing drawings reopen in their saved geometry mode. No persistence or backup change is needed.
 
@@ -71,6 +78,9 @@ Custom distance functions receive the detached readonly result through `input.st
 - `target/TargetCanvas`: mouse/touch capture, geometry gestures and navigation arbitration.
 - `target/targetViewport`: pure screen/image transforms and bounded cursor/centroid zoom.
 - `target/TargetDrawing`: SVG circle, anchors and color-matched dimension arrows.
+- `domain/targetCalibration`: reference validation, physical scale and bounded ruler intervals.
+- `target/TargetCalibrationDrawing`: contrasted reference endpoints/arrow and viewport ruler.
+- `target/CalibrationInput`: known-length editing without rewriting untouched precision.
 - `target/TargetConnections`: focused/hovered field connector with layout/viewport tracking.
 - `TargetValueInput`: local typing, one commit on Enter/blur and Escape cancellation.
 

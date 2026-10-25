@@ -257,6 +257,7 @@ export function validateBackup(value: unknown): asserts value is Workspace {
     'theme',
     'showProjectileWeight',
     'showGroupSize',
+    'showCaldwellNotes',
     'tableColumns',
     'tableColumnOrder',
     'tableSort',
@@ -278,6 +279,7 @@ export function validateBackup(value: unknown): asserts value is Workspace {
   requireValid(p.showTags === undefined || typeof p.showTags === 'boolean');
   requireValid(p.showProjectileWeight === undefined || typeof p.showProjectileWeight === 'boolean');
   requireValid(p.showGroupSize === undefined || typeof p.showGroupSize === 'boolean');
+  requireValid(p.showCaldwellNotes === undefined || typeof p.showCaldwellNotes === 'boolean');
   if (p.report !== undefined) {
     requireValid(object(p.report));
     keys(p.report, ['details', 'target', 'statistics', 'chart', 'records']);

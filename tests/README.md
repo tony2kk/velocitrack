@@ -84,3 +84,12 @@ Series-context coverage includes the additive v2 migration, custom field unit/va
   precision; ordinary curated reports still omit raw records. UI coverage verifies
   all selected String info sections, default Group + offset, repeated calibration
   from H, V and diameter, undo/save, and circle-only independent offsets.
+
+- `target-calibration.test.ts`: independent diagonal references, group/offset scale,
+  cm/in rulers bounded through zoom, manual replacement, reference-only results and
+  invalid scale/frame rejection. Editor tests cover both endpoints, cancellation,
+  undo, clear-group reuse, save/reopen and inch entry. Persistence tests round-trip
+  calibration and note-display preferences through reimport/ZIP restore and reject
+  invalid references; photo deletion retains numbers but removes provenance.
+- Navigator tests cover default-on imported notes, hidden blank notes, exclusive
+  Ctrl-click on card/checkbox, ordinary toggling and independent details controls.

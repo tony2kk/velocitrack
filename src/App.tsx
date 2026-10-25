@@ -353,6 +353,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
             series={filtered}
             shots={shots}
             selected={selected}
+            onSelectOnly={(id) => setSelected([id])}
             catalogNames={catalogNames}
             projectileNames={projectileNames}
             sourceNames={sourceNames}
@@ -366,6 +367,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
             fields={fieldDefinitions}
             unitSystem={profile.unitSystem}
             showGroupSize={profile.showGroupSize}
+            showCaldwellNotes={profile.showCaldwellNotes}
             onDetails={setDetailId}
           />
           {!filtered.length && (

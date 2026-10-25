@@ -4,6 +4,10 @@
 
 Select the **pencil** beside its shot count to open details and photos. Opening details does not select or deselect the string.
 
+Click a string card or its checkbox to add/remove it from the selection. **Ctrl + click** anywhere on a card selects only that string and deselects every other string. Ctrl-clicking an already selected string keeps it selected. The pencil continues to open details.
+
+Original Caldwell string notes appear on cards by default. Hide them through **Profile → Display → Show Caldwell string notes on cards**. Blank notes are omitted; imported notes and local annotations remain separate.
+
 ## Add your own fields
 
 Open **Profile → Custom fields**, enter a name, choose a type, and select **Add field**. Define as many as you need.

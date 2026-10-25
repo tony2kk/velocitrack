@@ -18,6 +18,7 @@ Units update charts, tooltips, tables, and applicable custom fields. Originals s
 - **Projectile weight:** append original mass, such as `Example projectile 150.0grs` or `Example projectile 2.00g`.
 - **Theme:** Light, Dark, or Auto to follow your operating system.
 - **Show group size on string cards:** display each string's saved target diameter in cm/in. Starts off; missing values stay hidden and zero is shown. See [Target measurements](targets.md).
+- **Show Caldwell string notes on cards:** show the original imported string note. Enabled by default, including older profiles; blank notes stay hidden. This does not change your separate local notes.
 
 Choose **Save display**. These choices are saved and included in backups.
 
