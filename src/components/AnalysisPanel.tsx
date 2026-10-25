@@ -38,6 +38,8 @@ import { columnOrder, sortShots, tableColumns, visibleColumns } from '../domain/
 import { StringInfo } from './StringInfo';
 import { ShotTable } from './ShotTable';
 import type { MeasurementChartHandle } from './MeasurementChart';
+import { reportChartHeight, REPORT_CHART_PIXELS } from '../reports/chartLayout';
+import { reportPageArea } from '../reports/paper';
 import type { ReportHandle } from '../reports/types';
 import { displayValue, formatValue, formatQuantity, unitLabels } from '../domain/units';
 import type { ViewportMemory } from '../domain/chartViewport';
@@ -279,6 +281,35 @@ export function AnalysisPanel({
             );
       if (chartVisible && reportProfile.report?.chart !== false && !chartRef.current)
         throw new Error('The chart is still loading. Try again in a moment.');
+      const legend = labels.map((label, index) => ({
+        label,
+        color: chartStyle(
+          kind === 'compare'
+            ? Math.max(
+                0,
+                colorOrder?.indexOf(
+                  [...series].sort((a, b) => a.id.localeCompare(b.id))[index]!.id,
+                ) ?? index,
+              )
+            : index,
+          dark,
+        ).color,
+      }));
+      const descriptions = activeCurves.flatMap((curve) => [
+        curve.label(unitSystem) + ': ' + curve.description,
+        ...describeCurveConditions(curve, sortedShots, curveData),
+      ]);
+      const firstChartPage =
+        reportProfile.report?.details === false &&
+        reportProfile.report?.statistics === false &&
+        (reportProfile.report?.target === false ||
+          !attachments.some((photo) => series.some((item) => item.id === photo.seriesId)));
+      const chartHeight = reportChartHeight(
+        legend,
+        descriptions,
+        firstChartPage,
+        reportProfile.reportPaperSize,
+      );
       return structuredClone({
         series,
         shots: sortedShots.filter((shot) => !shot.excluded && !invalidShots?.has(shot.id)),
@@ -294,25 +325,12 @@ export function AnalysisPanel({
         ...(chartVisible && reportProfile.report?.chart !== false
           ? {
               chart: {
-                image: chartRef.current!.capture(),
-                legend: labels.map((label, index) => ({
-                  label,
-                  color: chartStyle(
-                    kind === 'compare'
-                      ? Math.max(
-                          0,
-                          colorOrder?.indexOf(
-                            [...series].sort((a, b) => a.id.localeCompare(b.id))[index]!.id,
-                          ) ?? index,
-                        )
-                      : index,
-                    dark,
-                  ).color,
-                })),
-                descriptions: activeCurves.flatMap((curve) => [
-                  curve.label(unitSystem) + ': ' + curve.description,
-                  ...describeCurveConditions(curve, sortedShots, curveData),
-                ]),
+                image: chartRef.current!.capture(
+                  (chartHeight * REPORT_CHART_PIXELS) /
+                    reportPageArea(reportProfile.reportPaperSize).width,
+                ),
+                legend,
+                descriptions,
               },
             }
           : {}),
@@ -554,6 +572,7 @@ export function AnalysisPanel({
             <ShotTable
               shots={sortedShots}
               series={series}
+              sort={profile?.tableSort}
               activeShotId={activeShotId}
               onHoverShot={onHoverShot}
               unitSystem={unitSystem}
@@ -579,6 +598,7 @@ export function AnalysisPanel({
                   unitSystem={unitSystem}
                   viewportMemory={viewportMemory}
                   fitOnMount
+                  heightPercent={profile?.chartHeightPercent ?? 100}
                   curveData={curveData}
                   forecastDistance={
                     forecast ? (settings.forecastDistance ?? DEFAULT_FORECAST_DISTANCE) : undefined

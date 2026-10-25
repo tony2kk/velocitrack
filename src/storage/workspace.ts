@@ -33,6 +33,19 @@ export type Workspace = Awaited<ReturnType<typeof loadWorkspace>>;
 
 /** Merge top-level preferences atomically; callers provide complete nested filter objects. */
 export async function saveProfile(patch: Partial<Omit<Profile, 'id'>>, database = db) {
+  if (
+    patch.reportPaperSize !== undefined &&
+    patch.reportPaperSize !== 'A4' &&
+    patch.reportPaperSize !== 'LETTER'
+  )
+    throw new Error('Report paper size must be A4 or Letter.');
+  if (
+    patch.chartHeightPercent !== undefined &&
+    (!Number.isInteger(patch.chartHeightPercent) ||
+      patch.chartHeightPercent < 70 ||
+      patch.chartHeightPercent > 200)
+  )
+    throw new Error('Chart height must be a whole percentage between 70 and 200.');
   await database.transaction('rw', database.profiles, async () => {
     const current = { ...defaultProfile(), ...(await database.profiles.get('local')) };
     await database.profiles.put({ ...current, ...patch, id: 'local' });

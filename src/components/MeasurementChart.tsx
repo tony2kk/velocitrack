@@ -6,12 +6,14 @@ import {
   useRef,
   useState,
   type Ref,
+  type CSSProperties,
 } from 'react';
 import { RotateCcw } from 'lucide-react';
 import { init, use as registerCharts, type EChartsType } from 'echarts/core';
-import { LineChart } from 'echarts/charts';
+import { BarChart, LineChart } from 'echarts/charts';
 import { AriaComponent, GridComponent, DataZoomComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
+import { REPORT_CHART_PIXELS } from '../reports/chartLayout';
 import type { AnalysisMode, ChartSettings, Series, Shot, UnitSystem } from '../domain/model';
 import { quantityLabel, type Quantity } from '../domain/analysis';
 import { formatQuantity, unitLabels } from '../domain/units';
@@ -40,11 +42,18 @@ import {
   type ChartTrace,
 } from '../domain/chart';
 
-registerCharts([LineChart, AriaComponent, GridComponent, DataZoomComponent, CanvasRenderer]);
+registerCharts([
+  BarChart,
+  LineChart,
+  AriaComponent,
+  GridComponent,
+  DataZoomComponent,
+  CanvasRenderer,
+]);
 
 /** A fresh, unhovered print image of the current viewport; no screenshot of UI chrome. */
 export interface MeasurementChartHandle {
-  capture: () => string;
+  capture: (height?: number) => string;
 }
 
 /** Render measured points and bridge ECharts hover events to the shared shot identity. */
@@ -66,6 +75,7 @@ export default function MeasurementChart({
   curveData,
   viewportMemory,
   fitOnMount = false,
+  heightPercent = 100,
   forecastDistance,
   onForecastDistanceChange,
 }: {
@@ -87,6 +97,8 @@ export default function MeasurementChart({
   viewportMemory?: ViewportMemory;
   /** A new selection fits all plotted samples rather than restoring an unrelated forecast window. */
   fitOnMount?: boolean;
+  /** Local display preference; resizing must not alter the numerical viewport. */
+  heightPercent?: number;
   /** Existing forecast field, in canonical feet; this component only coordinates the viewport. */
   forecastDistance?: number;
   onForecastDistanceChange?: (distance: number) => void;
@@ -94,11 +106,15 @@ export default function MeasurementChart({
   const element = useRef<HTMLDivElement>(null);
   const instance = useRef<EChartsType | null>(null);
   useImperativeHandle(ref, () => ({
-    capture: () => {
+    capture: (height = 780) => {
       const current = instance.current;
       if (!current) throw new Error('The chart is still loading. Try again in a moment.');
       const host = document.createElement('div');
-      const copy = init(host, undefined, { width: 1400, height: 600, renderer: 'canvas' });
+      const copy = init(host, undefined, {
+        width: REPORT_CHART_PIXELS,
+        height,
+        renderer: 'canvas',
+      });
       const option = current.getOption();
       // Retain exact zoom percentages/extents; only print colors and navigation chrome change.
       const axesForPrint = (axes: unknown) =>
@@ -114,6 +130,8 @@ export default function MeasurementChart({
           ...option,
           animation: false,
           backgroundColor: '#ffffff',
+          // Printed charts retain their data window but need no room for zoom controls.
+          grid: { left: 74, right: kind === 'dual' ? 100 : 64, top: 40, bottom: 48 },
           textStyle: { color: '#334b43' },
           xAxis: axesForPrint(option.xAxis),
           yAxis: axesForPrint(option.yAxis),
@@ -298,6 +316,13 @@ export default function MeasurementChart({
       // Fit/reset starts exactly at the muzzle plane, without negative padding above zero.
       // Existing zoom windows remain untouched until the user explicitly resets the scales.
       if (downward[index] && fitted) fitted[0] = 0;
+      // A fitted bar starts at zero, including signed string offsets. Explicit zoom still works.
+      if (mode === 'string' && fitted) {
+        // Use displayed zero: 0 °C is 32 °F in the canonical viewport, unlike a length conversion.
+        const baseline = -scale.offset / scale.factor;
+        fitted[0] = Math.min(baseline, fitted[0]);
+        fitted[1] = Math.max(baseline, fitted[1]);
+      }
       return retainViewport(memory, `${xKey}:y:${key}`, fitted, reset);
     });
     const [yStart, yEnd] = zoomPercent(y[0]!);
@@ -424,7 +449,11 @@ export default function MeasurementChart({
         ],
         series: traces.map((trace) => ({
           ...trace,
-          type: 'line',
+          type: mode === 'string' ? 'bar' : 'line',
+          // Each string owns one series for identity/hover. Overlay their slots to center each
+          // isolated bar on its numeric string index rather than offsetting it by series order.
+          barGap: '-100%',
+          barMaxWidth: 64,
           showSymbol: !trace.data[0]?.derived && !trace.data[0]?.model,
           symbol: trace.symbol ?? 'circle',
           symbolSize: mode === 'distance' ? 6 : 8,
@@ -537,7 +566,10 @@ export default function MeasurementChart({
       }
   }, [activeShotId, activeShotIds, traces, resetCount]);
   return (
-    <div className="chart-frame">
+    <div
+      className="chart-frame"
+      style={{ '--chart-height-scale': heightPercent / 100 } as CSSProperties}
+    >
       <div
         className="measurement-chart"
         ref={element}

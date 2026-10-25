@@ -15,8 +15,9 @@ Units update charts, tooltips, tables, and applicable custom fields. Originals s
 
 ## Display
 
-- **Projectile weight:** append original mass, such as `Example projectile 150.0grs` or `Example projectile 2.00g`.
+- **Projectile weight:** append original mass, such as `Example projectile 150.0 grs` or `Example projectile 2.00 g`.
 - **Theme:** Light, Dark, or Auto to follow your operating system.
+- **Chart height (%):** set the screen chart to 70–200% of its default responsive height. Starts at 100%. Resizing keeps your zoom; PDF charts fit their paper independently.
 - **Show group size on string cards:** display each string's saved target diameter in cm/in. Starts off; missing values stay hidden and zero is shown. See [Target measurements](targets.md).
 - **Show Caldwell string notes on cards:** show the original imported string note. Enabled by default, including older profiles; blank notes stay hidden. This does not change your separate local notes.
 
@@ -28,6 +29,8 @@ including trailing zeroes. This does not round your stored measurements or edits
 Labels use each string's recorded projectile snapshot. If a Caldwell catalog edit does not update an old string's weight, assign the updated projectile to that string in Caldwell and refresh again.
 
 ## Report
+
+**Paper size:** choose A4 (default) or Letter. Charts and shot tables use landscape pages sized for this choice. The preference stays in this browser and is included in backups.
 
 **String details, Target, String statistics, Chart and Shot records are all enabled by default.** Choose sections and select **Save report preferences**. These local choices are included in backups. See [PDF reports](reports.md) for framing and Save as behavior.
 

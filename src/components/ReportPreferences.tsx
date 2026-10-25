@@ -1,16 +1,19 @@
 import { useState } from 'react';
-import { defaultReportSettings, type ReportSettings } from '../domain/model';
+import { defaultReportSettings, type ReportSettings, type Profile } from '../domain/model';
 import { saveProfile } from '../storage/workspace';
 
 /** Local report composition, saved independently of other profile tabs and included in backups. */
 export function ReportPreferences({
   initial,
+  initialPaperSize = 'A4',
   onClose,
 }: {
   initial?: ReportSettings;
+  initialPaperSize?: Profile['reportPaperSize'];
   onClose: () => void;
 }) {
   const [settings, setSettings] = useState({ ...defaultReportSettings(), ...initial });
+  const [paperSize, setPaperSize] = useState(initialPaperSize);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const sections: { id: keyof ReportSettings; label: string; help: string }[] = [
@@ -47,7 +50,7 @@ export function ReportPreferences({
         setBusy(true);
         setError('');
         try {
-          await saveProfile({ report: settings });
+          await saveProfile({ report: settings, reportPaperSize: paperSize });
           onClose();
         } catch {
           setError('Report preferences could not be saved.');
@@ -59,6 +62,17 @@ export function ReportPreferences({
       <p className="muted">
         All sections are enabled by default. Reports are generated on this device.
       </p>
+      <label className="field">
+        Paper size
+        <select
+          value={paperSize}
+          title="Choose the PDF sheet size. Charts and tables fit the page independently of screen chart height."
+          onChange={(event) => setPaperSize(event.target.value as 'A4' | 'LETTER')}
+        >
+          <option value="A4">A4 (210 × 297 mm)</option>
+          <option value="LETTER">Letter (8.5 × 11 in)</option>
+        </select>
+      </label>
       {sections.map(({ id, label, help }) => (
         <label className="check-field" key={id}>
           <input

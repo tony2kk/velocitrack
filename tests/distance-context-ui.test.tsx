@@ -16,7 +16,7 @@ const chart = vi.hoisted(() => ({
   dispose: vi.fn(),
 }));
 vi.mock('echarts/core', () => ({ init: () => chart, use: vi.fn() }));
-vi.mock('echarts/charts', () => ({ LineChart: {} }));
+vi.mock('echarts/charts', () => ({ LineChart: {}, BarChart: {} }));
 vi.mock('echarts/components', () => ({
   AriaComponent: {},
   GridComponent: {},

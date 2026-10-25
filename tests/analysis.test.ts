@@ -151,8 +151,13 @@ describe('analysis quantities and grouping', () => {
     );
     expect(a[0]?.color).toBe(b.find((trace) => trace.id === 'series')?.color);
     expect(chartStyle(0).color).not.toBe(chartStyle(1).color);
-    expect(chartStyle(8).color).toBe(chartStyle(0).color);
-    expect(chartStyle(8).dash).not.toBe(chartStyle(0).dash);
+    expect(chartStyle(8).color).not.toBe(chartStyle(0).color);
+    expect(chartStyle(8).dash).toBe('solid');
+    for (const dark of [false, true]) {
+      const styles = Array.from({ length: 100 }, (_, index) => chartStyle(index, dark));
+      expect(new Set(styles.map((style) => style.color)).size).toBe(100);
+      expect(styles.every((style) => style.dash === 'solid')).toBe(true);
+    }
     expect(chartStyle(0, true).color).not.toBe(chartStyle(0).color);
   });
   it('uses the recorded projectile mass unit and preserves explicit unknown units', () => {

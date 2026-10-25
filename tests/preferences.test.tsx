@@ -26,6 +26,51 @@ afterEach(async () => {
 });
 
 describe('display preferences', () => {
+  it('defaults to normal chart height and restores a saved display percentage', async () => {
+    const close = vi.fn();
+    const view = render(
+      <ProfileDialog profile={defaultProfile()} sources={[]} refreshing={false} onClose={close} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Display' }));
+    const height = screen.getByRole('spinbutton', { name: /Chart height/ }) as HTMLInputElement;
+    expect(height.value).toBe('100');
+    fireEvent.change(height, { target: { value: '69' } });
+    expect(height.checkValidity()).toBe(false);
+    fireEvent.change(height, { target: { value: '201' } });
+    expect(height.checkValidity()).toBe(false);
+    fireEvent.change(height, { target: { value: '175' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save display' }));
+    await waitFor(() => expect(close).toHaveBeenCalledOnce());
+    const workspace = await loadWorkspace();
+    expect(workspace.profile.chartHeightPercent).toBe(175);
+    view.unmount();
+    render(
+      <ProfileDialog profile={workspace.profile} sources={[]} refreshing={false} onClose={close} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Display' }));
+    expect(
+      (screen.getByRole('spinbutton', { name: /Chart height/ }) as HTMLInputElement).value,
+    ).toBe('175');
+  });
+  it('separates string groups by ID only for String/Shot sorting', () => {
+    const props = {
+      series: [series({ id: 'a', name: 'Same' }), series({ id: 'b', name: 'Same' })],
+      shots: [
+        shot({ id: 'a1', seriesId: 'a' }),
+        shot({ id: 'a2', seriesId: 'a', number: 2 }),
+        shot({ id: 'b1', seriesId: 'b' }),
+      ],
+      activeShotId: null,
+      onHoverShot: vi.fn(),
+    };
+    const view = render(<ShotTable {...props} />);
+    expect(view.container.querySelectorAll('tr.string-start')).toHaveLength(1);
+    expect(view.container.querySelector('tr.string-start')?.getAttribute('aria-label')).toBe(
+      'Shot 1 in Same',
+    );
+    view.rerender(<ShotTable {...props} sort={{ columnId: 'velocity', direction: 'asc' }} />);
+    expect(view.container.querySelectorAll('tr.string-start')).toHaveLength(0);
+  });
   it('saves units from the profile without changing stored measurements', async () => {
     const record = shot({ muzzleVelocity: 1000 });
     await db.shots.put(record);

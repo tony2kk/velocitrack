@@ -17,7 +17,7 @@ import { inspectPoints } from '../domain/measurements';
 import { displayValue, formatQuantity, unitLabels } from '../domain/units';
 
 import { availableQuantities, rawPath } from '../domain/analysis';
-import { tableColumns, DEFAULT_COLUMNS } from '../domain/table';
+import { tableColumns, DEFAULT_COLUMNS, stringBoundaryRows } from '../domain/table';
 import { projectileName } from '../domain/projectiles';
 import { providerTime } from './StringInfo';
 import { ColumnLabel } from './ColumnLabel';
@@ -79,6 +79,7 @@ export function ShotTable({
     if (selectAll.current) selectAll.current.indeterminate = selectedCount > 0 && !allSelected;
   }, [selectedCount, allSelected]);
   const hoveredIndex = shots.findIndex((shot) => shot.id === activeShotId);
+  const stringStarts = stringBoundaryRows(shots, sort);
   const currentPage =
     hoveredIndex >= 0
       ? Math.floor(hoveredIndex / 100)
@@ -208,13 +209,13 @@ export function ShotTable({
             </tr>
           </thead>
           <tbody>
-            {shots.slice(currentPage * 100, (currentPage + 1) * 100).map((shot) => (
+            {shots.slice(currentPage * 100, (currentPage + 1) * 100).map((shot, index) => (
               <tr
                 key={shot.id}
                 tabIndex={0}
                 ref={activeShotId === shot.id ? activeRow : undefined}
                 aria-label={`Shot ${shot.number} in ${names.get(shot.seriesId)}`}
-                className={`${shot.excluded || hiddenShots.has(shot.id) ? 'excluded' : ''} ${invalidShots.has(shot.id) ? 'shot-invalid' : ''} ${(activeShotIds ?? (activeShotId ? [activeShotId] : [])).includes(shot.id) ? 'shot-highlighted' : ''}`}
+                className={`${stringStarts.has(currentPage * 100 + index) ? 'string-start' : ''} ${shot.excluded || hiddenShots.has(shot.id) ? 'excluded' : ''} ${invalidShots.has(shot.id) ? 'shot-invalid' : ''} ${(activeShotIds ?? (activeShotId ? [activeShotId] : [])).includes(shot.id) ? 'shot-highlighted' : ''}`}
                 onMouseEnter={() => onHoverShot(shot.id)}
                 onMouseLeave={() => onHoverShot(null)}
                 onFocus={() => onHoverShot(shot.id)}

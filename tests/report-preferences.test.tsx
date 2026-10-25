@@ -17,12 +17,19 @@ afterEach(async () => {
 it('defaults all report sections on and persists only explicit local choices', async () => {
   const close = vi.fn();
   render(<ReportPreferences onClose={close} />);
+  expect((screen.getByRole('combobox', { name: 'Paper size' }) as HTMLSelectElement).value).toBe(
+    'A4',
+  );
+  fireEvent.change(screen.getByRole('combobox', { name: 'Paper size' }), {
+    target: { value: 'LETTER' },
+  });
   expect(
     screen.getAllByRole('checkbox').every((input) => (input as HTMLInputElement).checked),
   ).toBe(true);
   fireEvent.click(screen.getByRole('checkbox', { name: /Shot records/ }));
   fireEvent.click(screen.getByRole('button', { name: 'Save report preferences' }));
   await waitFor(() => expect(close).toHaveBeenCalledOnce());
+  expect((await db.profiles.get('local'))!.reportPaperSize).toBe('LETTER');
   expect((await db.profiles.get('local'))!.report).toEqual({
     details: true,
     target: true,
@@ -30,6 +37,16 @@ it('defaults all report sections on and persists only explicit local choices', a
     chart: true,
     records: false,
   });
+});
+
+it('restores the paper choice independently of section toggles', () => {
+  render(<ReportPreferences initialPaperSize="LETTER" onClose={vi.fn()} />);
+  expect((screen.getByRole('combobox', { name: 'Paper size' }) as HTMLSelectElement).value).toBe(
+    'LETTER',
+  );
+  expect(
+    screen.getAllByRole('checkbox').every((input) => (input as HTMLInputElement).checked),
+  ).toBe(true);
 });
 
 it('saves the generated blob through the user file picker and treats cancellation as a normal outcome', async () => {

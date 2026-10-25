@@ -15,7 +15,7 @@ import type { DistanceCurveData, DistanceSample } from './distanceCurves/types';
 import type { DisplayScale } from './chartViewport';
 
 export type ChartMode = 'distance' | 'shot' | 'string';
-// Alternating hue families separate neighboring traces; shape and dash also encode identity.
+// Stable workspace indexes keep a string's color unchanged when the selection changes.
 export const chartColors = [
   '#2563eb',
   '#c26a00',
@@ -25,6 +25,14 @@ export const chartColors = [
   '#bd4030',
   '#536174',
   '#827300',
+  '#168340',
+  '#a64d0b',
+  '#5861c7',
+  '#a83784',
+  '#007ca8',
+  '#8c503f',
+  '#657d17',
+  '#724bc2',
 ];
 const darkColors = [
   '#75a7ff',
@@ -35,13 +43,38 @@ const darkColors = [
   '#ff927c',
   '#bbc8dd',
   '#dfd36a',
+  '#6cde91',
+  '#e4a477',
+  '#a6afff',
+  '#e796d0',
+  '#72cbea',
+  '#d9b19f',
+  '#becf72',
+  '#bca2f1',
 ];
-/** Repeat colors only after a full palette, then vary symbols and dashes as a second cue. */
+/** Extend the palette without cycling back to an identical color; dashes are reserved for estimates. */
 export function chartStyle(index: number, dark = false) {
+  const palette = dark ? darkColors : chartColors;
+  // Golden-angle hue spacing separates adjacent overflow indexes without a repeating short cycle.
+  const hue = ((index * 137.508) % 360) / 30;
+  const lightness = dark ? 0.7 : 0.4;
+  const amplitude = 0.65 * Math.min(lightness, 1 - lightness);
+  // Hex works identically in canvas, CSS and the PDF renderer.
+  const overflow = [0, 8, 4]
+    .map((offset) => {
+      const channel = (offset + hue) % 12;
+      return Math.round(
+        255 * (lightness - amplitude * Math.max(-1, Math.min(channel - 3, 9 - channel, 1))),
+      )
+        .toString(16)
+        .padStart(2, '0');
+    })
+    .join('');
+  const color = palette[index] ?? `#${overflow}`;
   return {
-    color: (dark ? darkColors : chartColors)[index % chartColors.length]!,
+    color,
     symbol: ['circle', 'rect', 'triangle', 'diamond', 'pin', 'roundRect'][index % 6]!,
-    dash: (['solid', 'dashed', 'dotted'] as const)[Math.floor(index / chartColors.length) % 3]!,
+    dash: 'solid' as const,
   };
 }
 

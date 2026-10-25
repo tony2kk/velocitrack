@@ -43,6 +43,8 @@ async function seed() {
       visibleFieldIds: ['weight'],
       showTags: true,
       theme: 'dark',
+      chartHeightPercent: 175,
+      reportPaperSize: 'LETTER',
       showProjectileWeight: true,
       tableColumns: ['g1', 'velocity', 'field:weight'],
       tableColumnOrder: ['g1', 'g7', 'velocity', 'field:weight'],
@@ -88,6 +90,30 @@ async function seed() {
 }
 
 describe('structured ZIP backup and atomic restore', () => {
+  it('validates chart height and accepts older profiles without the new preference', async () => {
+    await seed();
+    const archive = await createBackup(database);
+    const prepared = await prepareBackup(archive);
+    for (const value of [69, 201, 100.5, Number.NaN]) {
+      prepared.workspace.profile.chartHeightPercent = value;
+      await expect(restoreBackup(prepared, database)).rejects.toThrow('invalid records');
+      await expect(saveProfile({ chartHeightPercent: value }, database)).rejects.toThrow(
+        'Chart height',
+      );
+    }
+    delete prepared.workspace.profile.chartHeightPercent;
+    delete prepared.workspace.profile.reportPaperSize;
+    await restoreBackup(prepared, database);
+    expect((await loadWorkspace(database)).profile.chartHeightPercent).toBe(100);
+    expect((await loadWorkspace(database)).profile.reportPaperSize).toBe('A4');
+    Object.assign(prepared.workspace.profile, { reportPaperSize: 'A3' });
+    await expect(restoreBackup(prepared, database)).rejects.toThrow('invalid records');
+    for (const value of [70, 200]) {
+      await saveProfile({ chartHeightPercent: value }, database);
+      await restoreBackup(await prepareBackup(await createBackup(database)), database);
+      expect((await loadWorkspace(database)).profile.chartHeightPercent).toBe(value);
+    }
+  });
   it('round-trips raw measurements, typed values, tags, profile and photo bytes', async () => {
     await seed();
     const before = await loadWorkspace(database);

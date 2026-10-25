@@ -55,6 +55,16 @@ export function reportFixture(): ReportInput {
 }
 
 describe('local PDF composition', () => {
+  it('selects A4 by default and Letter independently of screen chart height', () => {
+    const input = reportFixture();
+    expect(reportDocument(input).pageSize).toBe('A4');
+    input.profile.reportPaperSize = 'LETTER';
+    input.profile.chartHeightPercent = 70;
+    const smallScreen = reportDocument(input);
+    expect(smallScreen.pageSize).toBe('LETTER');
+    input.profile.chartHeightPercent = 200;
+    expect(JSON.stringify(reportDocument(input))).toBe(JSON.stringify(smallScreen));
+  });
   it.each(['simple', 'dual', 'compare'] as const)(
     'uses one overview for three strings in %s mode, with each target exactly once',
     (mode) => {

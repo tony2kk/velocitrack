@@ -259,6 +259,8 @@ export function validateBackup(value: unknown): asserts value is Workspace {
     'showProjectileWeight',
     'showGroupSize',
     'showCaldwellNotes',
+    'chartHeightPercent',
+    'reportPaperSize',
     'tableColumns',
     'tableColumnOrder',
     'tableSort',
@@ -281,6 +283,16 @@ export function validateBackup(value: unknown): asserts value is Workspace {
   requireValid(p.showProjectileWeight === undefined || typeof p.showProjectileWeight === 'boolean');
   requireValid(p.showGroupSize === undefined || typeof p.showGroupSize === 'boolean');
   requireValid(p.showCaldwellNotes === undefined || typeof p.showCaldwellNotes === 'boolean');
+  requireValid(
+    p.reportPaperSize === undefined || p.reportPaperSize === 'A4' || p.reportPaperSize === 'LETTER',
+  );
+  requireValid(
+    p.chartHeightPercent === undefined ||
+      (typeof p.chartHeightPercent === 'number' &&
+        Number.isInteger(p.chartHeightPercent) &&
+        p.chartHeightPercent >= 70 &&
+        p.chartHeightPercent <= 200),
+  );
   if (p.report !== undefined) {
     requireValid(object(p.report));
     keys(p.report, ['details', 'target', 'statistics', 'chart', 'records']);

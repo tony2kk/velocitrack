@@ -15,6 +15,16 @@ import { inspectPoints } from './measurements';
 import { providerTimestamp, rawPath } from './providerData';
 import { projectileName } from './projectiles';
 
+/** Data-row indexes starting a new string, only when the table is grouped by String/Shot. */
+export function stringBoundaryRows(shots: Shot[], sort?: Profile['tableSort']): Set<number> {
+  if (sort && sort.columnId !== 'series' && sort.columnId !== 'shot') return new Set();
+  return new Set(
+    shots.flatMap((shot, index) =>
+      index > 0 && shots[index - 1]!.seriesId !== shot.seriesId ? [index] : [],
+    ),
+  );
+}
+
 /** Stable column identity is separate from its translated/display-unit-dependent label. */
 export interface TableColumn {
   id: string;

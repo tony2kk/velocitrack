@@ -10,6 +10,8 @@ import { series, shot } from './fixtures/synthetic';
 import { writeFileSync } from 'node:fs';
 import pdfMake from 'pdfmake/build/pdfmake';
 import fonts from 'pdfmake/build/vfs_fonts';
+import { reportChartHeight } from '../src/reports/chartLayout';
+import { reportPageArea } from '../src/reports/paper';
 
 /** Synthetic off-center geometry on a high-contrast target; no real measurement is reused. */
 const target: TargetMeasurement = {
@@ -28,6 +30,21 @@ const target: TargetMeasurement = {
 };
 
 describe('print readability', () => {
+  it('draws stronger group boundaries without splitting rows or changing ordinary separators', () => {
+    const table = recordTable(
+      [{ id: 'shot', label: 'Shot' }],
+      [['1'], ['2'], ['1']],
+      new Set([2]),
+    ) as ContentTable;
+    const layout = table.layout as {
+      hLineWidth: (index: number) => number;
+      hLineColor: (index: number) => string;
+    };
+    expect(layout.hLineWidth(3)).toBeGreaterThan(layout.hLineWidth(2));
+    expect(layout.hLineColor(3)).not.toBe(layout.hLineColor(2));
+    expect(table.table.dontBreakRows).toBe(true);
+    expect(table.table.body).toHaveLength(4);
+  });
   it('places an accurate cm/in ruler beneath the image, capped at 30% of its width', () => {
     for (const units of ['metric', 'imperial'] as const) {
       const figure = targetFigureLayout(1000, 800, target, units);
@@ -181,10 +198,12 @@ describe('print readability', () => {
           },
         }),
       );
-      multi.shots = input.shots.map((item, index) => ({
-        ...item,
-        seriesId: multi.series[index % 3]!.id,
-      }));
+      multi.shots = input.shots
+        .map((item, index) => ({
+          ...item,
+          seriesId: multi.series[index % 3]!.id,
+        }))
+        .sort((a, b) => a.seriesId.localeCompare(b.seriesId) || a.number - b.number);
       const photos = new Map<string, string>();
       multi.annotations = multi.series.map((item, index) => {
         const measurement = structuredClone(target);
@@ -215,23 +234,29 @@ describe('print readability', () => {
         size: 100,
         createdAt: multi.createdAt,
       }));
-      const chartCanvas = createCanvas(800, 260);
+      const chartLegend = multi.series.map((item, index) => ({
+        label: item.name,
+        color: ['#2563eb', '#c26a00', '#9333ea'][index]!,
+      }));
+      const chartDescriptions = ['Invented layout fixture.'];
+      const paperHeight = reportChartHeight(chartLegend, chartDescriptions, false);
+      const chartCanvas = createCanvas(1400, (paperHeight * 1400) / reportPageArea().width);
       const chartContext = chartCanvas.getContext('2d');
       chartContext.fillStyle = 'white';
-      chartContext.fillRect(0, 0, 800, 260);
+      chartContext.fillRect(0, 0, chartCanvas.width, chartCanvas.height);
       chartContext.strokeStyle = '#08796e';
       chartContext.lineWidth = 3;
       chartContext.beginPath();
       chartContext.moveTo(40, 45);
-      chartContext.lineTo(750, 200);
+      chartContext.lineTo(1320, chartCanvas.height - 65);
       chartContext.stroke();
       chartContext.fillStyle = '#263e35';
       chartContext.font = '16px Arial';
-      chartContext.fillText('Synthetic chart for layout verification', 40, 240);
+      chartContext.fillText('Synthetic chart for layout verification', 40, chartCanvas.height - 25);
       multi.chart = {
         image: chartCanvas.toDataURL('image/jpeg'),
-        legend: [{ label: 'Synthetic curve', color: '#08796e' }],
-        descriptions: ['Invented layout fixture.'],
+        legend: chartLegend,
+        descriptions: chartDescriptions,
       };
       for (const mode of ['simple', 'dual', 'compare', 'info'] as const) {
         const sample = structuredClone(multi);

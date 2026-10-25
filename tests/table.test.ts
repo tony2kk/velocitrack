@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sortShots } from '../src/domain/table';
+import { sortShots, stringBoundaryRows } from '../src/domain/table';
 import { availableQuantities } from '../src/domain/analysis';
 import { buildAnalysisTraces } from '../src/domain/chart';
 import { defaultAnalysis } from '../src/domain/model';
@@ -20,6 +20,19 @@ const context = {
 };
 
 describe('table order shared with chart', () => {
+  it('keeps boundaries tied to full row indexes across pages and reversed groups', () => {
+    const grouped = Array.from({ length: 104 }, (_, i) =>
+      shot({ id: String(i), seriesId: i < 101 ? 'a' : 'b' }),
+    );
+    expect([...stringBoundaryRows(grouped)]).toEqual([101]);
+    expect([
+      ...stringBoundaryRows([...grouped].reverse(), { columnId: 'series', direction: 'desc' }),
+    ]).toEqual([3]);
+    expect([...stringBoundaryRows(grouped, { columnId: 'shot', direction: 'asc' })]).toEqual([101]);
+    expect([...stringBoundaryRows(grouped, { columnId: 'velocity', direction: 'asc' })]).toEqual(
+      [],
+    );
+  });
   it('sorts mixed supported timestamp forms chronologically and leaves invalid dates last', () => {
     const timed = [
       shot({ id: 'a', raw: { timestamp: '2026-01-03T00:00:00Z' } }),

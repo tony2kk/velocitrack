@@ -8,6 +8,9 @@ import { centeredSamplesCurve } from '../src/domain/distanceCurves/template';
 import { createRef } from 'react';
 import type { MeasurementChartHandle } from '../src/components/MeasurementChart';
 import { AnalysisPanel } from '../src/components/AnalysisPanel';
+import { availableQuantities } from '../src/domain/analysis';
+import { emptyTarget } from '../src/domain/targetMeasurement';
+import { chartStyle } from '../src/domain/chart';
 
 vi.mock('../src/domain/distanceCurves/customDistanceCurves', async () => ({
   customDistanceCurves: [
@@ -31,7 +34,7 @@ const chart = vi.hoisted(() => ({
   getWidth: () => 700,
 }));
 vi.mock('echarts/core', () => ({ init: chart.init, use: vi.fn() }));
-vi.mock('echarts/charts', () => ({ LineChart: {} }));
+vi.mock('echarts/charts', () => ({ LineChart: {}, BarChart: {} }));
 vi.mock('echarts/components', () => ({
   AriaComponent: {},
   GridComponent: {},
@@ -77,6 +80,97 @@ function zoomChart(horizontal: [number, number], vertical: [number, number]) {
 }
 
 describe('chart viewport', () => {
+  it('fits temperature bars to displayed zero rather than zero in the stored unit', () => {
+    const parents = [series({ raw: { weatherData: { temperature: 68 } } })];
+    render(
+      <MeasurementChart
+        series={parents}
+        shots={[]}
+        mode="string"
+        kind="compare"
+        settings={{ axis: 'string', quantity: 'source:weatherData.temperature', secondary: 'g1' }}
+        quantities={availableQuantities([{ seriesId: 'series' }], parents, [], [], 'metric')}
+        unitSystem="metric"
+        activeShotId={null}
+        onHoverShot={vi.fn()}
+      />,
+    );
+    const option = chart.setOption.mock.calls.at(-1)![0];
+    expect(option.yAxis[0].min).toBeCloseTo(0);
+    expect(option.series[0].data[0].value[1]).toBeCloseTo(20);
+  });
+  it.each([
+    [10, 20],
+    [-10, -20],
+    [-10, 20],
+  ])('renders string values %j as distinct colored bars including zero', (a, b) => {
+    const parents = [series({ id: 'a' }), series({ id: 'b' })];
+    const annotations = parents.map((item, index) => ({
+      entityId: item.id,
+      notes: '',
+      fields: {},
+      target: {
+        ...emptyTarget(),
+        values: { groupSize: null, horizontalOffset: index === 0 ? a : b, verticalOffset: null },
+      },
+    }));
+    render(
+      <MeasurementChart
+        series={parents}
+        shots={[]}
+        mode="string"
+        kind="compare"
+        settings={{ axis: 'string', quantity: 'target:horizontalOffset', secondary: 'g1' }}
+        quantities={availableQuantities(
+          parents.map((p) => ({ seriesId: p.id })),
+          parents,
+          [],
+          annotations,
+          'metric',
+        )}
+        colorOrder={['a', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'b']}
+        unitSystem="metric"
+        activeShotId={null}
+        onHoverShot={vi.fn()}
+      />,
+    );
+    const option = chart.setOption.mock.calls.at(-1)![0];
+    expect(option.series.map((item: { type: string }) => item.type)).toEqual(['bar', 'bar']);
+    expect(option.series.map((item: { color: string }) => item.color)).toEqual([
+      chartStyle(0).color,
+      chartStyle(8).color,
+    ]);
+    expect(option.series[0].color).not.toBe(option.series[1].color);
+    expect(option.yAxis[0].min).toBeLessThanOrEqual(0);
+    expect(option.yAxis[0].max).toBeGreaterThanOrEqual(0);
+    expect(
+      option.series.map((item: { data: { value: number[] }[] }) => item.data[0]!.value),
+    ).toEqual([
+      [1, a / 10],
+      [2, b / 10],
+    ]);
+  });
+  it('changes chart height without recreating the chart or resetting zoom', () => {
+    const props = {
+      series: [series()],
+      shots: [shot({ distances: [0, 100], velocities: [1000, 900] })],
+      mode: 'distance' as const,
+      activeShotId: null,
+      onHoverShot: vi.fn(),
+    };
+    const view = render(<MeasurementChart {...props} />);
+    zoomChart([25, 75], [20, 80]);
+    const current = chart.getOption();
+    view.rerender(<MeasurementChart {...props} heightPercent={175} />);
+    expect(view.container.querySelector('.chart-frame')).toHaveProperty('style');
+    expect(
+      (view.container.querySelector('.chart-frame') as HTMLElement).style.getPropertyValue(
+        '--chart-height-scale',
+      ),
+    ).toBe('1.75');
+    expect(chart.getOption().dataZoom).toEqual(current.dataZoom);
+    expect(chart.init).toHaveBeenCalledTimes(1);
+  });
   it('fits a new selection beyond the previous forecast edge and synchronizes the field', () => {
     const change = vi.fn();
     render(

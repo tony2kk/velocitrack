@@ -1,5 +1,14 @@
 # Plan
 
+## Presentation batch — 0.20.0
+
+- [x] Distinct string colors and solid measured comparison lines.
+- [x] Colored By string bars with a zero baseline on automatic fit.
+- [x] Local 70–200% screen chart height; preserve zoom on resize.
+- [x] A4/Letter PDF paper, larger page-fitted chart snapshots and adaptive table width.
+- [x] Strong String/Shot group separators in workspace and PDF tables.
+- [x] Validate and back up both new local preferences; preserve older defaults.
+
 ## Foundation
 
 - [x] New local/public GitHub repositories under the VelociTrack name.

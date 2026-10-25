@@ -1,5 +1,10 @@
 # Architecture
 
+Release 0.20.0 adds local screen chart height and A4/Letter report paper preferences.
+The chart capture uses a paper-specific aspect ratio, independently of screen size.
+String comparison bars/lines and both legends share stable colors; table group
+boundaries share one ID-based rule. See [decision 027](docs/decisions/027-chart-and-report-presentation.md).
+
 The owner approved a local-first MVP on 2026-10-18; see [decision 001](docs/decisions/001-local-first-mvp.md). The feasibility project is not reused.
 
 ## Runtime and ownership

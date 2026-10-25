@@ -191,6 +191,8 @@ export interface Filters {
 export interface Profile {
   /** Local PDF section choices; missing preferences enable every section. */
   report?: ReportSettings;
+  /** Physical PDF sheet size; independent of screen chart height. */
+  reportPaperSize?: 'A4' | 'LETTER';
   tableSort?: { columnId: string; direction: 'asc' | 'desc' };
   /** Visible identities; their order is inherited from tableColumnOrder when present. */
   tableColumns?: string[];
@@ -204,6 +206,8 @@ export interface Profile {
   showGroupSize?: boolean;
   /** Show imported string notes on cards; older profiles default to enabled. */
   showCaldwellNotes?: boolean;
+  /** Chart height relative to the responsive default, in whole percent (70–200). */
+  chartHeightPercent?: number;
   visibleFieldIds?: string[];
   showTags?: boolean;
   id: 'local';
@@ -256,6 +260,8 @@ export function defaultProfile(): Profile {
     showProjectileWeight: false,
     showGroupSize: false,
     showCaldwellNotes: true,
+    chartHeightPercent: 100,
+    reportPaperSize: 'A4',
     filters: structuredClone(EMPTY_FILTERS),
   };
 }

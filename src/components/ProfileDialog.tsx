@@ -29,6 +29,7 @@ export function ProfileDialog({
   const [nickname, setNickname] = useState(profile.nickname);
   const [showGroupSize, setShowGroupSize] = useState(profile.showGroupSize ?? false);
   const [showCaldwellNotes, setShowCaldwellNotes] = useState(profile.showCaldwellNotes ?? true);
+  const [chartHeightPercent, setChartHeightPercent] = useState(profile.chartHeightPercent ?? 100);
   const [remember, setRemember] = useState(profile.rememberSignIn);
   const [refresh, setRefresh] = useState(profile.refreshOnStart);
   const [unitSystem, setUnitSystem] = useState(profile.unitSystem ?? 'imperial');
@@ -59,7 +60,13 @@ export function ProfileDialog({
       {(tab === 'fields' || tab === 'tags') && (
         <CustomizationManager key={tab} kind={tab} fields={fields} tags={tags} />
       )}
-      {tab === 'report' && <ReportPreferences initial={profile.report} onClose={onClose} />}
+      {tab === 'report' && (
+        <ReportPreferences
+          initial={profile.report}
+          initialPaperSize={profile.reportPaperSize}
+          onClose={onClose}
+        />
+      )}
       {tab === 'display' && (
         <form
           onSubmit={async (event) => {
@@ -67,7 +74,13 @@ export function ProfileDialog({
             setBusy(true);
             setError('');
             try {
-              await saveProfile({ theme, showProjectileWeight, showGroupSize, showCaldwellNotes });
+              await saveProfile({
+                theme,
+                showProjectileWeight,
+                showGroupSize,
+                showCaldwellNotes,
+                chartHeightPercent,
+              });
               onClose();
             } catch {
               setError('Display preferences could not be saved.');
@@ -85,8 +98,8 @@ export function ProfileDialog({
             <span>
               Projectile weight
               <small>
-                Append the original Caldwell weight and unit to projectile names, for example 150grs
-                or 2g.
+                Append the original Caldwell weight and unit to projectile names, for example 150
+                grs or 2 g.
               </small>
             </span>
           </label>
@@ -115,6 +128,20 @@ export function ProfileDialog({
                 Use the profile's units. Only strings with a saved value display a group size.
               </small>
             </span>
+          </label>
+          <label className="field">
+            Chart height (%)
+            <input
+              type="number"
+              min={70}
+              max={200}
+              step={1}
+              required
+              value={Number.isNaN(chartHeightPercent) ? '' : chartHeightPercent}
+              title="Set chart height from 70% to 200%. 100% is the default. PDF charts fit their page independently."
+              onChange={(event) => setChartHeightPercent(event.target.valueAsNumber)}
+            />
+            <small>70–200%; 100% uses the default height for this screen.</small>
           </label>
           <label className="check-field">
             <input

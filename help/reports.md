@@ -12,6 +12,13 @@ The suggested name is `VelociTrack_YYYY-MM-DD_String-name.pdf`, using the earlie
 
 Open **Profile → Report**. **Every section is enabled by default.** Save changes with **Save report preferences**.
 
+Choose **Paper size: A4 or Letter** in the same tab; A4 is the default. Charts are
+rendered to use the available landscape page area, allowing for the legend and
+model notes. Screen chart height does not change the PDF. Long notes may continue
+on a subsequent page. Shot records fit all visible columns across the selected
+paper width; whole rows may continue onto further pages. When sorted by String/Shot,
+a stronger horizontal rule separates strings, just as in the workspace table.
+
 - **String details:** date and place, firearm, projectile, weather, notes, local notes, tags and custom values. Missing details are omitted. Pressure is explicitly labeled as sea-level pressure.
 - **Target:** a separate Targets section contains each selected string's active photo once, with its string name and report crop (or the complete photo without a crop). Saved group geometry uses thick white lines with a dark outline. H (horizontal offset), V (vertical offset) and G (group size) have high-contrast labels beside the photo: left for negative H, right otherwise. Dashed leaders leave dimensions diagonally to keep the arrows visible. Values are also centered below the photo. Without an active photo, the first attached photo is used.
 - **String statistics:** included valid muzzle readings, mean, minimum, maximum, sample SD and extreme spread, recalculated per string from the current shot selection.

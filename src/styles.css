@@ -989,7 +989,7 @@
   }
   .measurement-chart {
     width: 100%;
-    height: 330px;
+    height: calc(330px * var(--chart-height-scale, 1));
   }
   .chart-legend {
     display: flex;
@@ -1198,6 +1198,9 @@
   }
   .shot-invalid td:not(.shot-actions) {
     opacity: 0.55;
+  }
+  tr.string-start > td {
+    border-top: 2px solid var(--muted);
   }
   .shot-actions {
     position: sticky;
@@ -1573,7 +1576,7 @@
       padding: 32px;
     }
     .measurement-chart {
-      height: 380px;
+      height: calc(380px * var(--chart-height-scale, 1));
     }
   }
   @media (max-width: 1240px) {
@@ -1629,7 +1632,7 @@
       display: none;
     }
     .measurement-chart {
-      height: 300px;
+      height: calc(300px * var(--chart-height-scale, 1));
     }
   }
   @media (max-width: 720px) {

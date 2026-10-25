@@ -8,7 +8,7 @@ Choose a view in **Analysis**, between Filters and Tools.
 | ------------------ | -------------------------------------------------------------------------------------------- |
 | **Simple chart**   | One quantity across selected shots.                                                          |
 | **Dual chart**     | Two quantities together, including recorded versus calculated velocity.                      |
-| **String compare** | A separate curve for each string.                                                            |
+| **String compare** | Separate colored curves, or one colored bar per string in By string.                         |
 | **String info**    | Dates, notes, conditions, original statistics, tags, and custom values. Works without shots. |
 
 ## Choose an axis and quantity
@@ -18,11 +18,16 @@ Choose a view in **Analysis**, between Filters and Tools.
 and local annotation in its stored units and precision. The PDF's **Chart / String
 info** section includes these complete records for all selected strings as well.
 
-**By shot** shows one reading per shot: velocity, Caldwell G1/G7, recorded conditions, known projectile mass, or a numeric custom field. Only supported choices are offered. In **String compare**, By shot offers only shot-owned velocity and G1/G7. **By string** offers numeric string-owned attributes (for example Group size, offsets, weather and custom numeric fields), with one point per string. It works even without selected shots. Text and List fields remain available in details and tables rather than numeric charts.
+**By shot** shows one reading per shot: velocity, Caldwell G1/G7, recorded conditions, known projectile mass, or a numeric custom field. Only supported choices are offered. In **String compare**, By shot offers only shot-owned velocity and G1/G7. **By string** offers numeric string-owned attributes (for example Group size, offsets, weather and custom numeric fields), with one colored bar per string. Automatic fitting includes zero; manual zoom is still available. It works even without selected shots. Text and List fields remain available in details and tables rather than numeric charts.
 
 **Over distance** shows recorded velocity samples or a calculated G1/G7 velocity curve when inputs exist. A custom application build can also register additional curves. Each selected function has its own description below the chart; Dual shows both. Simple/Dual recorded views show the first 100 selected shot traces. String compare **Velocity** averages traces within their non-null returned ranges. **Velocity detail** instead shows up to 100 individual shot traces, colored by string, with no averaging.
 
 Each view remembers its axis and quantities. Changing to an incompatible axis selects a suitable quantity. A saved quantity temporarily missing from selected data stays saved with a no-readings label.
+
+String colors remain consistent across comparison views, legends and PDF. Measured
+comparison traces use solid lines; calculated estimates remain dashed. Set the
+screen chart height in **Profile → Display** (70–200%, default 100%). PDF charts
+instead adapt to the paper selected in **Profile → Report**.
 
 ## Compare measured and calculated velocity
 

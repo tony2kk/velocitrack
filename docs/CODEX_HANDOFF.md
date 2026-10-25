@@ -1,5 +1,11 @@
 # Continue in Codex
 
+Version 0.20.0 adds colored By string bars, non-cycling string colors, solid measured
+comparison lines, screen-only chart height (70–200%) and A4/Letter PDF paper.
+Snapshots adapt to the paper and notes, independently of screen height. String/Shot
+table groups have stronger boundaries by string ID. New preferences remain local
+and participate in backup validation; older profiles use 100% and A4. Read decision 027.
+
 Open `C:\dev\VelociTrack`. Remote: `https://github.com/tony2kk/velocitrack`. Check Git to distinguish local commits from published work.
 
 Read `AGENTS.md`, `PLAN.md`, `ARCHITECTURE.md`, `docs/decisions/001-local-first-mvp.md` and `docs/VERIFICATION.md`.

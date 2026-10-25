@@ -1,5 +1,24 @@
 # MVP verification
 
+## Chart/report presentation — 0.20.0
+
+- Full verification passes: 363 tests across 50 files, types, lint, formatting,
+  production/PWA build and public-content guard. All seven optional canvas/PDF
+  layout checks also pass with the installed local renderer.
+- Regression coverage includes distinct colors after palette index 8, solid measured
+  traces, colored bars with positive/negative values and displayed temperature zero,
+  resize without zoom reset, chart-height range limits, A4/Letter choices, backup
+  round trips and old-profile defaults. String boundaries use IDs, including equal
+  names, reversed groups and screen pagination.
+- An isolated 4182 browser imported five invented strings and 20 shots. By string
+  group-size bars, individual velocity traces, four table separators, and 100%/175%
+  screen heights were checked. The owner's 4180 workspace was not modified.
+- Actual browser-generated A4 and Letter PDFs were checked for physical page sizes
+  and visually rendered. The charts use the landscape area, retain matching string
+  colors and preserve readable legend/notes. Shot columns stay on one sheet with
+  stronger group boundaries and complete-row pagination. A chart-only A4 report
+  also stays on one page. Test artifacts remain ignored in `.local/`.
+
 Verified on 2026-10-18, on Windows with Node 22 and the Codex in-app Chromium browser. Each section distinguishes automated checks, local browser checks and published-origin observations.
 
 ## Automated checks

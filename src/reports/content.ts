@@ -5,7 +5,7 @@ import { fieldText, fieldUnit } from '../domain/customFields';
 import { inspectPoints, summarizeShots } from '../domain/measurements';
 import { providerTimestamp, rawPath } from '../domain/providerData';
 import { projectileName } from '../domain/projectiles';
-import { tableColumns, visibleColumns } from '../domain/table';
+import { tableColumns, visibleColumns, stringBoundaryRows } from '../domain/table';
 import {
   TARGET_FIELDS,
   TARGET_LABELS,
@@ -17,6 +17,7 @@ import type { ReportInput } from './types';
 import { safeFilename } from './filename';
 import { recordTable } from './recordTable';
 import { reportStringInfo } from './stringInfo';
+import { REPORT_MARGINS, reportPageArea } from './paper';
 
 /** Compare up to three strings per block without repeating a cover or forcing one page per string. */
 function overview(input: ReportInput, details: boolean, stats: boolean): Content[] {
@@ -206,6 +207,7 @@ export function reportRecords(input: ReportInput) {
   return {
     columns,
     rows: input.shots.map((shot) => columns.map((column) => cell(shot, column.id))),
+    stringStarts: stringBoundaryRows(input.shots, input.profile.tableSort),
   };
 }
 
@@ -253,7 +255,7 @@ function statistics(shots: Shot[], input: ReportInput): Content {
   };
 }
 
-/** Paginated A4 document with selectable text, repeated table headings and deliberate landscape sections. */
+/** Paginated document with selectable text, repeated table headings and deliberate landscape sections. */
 export function reportDocument(
   input: ReportInput,
   photos: ReadonlyMap<string, string> = new Map(),
@@ -355,7 +357,11 @@ export function reportDocument(
     });
     if (infoMode) content.push(...reportStringInfo(input));
     else if (input.chart) {
-      content.push({ image: input.chart.image, width: 750, margin: [0, 6, 0, 8] });
+      content.push({
+        image: input.chart.image,
+        width: reportPageArea(input.profile.reportPaperSize).width,
+        margin: [0, 6, 0, 8],
+      });
       content.push({
         text: input.chart.legend.flatMap((item) => [
           { text: '■ ', color: item.color },
@@ -389,7 +395,15 @@ export function reportDocument(
       style: 'small',
       margin: [0, 0, 0, 10],
     });
-    if (records.columns.length) content.push(recordTable(records.columns, records.rows));
+    if (records.columns.length)
+      content.push(
+        recordTable(
+          records.columns,
+          records.rows,
+          records.stringStarts,
+          input.profile.reportPaperSize,
+        ),
+      );
     if (!records.columns.length)
       content.push({ text: 'No shot-record columns are selected.', style: 'small' });
   }
@@ -399,14 +413,14 @@ export function reportDocument(
       style: 'small',
     });
   return {
-    pageSize: 'A4',
+    pageSize: input.profile.reportPaperSize ?? 'A4',
     pageOrientation:
       !detailsEnabled &&
       !hasTargets &&
       ((options.chart && !infoMode) || (!options.chart && options.records))
         ? 'landscape'
         : 'portrait',
-    pageMargins: [42, 38, 42, 44],
+    pageMargins: REPORT_MARGINS,
     info: {
       title: 'VelociTrack range report',
       author: input.profile.nickname || 'VelociTrack',
