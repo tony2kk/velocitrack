@@ -1,5 +1,14 @@
 # Plan
 
+## Backup compatibility and overview pagination — 0.21.0
+
+- [x] Versioned ZIP metadata and independent data schema with legacy readers.
+- [x] Preview release differences, explicit migrations and unavailable custom curves.
+- [x] Preserve original records/photos and reject unsupported formats without writes.
+- [x] Historical migration, current round-trip and replacement-preview regression tests.
+- [x] Dedicated overview groups; landscape for wide A4/Letter comparisons.
+- [x] Document future backward-compatibility requirements and migration maintenance.
+
 ## Presentation batch — 0.20.0
 
 - [x] Distinct string colors and solid measured comparison lines.

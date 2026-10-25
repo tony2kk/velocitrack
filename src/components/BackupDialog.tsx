@@ -116,6 +116,33 @@ export function BackupDialog({
             custom fields · {prepared.workspace.tags.length} tags ·{' '}
             {prepared.workspace.attachments.length} photos
           </p>
+          <div className="notice" aria-label="Backup compatibility">
+            <h4>Compatibility</h4>
+            <p>
+              Backup app: {prepared.compatibility.appVersion ?? 'Not recorded (legacy backup)'}
+              {' · '}Current app: {prepared.compatibility.currentAppVersion}
+            </p>
+            <p>
+              Archive format: {prepared.compatibility.formatVersion}
+              {' · '}Data version: {prepared.compatibility.dataVersion}
+              {prepared.compatibility.dataVersion !== prepared.compatibility.targetDataVersion
+                ? ` → ${prepared.compatibility.targetDataVersion} (converted for this app)`
+                : ' (compatible)'}
+            </p>
+            {prepared.compatibility.notices.map((notice) => (
+              <p key={notice}>{notice}</p>
+            ))}
+            {prepared.compatibility.changes.length > 0 && (
+              <>
+                <h4>Changes during restore</h4>
+                <ul>
+                  {prepared.compatibility.changes.map((change) => (
+                    <li key={change}>{change}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
           <p>
             This replaces the entire local workspace. It does not merge data or change Caldwell
             cloud data. Connected sources will need sign-in again.

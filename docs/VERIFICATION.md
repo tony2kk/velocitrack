@@ -1,5 +1,29 @@
 # MVP verification
 
+## Backup compatibility and overview pages — 0.21.0
+
+- Full verification passes: 375 tests across 52 files, types, lint, formatting,
+  production/PWA build and public-content guard. All seven optional canvas/PDF
+  layout tests also pass with the installed local renderer.
+- Archive integration tests restore a synthetic 0.4-era profile and version-one
+  envelope, preserve records/annotations/photo bytes, migrate historical curve/sort
+  identities, retain explicit preferences and re-save in the current format. Tests
+  cover different app releases with supported data, unknown versions, invalid or
+  unsupported fields, inspection without writes and the existing quota rollback.
+- A component test verifies that conversion details precede replacement approval
+  and that choosing an invalid second ZIP clears both the preview and confirmation.
+- An isolated browser on port 4182 displayed the legacy compatibility preview and
+  all eight defaulted preferences. A synthetic future schema was rejected with both
+  app versions and an unchanged-workspace message. No restore was run against the
+  browser workspace, and the owner's port 4180 data was not modified. The update
+  notice successfully activated 0.21.0 from the cached 0.20.0 build.
+- Ten generated overview PDFs cover 2, 3, 5, 7 and 11 strings on A4 and Letter.
+  Page counts match complete comparison groups; physical dimensions match the
+  intended orientation. Rendered five-string A4 and second-page Letter examples
+  have readable tables, no partial trailing group and clear footer spacing. Target
+  section transitions back to portrait are covered. QA files remain in ignored
+  `.local/`; fixtures contain invented data only.
+
 ## Chart/report presentation — 0.20.0
 
 - Full verification passes: 363 tests across 50 files, types, lint, formatting,

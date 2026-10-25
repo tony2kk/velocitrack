@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { readFileSync } from 'node:fs';
 
 export default defineConfig({
   // Component tests mock this build-only module; resolving it must not register a real worker.
@@ -10,6 +11,11 @@ export default defineConfig({
       },
     },
   ],
-  define: { __APP_VERSION__: JSON.stringify('test'), __BUILD_REVISION__: JSON.stringify('test') },
+  define: {
+    __APP_VERSION__: JSON.stringify(
+      JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version,
+    ),
+    __BUILD_REVISION__: JSON.stringify('test'),
+  },
   test: { environment: 'node', include: ['tests/**/*.test.{ts,tsx}'] },
 });

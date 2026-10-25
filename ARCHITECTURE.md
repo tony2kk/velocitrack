@@ -1,5 +1,12 @@
 # Architecture
 
+Release 0.21.0 versions backup envelopes and data independently of the application
+and IndexedDB. Checksums precede in-memory migrations; strict current validation
+precedes the compatibility preview and atomic replacement. Version-one readers
+remain supported. See [backup contract](docs/BACKUP_FORMAT.md) and
+[decision 028](docs/decisions/028-versioned-backups-and-overview-pages.md).
+Wide report overviews use landscape with each comparison group on its own page.
+
 Release 0.20.0 adds local screen chart height and A4/Letter report paper preferences.
 The chart capture uses a paper-specific aspect ratio, independently of screen size.
 String comparison bars/lines and both legends share stable colors; table group

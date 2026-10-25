@@ -4,6 +4,14 @@ import { loadWorkspace, type Workspace } from './workspace';
 import { validateBackup } from './backupValidation';
 import { photoMime } from './attachments';
 import type { Attachment } from '../domain/model';
+import {
+  BACKUP_DATA_VERSION,
+  BACKUP_FORMAT_VERSION,
+  backupCompatibility,
+  type BackupCompatibility,
+} from './backupVersions';
+import { migrateBackup } from './backupMigrations';
+import { distanceCurveRegistry } from '../domain/distanceCurves/registry';
 
 export const MAX_BACKUP_BYTES = 256 * 1024 * 1024;
 const TABLE_NAMES = [
@@ -21,6 +29,7 @@ export interface PreparedBackup {
   workspace: Workspace;
   photos: Map<string, Uint8Array>;
   createdAt: string;
+  compatibility: BackupCompatibility;
 }
 
 /** Stable paths use attachment IDs, never user-controlled filenames or filesystem paths. */
@@ -68,7 +77,15 @@ export async function createBackup(database = db): Promise<Uint8Array> {
     throw new Error('This workspace exceeds the 10,000 backup-entry limit.');
   entries['manifest.json'] = strToU8(
     JSON.stringify(
-      { format: 'velocitrack-workspace', version: 1, createdAt: new Date().toISOString(), files },
+      {
+        format: 'velocitrack-workspace',
+        version: BACKUP_FORMAT_VERSION,
+        dataVersion: BACKUP_DATA_VERSION,
+        appVersion: __APP_VERSION__,
+        appRevision: __BUILD_REVISION__,
+        createdAt: new Date().toISOString(),
+        files,
+      },
       null,
       2,
     ),
@@ -117,16 +134,11 @@ export async function prepareBackup(bytes: Uint8Array): Promise<PreparedBackup> 
   const manifestBytes = entries['manifest.json'];
   if (!manifestBytes || manifestBytes.length > 2 * 1024 * 1024)
     throw new Error('Missing or oversized backup manifest.');
-  const manifest = JSON.parse(strFromU8(manifestBytes)) as {
-    format?: unknown;
-    version?: unknown;
-    createdAt?: unknown;
-    files?: unknown;
-  } | null;
+  const manifest = JSON.parse(strFromU8(manifestBytes)) as Record<string, unknown> | null;
+  if (!manifest || manifest.format !== 'velocitrack-workspace')
+    throw new Error('This backup format is not supported.');
+  const compatibility = backupCompatibility(manifest);
   if (
-    !manifest ||
-    manifest.format !== 'velocitrack-workspace' ||
-    manifest.version !== 1 ||
     typeof manifest.createdAt !== 'string' ||
     !Number.isFinite(Date.parse(manifest.createdAt)) ||
     !Array.isArray(manifest.files)
@@ -155,7 +167,26 @@ export async function prepareBackup(bytes: Uint8Array): Promise<PreparedBackup> 
     if (!data) throw new Error(`Missing ${name} data.`);
     value[name] = JSON.parse(strFromU8(data));
   }
-  validateBackup(value);
+  migrateBackup(value, compatibility);
+  try {
+    validateBackup(value);
+  } catch {
+    throw new Error(
+      `The backup contains invalid records, unsupported fields or broken references. Nothing was restored. If it was created by a newer app, update VelociTrack first. Backup app: ${compatibility.appVersion ?? 'not recorded'}; current app: ${__APP_VERSION__}.`,
+    );
+  }
+  const unavailable = new Set<string>();
+  for (const mode of ['simple', 'dual', 'compare'] as const) {
+    const chart = value.profile.analysis?.[mode];
+    for (const id of [chart?.quantity, chart?.secondary]) {
+      if (id && /^(curve:|calculated:)/.test(id) && !distanceCurveRegistry.get(id))
+        unavailable.add(id);
+    }
+  }
+  if (unavailable.size)
+    compatibility.notices.push(
+      `Unavailable chart functions: ${[...unavailable].join(', ')}. Their saved IDs are retained, but this app cannot run them; choose an available quantity after restoring.`,
+    );
   const expected = new Set([
     'manifest.json',
     ...[...TABLE_NAMES, 'profile'].map((name) => `data/${name}.json`),
@@ -173,7 +204,7 @@ export async function prepareBackup(bytes: Uint8Array): Promise<PreparedBackup> 
       throw new Error('A photo is missing or invalid.');
     photos.set(photo.id, content);
   }
-  return { workspace: value, photos, createdAt: manifest.createdAt };
+  return { workspace: value, photos, createdAt: manifest.createdAt, compatibility };
 }
 
 /** Replace every application table in one transaction; quota/write failures roll back the whole workspace. */

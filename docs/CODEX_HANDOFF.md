@@ -1,5 +1,11 @@
 # Continue in Codex
 
+Version 0.21.0 adds versioned backups and a compatibility/conversion preview. Preserve
+legacy format-one support; read BACKUP_FORMAT.md before changing stored contracts.
+New archives record app/revision and independent data version; no IndexedDB reset
+or schema change. Reports now place overview groups on separate pages and use
+landscape above three strings. Read decision 028.
+
 Version 0.20.0 adds colored By string bars, non-cycling string colors, solid measured
 comparison lines, screen-only chart height (70–200%) and A4/Letter PDF paper.
 Snapshots adapt to the paper and notes, independently of screen height. String/Shot

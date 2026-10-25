@@ -38,7 +38,7 @@ function keys(value: Record<string, unknown>, allowed: string[]) {
   requireValid(Object.keys(value).every((key) => allowed.includes(key)));
 }
 
-/** Validate the complete version-one backup contract, including all references and typed field values. */
+/** Validate the current workspace contract after version migration, including references and typed values. */
 export function validateBackup(value: unknown): asserts value is Workspace {
   requireValid(object(value));
   keys(value, [

@@ -25,7 +25,18 @@ a stronger horizontal rule separates strings, just as in the workspace table.
 - **Chart / String info:** chart views include the current zoom, units, colors, legend and model descriptions on a light background. In **String info**, this section instead lists every selected string's quantities and complete JSON record, including original provider fields, local annotations and their field/tag definitions. JSON keeps stored units and full precision and may continue across pages. A point-table view produces a no-chart note.
 - **Shot records:** selected valid shots in current table sort order, with visible columns in their saved order. All selected rows are included regardless of screen pagination. Source-excluded and locally invalid shots are omitted.
 
-There is one shared introduction. Multiple strings appear side by side in the overview, in blocks of up to three; longer details flow onto further pages without another cover. Targets follow in their own section, with each image kept beside its name and dimensions. Details, targets and String info use portrait A4. Charts and shot records use landscape A4. Every visible column stays together, in the same order as the workspace table. Column widths and type size adapt to the selection. A shot row is never split between pages; larger selections continue with complete rows and repeated headings. If too many columns or an exceptionally long note cannot fit legibly, the report asks you to hide some columns instead of dropping content. String notes can still be included in String details.
+There is one shared introduction. Up to three strings use a portrait overview;
+larger comparisons use landscape, with up to five strings side by side. Each next
+group starts on a separate page instead of being squeezed below the previous table.
+Long details may continue with repeated string headings, without another cover.
+Targets follow in their own portrait section, with each image kept beside its name
+and dimensions. String info uses portrait; charts and shot records use landscape.
+These rules apply to both A4 and Letter. Every visible shot column stays together,
+in the same order as the workspace table. Column widths and type size adapt to the
+selection. A shot row is never split between pages; larger selections continue with
+complete rows and repeated headings. If too many columns or an exceptionally long
+note cannot fit legibly, the report asks you to hide some columns instead of dropping
+content. String notes can still be included in String details.
 
 Displayed numbers follow the same [precision rules](../docs/DISPLAY_FORMAT.md) as the application: velocity has one decimal place, G1/G7 three, and target measurements two, including trailing zeroes. Calculations, stored measurements and backups retain their full precision.
 

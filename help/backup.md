@@ -20,13 +20,35 @@ Keep it somewhere private: the ZIP is not encrypted. Save a fresh backup after a
 
 1. Back up the current workspace first. Finish imports and close other VelociTrack tabs.
 2. In **Backup / Restore**, choose a backup ZIP.
-3. Review counts, check the replacement confirmation, and select **Replace workspace from backup**.
+3. Review **Compatibility**, conversions and record counts, check the replacement confirmation, and select **Replace workspace from backup**.
 
 Restore replaces the whole local workspace; it does not merge or change Caldwell cloud data. An invalid archive or failed database write leaves the workspace intact. Sign-in cleanup may already have happened, so sign in before your next online refresh.
 
-Older backups remain supported. If they contain no separate hidden-column order,
-the saved visible order is retained and other columns follow it. Use the current
-application version when restoring a backup made by a newer release.
+## Versions and compatibility
+
+New backups record the creating app version and revision, archive format and data
+version. The preview shows the backup and current app versions, whether conversion
+is needed, and each change that will be applied. Inspecting a ZIP changes neither
+the current workspace nor the original ZIP.
+
+Older version-one backups remain supported. They did not record the app version;
+the preview displays **Not recorded (legacy backup)**. Missing optional settings
+receive explicit defaults, listed before restore. Existing choices are retained.
+Historical Shot sorting and local G1/G7 curve choices are converted to their
+current equivalents. Without a separate hidden-column order, the saved visible
+order is retained and other columns follow it.
+
+A different app version does not necessarily mean incompatible data. A backup from
+a newer app can be restored when its data format and all records are supported.
+Unknown newer formats or unsupported fields stop recovery without changing your
+workspace; update the app and retry. No records are silently skipped to make it fit.
+New version-two archives require VelociTrack 0.21 or later; keep your original older
+ZIP if you also need to use an older app.
+
+Measurements, notes and original photo bytes retain their stored precision. Reports
+and calculated curves use the current app, so derived output can differ between
+releases. Custom curve code is not included in a backup; unavailable saved functions
+are listed so you can choose an available quantity after restore.
 
 Derived string **Air density** and **Sound speed** are backed up with their source
 weather. Restore preserves their values; it does not recalculate them. Older

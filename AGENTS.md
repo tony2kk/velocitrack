@@ -27,6 +27,11 @@ The footer displays the package version and build-time Git revision. Update the
 package version and lockfile together for a release. Build after committing when
 handing off a clean preview; uncommitted work is intentionally marked `-dirty`.
 
+Preserve backward compatibility for workspace backups. Read `docs/BACKUP_FORMAT.md`
+before changing stored contracts. Keep historical readers and synthetic migration
+fixtures; version incompatible data changes and report every conversion before
+restore. Never silently discard unknown fields or partially replace a workspace.
+
 ## Commands
 
 - `npm ci` — reproducible dependency installation (Node 22.12+).

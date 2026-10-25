@@ -19,11 +19,13 @@ import { recordTable } from './recordTable';
 import { reportStringInfo } from './stringInfo';
 import { REPORT_MARGINS, reportPageArea } from './paper';
 
-/** Compare up to three strings per block without repeating a cover or forcing one page per string. */
+/** Keep each horizontal comparison group on its own page, with enough width for readable values. */
 function overview(input: ReportInput, details: boolean, stats: boolean): Content[] {
   const blocks: Content[] = [];
-  for (let start = 0; start < input.series.length; start += 3) {
-    const strings = input.series.slice(start, start + 3);
+  // Five landscape columns have roughly the same readable width as three portrait columns.
+  const columnsPerPage = input.series.length > 3 ? 5 : 3;
+  for (let start = 0; start < input.series.length; start += columnsPerPage) {
+    const strings = input.series.slice(start, start + columnsPerPage);
     const columns = strings.map((series) => {
       const values = details ? reportDetails(input, series) : [];
       if (stats) {
@@ -45,8 +47,13 @@ function overview(input: ReportInput, details: boolean, stats: boolean): Content
     });
     const labels = [...new Set(columns.flatMap((column) => [...column.keys()]))];
     blocks.push({
+      // Never start the next group in leftover space below the previous table.
+      ...(start > 0 ? { pageBreak: 'before' as const } : {}),
       table: {
         headerRows: 1,
+        keepWithHeaderRows: 1,
+        // Very long notes/custom fields may still span pages; repeated headers preserve context.
+        // Do not make the entire table unbreakable, which can lose content taller than a page.
         widths: [110, ...strings.map(() => '*' as const)],
         body: [
           [
@@ -306,6 +313,7 @@ export function reportDocument(
     content.push({
       text: 'Targets',
       style: 'heading',
+      pageOrientation: 'portrait',
       ...(detailsEnabled ? { pageBreak: 'before' as const } : {}),
     });
     for (const series of input.series.filter((item) => photos.has(item.id))) {
@@ -415,9 +423,10 @@ export function reportDocument(
   return {
     pageSize: input.profile.reportPaperSize ?? 'A4',
     pageOrientation:
-      !detailsEnabled &&
-      !hasTargets &&
-      ((options.chart && !infoMode) || (!options.chart && options.records))
+      (detailsEnabled && input.series.length > 3) ||
+      (!detailsEnabled &&
+        !hasTargets &&
+        ((options.chart && !infoMode) || (!options.chart && options.records)))
         ? 'landscape'
         : 'portrait',
     pageMargins: REPORT_MARGINS,
