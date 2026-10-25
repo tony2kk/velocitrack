@@ -266,7 +266,7 @@ export function AnalysisPanel({
   const forecast = activeCurves.some((curve) => curve.usesForecast);
   const derived = activeCurves.some((curve) => curve.derived);
   useImperativeHandle(ref, () => ({
-    capture: () => {
+    capture: (includeChart = true) => {
       const reportProfile = profile ?? defaultProfile();
       const chartVisible =
         kind !== 'info' &&
@@ -279,7 +279,12 @@ export function AnalysisPanel({
               (id) =>
                 quantities.find((item) => item.id === id)?.label ?? quantityLabel(id, unitSystem),
             );
-      if (chartVisible && reportProfile.report?.chart !== false && !chartRef.current)
+      if (
+        includeChart &&
+        chartVisible &&
+        reportProfile.report?.chart !== false &&
+        !chartRef.current
+      )
         throw new Error('The chart is still loading. Try again in a moment.');
       const legend = labels.map((label, index) => ({
         label,
@@ -319,10 +324,11 @@ export function AnalysisPanel({
         fields,
         tags,
         attachments,
+        colorOrder,
         createdAt: new Date().toISOString(),
         version: __APP_VERSION__,
         revision: __BUILD_REVISION__,
-        ...(chartVisible && reportProfile.report?.chart !== false
+        ...(includeChart && chartVisible && reportProfile.report?.chart !== false
           ? {
               chart: {
                 image: chartRef.current!.capture(

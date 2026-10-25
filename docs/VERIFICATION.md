@@ -1,5 +1,28 @@
 # MVP verification
 
+## Report Builder — 0.22.0
+
+- Behavior coverage includes unique normalized names, atomic concurrent profile
+  updates, detached draft save/cancel/error handling, confirmed deletion, pointer
+  and keyboard view ordering, quantity ownership, forecast unit conversion and
+  automatic per-string distance. Template planning does not mutate screen settings.
+- Backup tests restore data version 2 through the explicit version-3 migration,
+  round-trip profiles/selection/order, preserve unavailable quantity IDs with notices,
+  and retain all historical migration and corruption/rollback checks.
+- An isolated 4182 browser created a four-view template, reordered it, saved it and
+  retained its Tools selection after reload. The owner's 4180 workspace was untouched.
+- Browser-generated A4 and Letter reports each have eight pages: one overview,
+  two individual velocity charts, a combined Dual, colored group-size comparison,
+  complete info for both synthetic strings, and shot records. Paper sizes and
+  orientations were inspected; rendered charts retain readable legends/notes and
+  fill the landscape area. Missing targets create no page. A separate Quick report
+  remains a single landscape page using the current By string chart.
+- Full verification passes: 388 tests across 54 files, types, lint, formatting,
+  production/PWA build and public-content guard, including chart viewport/hover regressions.
+  All seven optional canvas/PDF layout checks pass. QA PDFs/screenshots contain only
+  invented data and remain ignored. Physical mobile drag and very large 200-view
+  reports were not exercised on hardware.
+
 ## Backup compatibility and overview pages — 0.21.0
 
 - Full verification passes: 375 tests across 52 files, types, lint, formatting,

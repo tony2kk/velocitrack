@@ -1,5 +1,15 @@
 # Plan
 
+## Report Builder — 0.22.0
+
+- [x] Local named report profiles with CRUD and unique names.
+- [x] Ordered Simple/Dual/Compare/Info views with pointer and keyboard reordering.
+- [x] Combined/per-string charts and optional automatic forecast distance.
+- [x] Remembered Tools dropdown; independent current-view Quick report.
+- [x] Shared chart rendering, page-fitted PDFs and explicit unavailable-data notices.
+- [x] Backup data version 3, older-archive migration and profile round-trip tests.
+- [x] English user/developer documentation.
+
 ## Backup compatibility and overview pagination — 0.21.0
 
 - [x] Versioned ZIP metadata and independent data schema with legacy readers.

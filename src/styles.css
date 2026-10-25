@@ -1,6 +1,141 @@
 @layer reset, base, layout, components, responsive;
 
 @layer components {
+  .report-selector {
+    width: clamp(145px, 15vw, 230px);
+    text-overflow: ellipsis;
+  }
+  .report-profile-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .report-profile-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+  }
+  .report-profile-row > div:first-child {
+    flex: 1;
+    min-width: 120px;
+    overflow-wrap: anywhere;
+  }
+  .report-profile-row small {
+    display: block;
+    margin-top: 5px;
+    color: var(--muted);
+  }
+  .report-delete-confirm {
+    flex-basis: 100%;
+  }
+  .report-delete-confirm button + button {
+    margin-left: 8px;
+  }
+  .report-section-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin: 14px 0 20px;
+  }
+  .report-section-grid .check-field {
+    margin: 0;
+  }
+  .report-view-list {
+    display: grid;
+    gap: 14px;
+    max-height: 55vh;
+    overflow: auto;
+    padding: 8px 5px;
+    margin: 0 -5px 14px;
+  }
+  .report-view-card {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 12px;
+    background: var(--surface);
+  }
+  .report-view-card.is-dragging {
+    opacity: 0.6;
+  }
+  .report-view-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .report-view-heading strong {
+    font-size: 13px;
+  }
+  .report-view-actions {
+    display: flex;
+    gap: 3px;
+    margin-left: auto;
+  }
+  .report-view-heading .drag-handle {
+    touch-action: none;
+    cursor: grab;
+  }
+  .report-view-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .report-view-fields .field {
+    margin: 0;
+    min-width: 0;
+  }
+  .report-view-fields select {
+    min-width: 0;
+    width: 100%;
+    text-overflow: ellipsis;
+  }
+  .report-view-fields > p {
+    margin: 0;
+  }
+  .report-builder h3 {
+    margin: 20px 0 8px;
+    font-size: 15px;
+  }
+  .report-builder fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+  }
+  .report-builder .dialog-actions {
+    position: sticky;
+    bottom: -26px;
+    z-index: 2;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 12px 0;
+  }
+  .report-builder > .muted,
+  .report-builder form .muted {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+}
+@layer responsive {
+  @media (max-width: 520px) {
+    .report-view-fields {
+      grid-template-columns: 1fr;
+    }
+    .report-view-list {
+      max-height: 60vh;
+    }
+    .report-selector {
+      width: 160px;
+    }
+  }
+}
+
+@layer components {
   .target-summary {
     border-block: 1px solid var(--border);
     padding: 18px 0;

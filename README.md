@@ -10,7 +10,11 @@ VelociTrack is not affiliated with, endorsed by or supported by Caldwell or Amer
 
 ## Using VelociTrack
 
-Use the PDF icon in Tools to [save or print a local report](help/reports.md) with selected strings, target crops, statistics, the current chart zoom and visible shot columns. All report sections default on in Profile → Report.
+Choose **Quick report** or a saved profile in Tools, then use the PDF icon to
+[save or print a local report](help/reports.md). Quick report captures current chart
+zoom. **Profile → Report Builder** creates reusable reports with ordered charts,
+including one chart per string and shared comparisons. Report sections default on;
+templates, selection and settings stay local and are included in backups.
 
 See the [user help](help/README.md) for Sources, Caldwell sign-in, JSON/text import formats, filters, profile preferences and offline use.
 

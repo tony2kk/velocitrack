@@ -4,6 +4,7 @@ import { CustomizationManager } from './CustomizationManager';
 import { saveProfile } from '../storage/workspace';
 import { Modal } from './Modal';
 import { ReportPreferences } from './ReportPreferences';
+import { ReportBuilder } from './ReportBuilder';
 
 /** Edit the browser profile and apply explicit consent changes to existing SDK sessions. */
 export function ProfileDialog({
@@ -21,7 +22,9 @@ export function ProfileDialog({
   fields?: FieldDefinition[];
   tags?: Tag[];
 }) {
-  const [tab, setTab] = useState<'general' | 'display' | 'report' | 'fields' | 'tags'>('general');
+  const [tab, setTab] = useState<'general' | 'display' | 'report' | 'builder' | 'fields' | 'tags'>(
+    'general',
+  );
   const [theme, setTheme] = useState(profile.theme ?? 'auto');
   const [showProjectileWeight, setShowProjectileWeight] = useState(
     profile.showProjectileWeight ?? false,
@@ -38,7 +41,7 @@ export function ProfileDialog({
   return (
     <Modal title="Your local profile" onClose={onClose} wide>
       <div className="segmented profile-tabs" aria-label="Profile sections">
-        {(['general', 'display', 'report', 'fields', 'tags'] as const).map((value) => (
+        {(['general', 'display', 'report', 'builder', 'fields', 'tags'] as const).map((value) => (
           <button
             key={value}
             title={`Open ${value} preferences stored in this browser.`}
@@ -51,15 +54,18 @@ export function ProfileDialog({
                 ? 'Display'
                 : value === 'report'
                   ? 'Report'
-                  : value === 'fields'
-                    ? 'Custom fields'
-                    : 'Tags'}
+                  : value === 'builder'
+                    ? 'Report Builder'
+                    : value === 'fields'
+                      ? 'Custom fields'
+                      : 'Tags'}
           </button>
         ))}
       </div>
       {(tab === 'fields' || tab === 'tags') && (
         <CustomizationManager key={tab} kind={tab} fields={fields} tags={tags} />
       )}
+      {tab === 'builder' && <ReportBuilder profile={profile} fields={fields} />}
       {tab === 'report' && (
         <ReportPreferences
           initial={profile.report}

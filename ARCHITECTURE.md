@@ -1,5 +1,13 @@
 # Architecture
 
+Release 0.22.0 adds local Report Builder templates and a remembered Tools selection.
+The shared `charts/options.ts` and `charts/engine.ts` render screen and PDF charts.
+`reports/builder.ts` plans ordered combined/per-string views; `renderBuilder.ts`
+renders them sequentially without changing screen state. Templates reuse current
+selection, units, paper and table columns. Backup data version 3 includes templates;
+older readers migrate forward without resetting IndexedDB. See
+[decision 029](docs/decisions/029-report-builder.md).
+
 Release 0.21.0 versions backup envelopes and data independently of the application
 and IndexedDB. Checksums precede in-memory migrations; strict current validation
 precedes the compatibility preview and atomic replacement. Version-one readers

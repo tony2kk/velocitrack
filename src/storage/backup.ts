@@ -176,16 +176,26 @@ export async function prepareBackup(bytes: Uint8Array): Promise<PreparedBackup> 
     );
   }
   const unavailable = new Set<string>();
-  for (const mode of ['simple', 'dual', 'compare'] as const) {
-    const chart = value.profile.analysis?.[mode];
+  const charts = [
+    ...(['simple', 'dual', 'compare'] as const).map((mode) => value.profile.analysis?.[mode]),
+    ...(value.profile.reportProfiles ?? []).flatMap((report) =>
+      report.views.flatMap((view) => (view.mode === 'info' ? [] : [view.settings])),
+    ),
+  ];
+  for (const chart of charts) {
     for (const id of [chart?.quantity, chart?.secondary]) {
-      if (id && /^(curve:|calculated:)/.test(id) && !distanceCurveRegistry.get(id))
+      if (
+        id &&
+        ((/^(curve:|calculated:)/.test(id) && !distanceCurveRegistry.get(id)) ||
+          (id.startsWith('field:') &&
+            !value.fieldDefinitions.some((field) => `field:${field.id}` === id)))
+      )
         unavailable.add(id);
     }
   }
   if (unavailable.size)
     compatibility.notices.push(
-      `Unavailable chart functions: ${[...unavailable].join(', ')}. Their saved IDs are retained, but this app cannot run them; choose an available quantity after restoring.`,
+      `Unavailable chart functions or fields: ${[...unavailable].join(', ')}. Their saved IDs are retained in charts and Report Builder, but this app cannot display them; choose an available quantity after restoring.`,
     );
   const expected = new Set([
     'manifest.json',

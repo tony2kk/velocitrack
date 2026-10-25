@@ -2,11 +2,48 @@
 
 # Save or print a range report
 
-Select strings and shots, arrange the chart and its zoom, then choose the **PDF document icon** in **Tools**. The report captures the selection at that moment and is generated entirely on this device.
+Select strings and shots. In **Tools**, choose **Quick report** or a saved report profile, then press the adjacent **PDF document icon**. Your choice is remembered on this device. Quick report uses the current chart and its zoom; saved profiles generate their configured views. The report captures the selection at that moment and is generated entirely on this device.
 
 Once ready, edit the suggested file name and choose **Save as…**. Supported browsers open a native file dialog; other browsers download the file using your chosen name. **Open / print PDF** opens the finished document for preview, printing or saving through the browser's PDF viewer. Canceling Save as leaves the report ready to save again.
 
-The suggested name is `VelociTrack_YYYY-MM-DD_String-name.pdf`, using the earliest selected string date. Multiple strings use `N-strings`; a missing date uses the generation date. The footer records generation time, app version, source revision and page number.
+The suggested name is `VelociTrack_YYYY-MM-DD_String-name.pdf`, using the earliest selected string date. Saved profiles include their name before the string name. Multiple strings use `N-strings`; a missing date uses the generation date. The footer records generation time, app version, source revision and page number.
+
+## Build a reusable report
+
+Open **Profile → Report Builder → Add report profile**. Give it a unique name.
+Enable the sections you want, then use **Add view** to compose any number of
+charts or String info views. All four sections start enabled; zero charts is valid.
+
+- **Analysis:** Simple, Dual, String compare or String info.
+- **Horizontal axis / Quantity:** use the same choices as workspace analysis.
+  Compare offers By string for string attributes and By shot for shot attributes.
+  Dual also has a Second quantity. String info includes all selected strings and
+  original JSON without chart settings.
+- **Forecast distance:** for calculated distance curves, leave blank to fit the
+  model to the furthest valid measured distance in that chart. For a string with
+  no positive distance samples, the existing model default is 1000 ft (304.8 m).
+  Enter a distance to use a fixed horizon instead, up to 1 km (3280.84 ft).
+- **Strings:** Simple/Dual can use **Combined strings**, or **One chart per string**.
+  Compare and String info always include all selected strings together.
+
+Drag a view's handle to change its position, or use its up/down arrows. Select
+**Save report profile** when finished. Cancel discards draft changes. The pencil
+edits an existing profile; the trash icon asks before deleting it.
+
+For example, add a Simple velocity chart with One chart per string, then a String
+compare / By string / Group size view, then a String compare / By shot / G1 view.
+One PDF will contain the separate velocity charts followed by both comparisons.
+
+Saved reports use the current selected shots, units, paper size and shot-table
+columns/sort order. Each chart fits its own data; screen zoom and chart height are
+unaffected. Missing fields or unavailable readings produce an explanatory view
+instead of substituted data. The existing limit of 100 eligible shots per calculated
+curve remains. Up to 50 views can be saved per profile; expansion is limited to 200
+views per PDF. Use a smaller selection if that limit is reached.
+
+Profiles and the Tools selection are included in workspace backups. Deleting the
+selected profile returns Tools to Quick report. Profile → Report continues to
+control Quick report sections and the paper size used by both report types.
 
 ## Choose sections
 

@@ -4,6 +4,7 @@ import { db } from '../storage/database';
 import { reportDocument } from './content';
 import type { ReportInput } from './types';
 import { renderTargetPhoto } from './renderTarget';
+import { renderBuilderViews } from './renderBuilder';
 
 pdfMake.addVirtualFileSystem(fonts);
 // Report content is local data only. No URL embedded in a field may trigger a network request.
@@ -23,7 +24,7 @@ export async function reportPhotos(input: ReportInput): Promise<Map<string, stri
     const record = await db.attachmentContents.get(photo.id);
     if (!record)
       throw new Error(
-        `The target photo for "${series.name}" is missing. Restore it or disable Target in Profile → Report.`,
+        `The target photo for "${series.name}" is missing. Restore it or disable Target in Profile → ${input.template ? 'Report Builder for this profile' : 'Report'}.`,
       );
     result.set(
       series.id,
@@ -38,6 +39,19 @@ export async function reportPhotos(input: ReportInput): Promise<Map<string, stri
 }
 
 /** Build a self-contained local PDF; fonts are bundled so first generation also works offline. */
-export async function generateReport(input: ReportInput): Promise<Blob> {
-  return pdfMake.createPdf(reportDocument(input, await reportPhotos(input))).getBlob();
+export async function generateReport(
+  input: ReportInput,
+  cancelled: () => boolean = () => false,
+): Promise<Blob> {
+  const prepared = input.template
+    ? {
+        ...input,
+        profile: { ...input.profile, report: { ...input.template.sections, chart: false } },
+      }
+    : input;
+  const photos = await reportPhotos(prepared);
+  if (input.template)
+    prepared.views = await renderBuilderViews(prepared, photos.size > 0, cancelled);
+  if (cancelled()) throw new Error('Report generation cancelled.');
+  return pdfMake.createPdf(reportDocument(prepared, photos)).getBlob();
 }

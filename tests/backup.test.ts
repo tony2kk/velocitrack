@@ -203,7 +203,7 @@ describe('structured ZIP backup and atomic restore', () => {
     const archive = await createBackup(database);
     for (const patch of [
       { version: 3 },
-      { dataVersion: 3 },
+      { dataVersion: 4 },
       { dataVersion: 0 },
       { dataVersion: '2' },
       { appVersion: null },

@@ -12,6 +12,7 @@ import {
 import type { ImportBundle, ImportedReference } from '../sources/velociradar';
 import { importedAtmosphere } from '../sources/atmosphere';
 import { db, type WorkspaceDatabase } from './database';
+import { validateReportProfiles } from '../domain/reportProfiles';
 
 /** Read a consistent snapshot so the UI never mixes tables from different import transactions. */
 export async function loadWorkspace(database = db) {
@@ -48,7 +49,12 @@ export async function saveProfile(patch: Partial<Omit<Profile, 'id'>>, database 
     throw new Error('Chart height must be a whole percentage between 70 and 200.');
   await database.transaction('rw', database.profiles, async () => {
     const current = { ...defaultProfile(), ...(await database.profiles.get('local')) };
-    await database.profiles.put({ ...current, ...patch, id: 'local' });
+    const next = { ...current, ...patch, id: 'local' as const };
+    validateReportProfiles(
+      next.reportProfiles === undefined ? [] : next.reportProfiles,
+      next.selectedReportProfileId,
+    );
+    await database.profiles.put(next);
   });
 }
 

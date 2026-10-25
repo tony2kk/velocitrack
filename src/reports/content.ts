@@ -13,7 +13,7 @@ import {
   targetUnit,
 } from '../domain/targetMeasurement';
 import { displayValue, formatQuantity, unitLabels } from '../domain/units';
-import type { ReportInput } from './types';
+import type { ReportInput, ReportChart } from './types';
 import { safeFilename } from './filename';
 import { recordTable } from './recordTable';
 import { reportStringInfo } from './stringInfo';
@@ -72,7 +72,9 @@ function overview(input: ReportInput, details: boolean, stats: boolean): Content
 }
 
 /** Stable, filesystem-safe suggestion; the save dialog may replace it without changing the report. */
-export function reportFilename(input: Pick<ReportInput, 'series' | 'createdAt'>): string {
+export function reportFilename(
+  input: Pick<ReportInput, 'series' | 'createdAt' | 'template'>,
+): string {
   const date =
     input.series
       .map((item) => item.startedAt)
@@ -81,7 +83,7 @@ export function reportFilename(input: Pick<ReportInput, 'series' | 'createdAt'>)
   const label =
     input.series.length === 1 ? input.series[0]!.name : `${input.series.length}-strings`;
   const safe =
-    safeFilename(label)
+    safeFilename(input.template ? `${input.template.name}-${label}` : label)
       .replace(/\s+/g, '-')
       .replace(/[. -]+$/g, '')
       .slice(0, 80) || 'report';
@@ -262,19 +264,42 @@ function statistics(shots: Shot[], input: ReportInput): Content {
   };
 }
 
+/** Place a page-fitted plot, its external legend and model notes using identical Quick/Builder rules. */
+function chartFigure(
+  chart: ReportChart,
+  paper: ReportInput['profile']['reportPaperSize'],
+): Content[] {
+  return [
+    { image: chart.image, width: reportPageArea(paper).width, margin: [0, 6, 0, 8] },
+    {
+      text: chart.legend.flatMap((item) => [
+        { text: '■ ', color: item.color },
+        { text: item.label + '     ' },
+      ]),
+      fontSize: 9,
+      margin: [0, 0, 0, 12],
+    },
+    ...chart.descriptions.map((text): Content => ({ text, style: 'small', margin: [0, 0, 0, 5] })),
+  ];
+}
+
 /** Paginated document with selectable text, repeated table headings and deliberate landscape sections. */
 export function reportDocument(
   input: ReportInput,
   photos: ReadonlyMap<string, string> = new Map(),
 ): TDocumentDefinitions {
-  const options = { ...defaultReportSettings(), ...input.profile.report };
+  const options = input.template
+    ? { ...input.template.sections, chart: false }
+    : { ...defaultReportSettings(), ...input.profile.report };
+  const views = input.views ?? [];
+  const hasAnalysis = options.chart || views.length > 0;
   const detailsEnabled = options.details || options.statistics;
   const hasTargets = options.target && input.series.some((series) => photos.has(series.id));
   const infoMode = input.profile.analysis?.mode === 'info';
   const records = options.records ? reportRecords(input) : undefined;
   const content: Content[] = [
     { text: 'VELOCITRACK', color: '#08796e', bold: true, characterSpacing: 2, fontSize: 11 },
-    { text: 'Range report', style: 'title' },
+    { text: input.template?.name ?? 'Range report', style: 'title' },
     {
       text: `${input.series.length} string${input.series.length === 1 ? '' : 's'} · ${input.shots.length} included shot${input.shots.length === 1 ? '' : 's'}${input.profile.nickname ? ` · ${input.profile.nickname}` : ''}`,
       style: 'small',
@@ -364,39 +389,36 @@ export function reportDocument(
       ...(detailsEnabled || hasTargets ? { pageBreak: 'before' as const } : {}),
     });
     if (infoMode) content.push(...reportStringInfo(input));
-    else if (input.chart) {
-      content.push({
-        image: input.chart.image,
-        width: reportPageArea(input.profile.reportPaperSize).width,
-        margin: [0, 6, 0, 8],
-      });
-      content.push({
-        text: input.chart.legend.flatMap((item) => [
-          { text: '■ ', color: item.color },
-          { text: item.label + '     ' },
-        ]),
-        fontSize: 9,
-        margin: [0, 0, 0, 12],
-      });
-      content.push(
-        ...input.chart.descriptions.map((text): Content => ({
-          text,
-          style: 'small',
-          margin: [0, 0, 0, 5],
-        })),
-      );
-    } else
+    else if (input.chart) content.push(...chartFigure(input.chart, input.profile.reportPaperSize));
+    else
       content.push({
         text: 'No chart is displayed in the current workspace view.',
         style: 'small',
       });
+  }
+  for (const [index, view] of views.entries()) {
+    content.push({
+      text: view.title,
+      style: 'heading',
+      pageOrientation: view.mode === 'info' ? 'portrait' : 'landscape',
+      ...(detailsEnabled || hasTargets || index > 0 ? { pageBreak: 'before' as const } : {}),
+    });
+    if (view.mode === 'info')
+      content.push(
+        ...reportStringInfo({
+          ...input,
+          series: input.series.filter((series) => view.seriesIds.includes(series.id)),
+        }),
+      );
+    else if (view.chart) content.push(...chartFigure(view.chart, input.profile.reportPaperSize));
+    else content.push({ text: view.message ?? 'No chart data available.', style: 'small' });
   }
   if (records) {
     content.push({
       text: 'Shot records',
       style: 'heading',
       pageOrientation: 'landscape',
-      ...(detailsEnabled || hasTargets || options.chart ? { pageBreak: 'before' as const } : {}),
+      ...(detailsEnabled || hasTargets || hasAnalysis ? { pageBreak: 'before' as const } : {}),
     });
     content.push({
       text: 'Selected valid shots in workspace table order. All visible columns stay together; complete rows continue onto further pages.',
@@ -415,9 +437,11 @@ export function reportDocument(
     if (!records.columns.length)
       content.push({ text: 'No shot-record columns are selected.', style: 'small' });
   }
-  if (!Object.values(options).some(Boolean))
+  if (!Object.values(options).some(Boolean) && views.length === 0)
     content.push({
-      text: 'All report sections are disabled. Enable sections in Profile → Report.',
+      text: input.template
+        ? 'This report profile has no enabled sections or views. Edit it in Profile → Report Builder.'
+        : 'All report sections are disabled. Enable sections in Profile → Report.',
       style: 'small',
     });
   return {
@@ -426,12 +450,14 @@ export function reportDocument(
       (detailsEnabled && input.series.length > 3) ||
       (!detailsEnabled &&
         !hasTargets &&
-        ((options.chart && !infoMode) || (!options.chart && options.records)))
+        ((options.chart && !infoMode) ||
+          views[0]?.mode === 'chart' ||
+          (!hasAnalysis && options.records)))
         ? 'landscape'
         : 'portrait',
     pageMargins: REPORT_MARGINS,
     info: {
-      title: 'VelociTrack range report',
+      title: input.template ? `VelociTrack · ${input.template.name}` : 'VelociTrack range report',
       author: input.profile.nickname || 'VelociTrack',
       subject: 'Recorded measurements and current analysis',
       creator: `VelociTrack ${input.version} (${input.revision})`,

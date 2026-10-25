@@ -69,5 +69,15 @@ export function migrateBackup(
   compatibility: BackupCompatibility,
 ): void {
   if (compatibility.dataVersion === 1) migrateOneToTwo(workspace, compatibility.changes);
+  if (
+    compatibility.dataVersion <= 2 &&
+    object(workspace.profile) &&
+    !Object.hasOwn(workspace.profile, 'reportProfiles')
+  ) {
+    workspace.profile.reportProfiles = [];
+    compatibility.changes.push(
+      'This backup has no Report Builder profiles. Start with an empty template list and Quick report.',
+    );
+  }
   // Future data versions append explicit migration steps. Never drop unrecognized fields to pass validation.
 }

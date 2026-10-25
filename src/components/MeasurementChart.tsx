@@ -9,26 +9,20 @@ import {
   type CSSProperties,
 } from 'react';
 import { RotateCcw } from 'lucide-react';
-import { init, use as registerCharts, type EChartsType } from 'echarts/core';
-import { BarChart, LineChart } from 'echarts/charts';
-import { AriaComponent, GridComponent, DataZoomComponent } from 'echarts/components';
-import { CanvasRenderer } from 'echarts/renderers';
-import { REPORT_CHART_PIXELS } from '../reports/chartLayout';
+import type { EChartsType } from 'echarts/core';
+import { init, renderChartImage } from '../charts/engine';
+import { chartAxes, measurementChartOption } from '../charts/options';
 import type { AnalysisMode, ChartSettings, Series, Shot, UnitSystem } from '../domain/model';
-import { quantityLabel, type Quantity } from '../domain/analysis';
-import { formatQuantity, unitLabels } from '../domain/units';
-import { distanceCurveRegistry, distanceAxisIndex } from '../domain/distanceCurves/registry';
+import { type Quantity } from '../domain/analysis';
+import { distanceCurveRegistry } from '../domain/distanceCurves/registry';
 import type { DistanceCurveData } from '../domain/distanceCurves/types';
 import {
   alignExtent,
   applyZoom,
-  displayRange,
-  fitRange,
   retainViewport,
   setRightEdge,
   zoomPercent,
   type AxisViewport,
-  type DisplayScale,
   type ViewportMemory,
 } from '../domain/chartViewport';
 import {
@@ -41,15 +35,6 @@ import {
   type ChartPoint,
   type ChartTrace,
 } from '../domain/chart';
-
-registerCharts([
-  BarChart,
-  LineChart,
-  AriaComponent,
-  GridComponent,
-  DataZoomComponent,
-  CanvasRenderer,
-]);
 
 /** A fresh, unhovered print image of the current viewport; no screenshot of UI chrome. */
 export interface MeasurementChartHandle {
@@ -109,42 +94,7 @@ export default function MeasurementChart({
     capture: (height = 780) => {
       const current = instance.current;
       if (!current) throw new Error('The chart is still loading. Try again in a moment.');
-      const host = document.createElement('div');
-      const copy = init(host, undefined, {
-        width: REPORT_CHART_PIXELS,
-        height,
-        renderer: 'canvas',
-      });
-      const option = current.getOption();
-      // Retain exact zoom percentages/extents; only print colors and navigation chrome change.
-      const axesForPrint = (axes: unknown) =>
-        (Array.isArray(axes) ? axes : axes ? [axes] : []).map((axis: Record<string, unknown>) => ({
-          ...axis,
-          nameTextStyle: { color: '#334b43', width: 500 },
-          axisLabel: { ...(axis.axisLabel as object), color: '#334b43' },
-          axisLine: { lineStyle: { color: '#8a9c94' } },
-          splitLine: { ...(axis.splitLine as object), lineStyle: { color: '#e6ece8' } },
-        }));
-      try {
-        copy.setOption({
-          ...option,
-          animation: false,
-          backgroundColor: '#ffffff',
-          // Printed charts retain their data window but need no room for zoom controls.
-          grid: { left: 74, right: kind === 'dual' ? 100 : 64, top: 40, bottom: 48 },
-          textStyle: { color: '#334b43' },
-          xAxis: axesForPrint(option.xAxis),
-          yAxis: axesForPrint(option.yAxis),
-        });
-        return copy.getDataURL({
-          type: 'png',
-          pixelRatio: 2,
-          backgroundColor: '#ffffff',
-          excludeComponents: ['dataZoom'],
-        });
-      } finally {
-        copy.dispose();
-      }
+      return renderChartImage(current.getOption(), kind, height);
     },
   }));
   const [ownMemory] = useState<ViewportMemory>(() => new Map());
@@ -242,30 +192,10 @@ export default function MeasurementChart({
     lastReset.current = resetCount;
     if (completedReset || lastForecast.current?.distance !== forecastDistance)
       resetDistance.current = undefined;
-    const xKey =
-      mode === 'distance'
-        ? 'distance'
-        : mode === 'string'
-          ? 'strings'
-          : kind === 'compare'
-            ? 'string-order'
-            : 'shot-order';
-    const xScale = {
-      factor: mode === 'distance' && unitSystem === 'metric' ? 0.3048 : 1,
-      offset: 0,
-    };
+    const presentation = { traces, series, mode, settings, kind, unitSystem, dark, quantities };
+    const { xKey, fittedX, fittedY } = chartAxes(presentation);
     const hadX = memory.has(xKey);
-    const x = retainViewport(
-      memory,
-      xKey,
-      mode === 'string'
-        ? [0.5, series.length + 0.5]
-        : fitRange(
-            traces.flatMap((trace) => trace.data.map((point) => point.value[0] / xScale.factor)),
-            true,
-          ),
-      reset,
-    );
+    const x = retainViewport(memory, xKey, fittedX, reset);
     const previousForecast = lastForecast.current;
     if (
       forecastDistance !== undefined &&
@@ -278,203 +208,17 @@ export default function MeasurementChart({
       setRightEdge(x, forecastDistance);
     lastForecast.current = { kind, distance: forecastDistance };
 
-    const yQuantities =
-      settings &&
-      kind === 'dual' &&
-      settings.quantity !== settings.secondary &&
-      (mode === 'shot' || distanceAxisIndex(settings.quantity, settings.secondary) === 1)
-        ? [settings.quantity, settings.secondary]
-        : [settings?.quantity ?? 'velocity'];
-    const scales: DisplayScale[] = yQuantities.map((quantity) =>
-      mode === 'distance' && distanceCurveRegistry.get(quantity)
-        ? distanceCurveRegistry.get(quantity)!.displayScale(unitSystem)
-        : quantity === 'velocity'
-          ? { factor: unitSystem === 'metric' ? 0.3048 : 1, offset: 0 }
-          : (quantities?.find((item) => item.id === quantity)?.displayScale ?? {
-              factor: 1,
-              offset: 0,
-            }),
-    );
-    // Drop retains positive values; only its shared physical axis runs downward on screen.
-    const downward = yQuantities.map(
-      (quantity) => mode === 'distance' && distanceCurveRegistry.get(quantity)?.axisKey === 'drop',
-    );
-    const y = yQuantities.map((quantity, index) => {
-      // Recorded and calculated velocities have the same dimension and share one numerical scale.
-      const key =
-        mode === 'distance' ? (distanceCurveRegistry.get(quantity)?.axisKey ?? quantity) : quantity;
-      const scale = scales[index]!;
-      const fitted = fitRange(
-        traces
-          .filter((trace) => (trace.yAxisIndex ?? 0) === index)
-          .flatMap((trace) =>
-            trace.data.map((point) =>
-              point.value[1] === null ? null : (point.value[1] - scale.offset) / scale.factor,
-            ),
-          ),
-      );
-      // Fit/reset starts exactly at the muzzle plane, without negative padding above zero.
-      // Existing zoom windows remain untouched until the user explicitly resets the scales.
-      if (downward[index] && fitted) fitted[0] = 0;
-      // A fitted bar starts at zero, including signed string offsets. Explicit zoom still works.
-      if (mode === 'string' && fitted) {
-        // Use displayed zero: 0 °C is 32 °F in the canonical viewport, unlike a length conversion.
-        const baseline = -scale.offset / scale.factor;
-        fitted[0] = Math.min(baseline, fitted[0]);
-        fitted[1] = Math.max(baseline, fitted[1]);
-      }
-      return retainViewport(memory, `${xKey}:y:${key}`, fitted, reset);
-    });
+    const y = fittedY.map((axis) => retainViewport(memory, axis.key, axis.range, reset));
     const [yStart, yEnd] = zoomPercent(y[0]!);
     for (const secondary of y.slice(1)) alignExtent(secondary, [yStart, yEnd]);
     axes.current = { x, y };
     // Reset can extend the linked right edge. Fit again when that edit supplies its new plotted data.
     if (requestedReset && forecastDistance !== undefined && x.window[1] !== forecastDistance)
       resetDistance.current = x.window[1];
-    const [xStart, xEnd] = zoomPercent(x);
-    const xExtent = displayRange(x.extent, xScale);
-    chart.setOption(
-      {
-        animation: false,
-        aria: {
-          enabled: true,
-          label: {
-            description:
-              'Recorded measurements. An accessible shot table is available below the chart.',
-          },
-        },
-        textStyle: { fontFamily: 'system-ui, sans-serif', color: dark ? '#c5d2cf' : '#63716e' },
-        grid: { left: 74, right: kind === 'dual' ? 100 : 64, top: 48, bottom: 75 },
-        xAxis: {
-          type: 'value',
-          min: xExtent[0],
-          max: xExtent[1],
-          name:
-            mode === 'distance'
-              ? `Distance (${unitLabels[unitSystem].distance})`
-              : mode === 'string'
-                ? 'String'
-                : settings && kind !== 'compare'
-                  ? 'Shot sequence'
-                  : settings
-                    ? 'Shot order within string'
-                    : 'Shot number',
-          nameLocation: 'middle',
-          nameGap: 32,
-          minInterval: mode !== 'distance' ? 1 : undefined,
-          axisLine: { lineStyle: { color: dark ? '#6b8078' : '#dae3df' } },
-          splitLine: { show: false },
-          axisLabel: {
-            hideOverlap: true,
-            ...(mode === 'string' ? { width: 120, overflow: 'truncate' as const } : {}),
-            formatter: (value: number) =>
-              mode === 'string'
-                ? ([...series].sort((a, b) => a.id.localeCompare(b.id))[value - 1]?.name ?? '')
-                : formatQuantity(
-                    value,
-                    mode !== 'distance' ? 'count' : 'distance',
-                    mode === 'distance' ? unitLabels[unitSystem].distance : '',
-                  ),
-          },
-        },
-        yAxis: yQuantities.map((quantity, index) => ({
-          type: 'value',
-          inverse: downward[index],
-          nameLocation: downward[index] ? 'start' : 'end',
-          min: displayRange(y[index]!.extent, scales[index]!)[0],
-          max: displayRange(y[index]!.extent, scales[index]!)[1],
-          name:
-            quantities?.find((item) => item.id === quantity)?.label ??
-            quantityLabel(quantity, unitSystem),
-          position: index === 0 ? 'left' : 'right',
-          nameTextStyle: { width: 170, overflow: 'truncate' },
-          scale: true,
-          splitLine: { show: index === 0, lineStyle: { color: dark ? '#34443e' : '#edf1ef' } },
-          axisLabel: {
-            hideOverlap: true,
-            showMaxLabel: false,
-            // Exact viewport edges are not useful ticks. Keep a zero baseline, including on
-            // inverted drop axes; the formatter also handles new edges during live zoom.
-            formatter: (value: number, tickIndex: number) =>
-              tickIndex === 0 && value !== 0
-                ? ''
-                : formatQuantity(
-                    value,
-                    quantity,
-                    mode === 'distance'
-                      ? distanceCurveRegistry.get(quantity)?.unit?.(unitSystem)
-                      : quantities?.find((item) => item.id === quantity)?.unit,
-                  ),
-          },
-        })),
-        dataZoom: [
-          {
-            id: 'inside-zoom',
-            type: 'inside',
-            xAxisIndex: 0,
-            filterMode: 'none',
-            start: xStart,
-            end: xEnd,
-          },
-          {
-            id: 'distance-zoom',
-            type: 'slider',
-            xAxisIndex: 0,
-            filterMode: 'none',
-            start: xStart,
-            end: xEnd,
-            realtime: true,
-            height: 14,
-            bottom: 6,
-            borderColor: 'transparent',
-            fillerColor: '#0c817622',
-          },
-          {
-            id: 'velocity-zoom',
-            type: 'slider',
-            orient: 'vertical',
-            yAxisIndex: yQuantities.map((_, index) => index),
-            // Zoom clips the viewport without deleting samples or changing linked shot identities.
-            filterMode: 'none',
-            start: yStart,
-            end: yEnd,
-            realtime: true,
-            width: 14,
-            right: 8,
-            top: 32,
-            bottom: 75,
-            borderColor: 'transparent',
-            fillerColor: '#0c817622',
-          },
-        ],
-        series: traces.map((trace) => ({
-          ...trace,
-          type: mode === 'string' ? 'bar' : 'line',
-          // Each string owns one series for identity/hover. Overlay their slots to center each
-          // isolated bar on its numeric string index rather than offsetting it by series order.
-          barGap: '-100%',
-          barMaxWidth: 64,
-          showSymbol: !trace.data[0]?.derived && !trace.data[0]?.model,
-          symbol: trace.symbol ?? 'circle',
-          symbolSize: mode === 'distance' ? 6 : 8,
-          triggerEvent: 'line',
-          connectNulls: false,
-          lineStyle: { width: 2, opacity: 0.9, type: trace.dash ?? 'solid' },
-          itemStyle: { color: trace.color },
-          emphasis: {
-            focus: mode === 'distance' ? 'series' : 'self',
-            lineStyle: { width: 3.5, opacity: 1 },
-            itemStyle: {
-              borderColor: '#183e36',
-              borderWidth: 2,
-              shadowBlur: 8,
-              shadowColor: '#08796e55',
-            },
-          },
-        })),
-      },
-      { notMerge: true, silent: true },
-    );
+    chart.setOption(measurementChartOption(presentation, { x, y }), {
+      notMerge: true,
+      silent: true,
+    });
     commitDistance();
   }, [
     traces,

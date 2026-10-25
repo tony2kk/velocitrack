@@ -17,7 +17,7 @@ export function ReportDialog({ input, onClose }: { input: ReportInput; onClose: 
     let cancelled = false;
     let url = '';
     void import('../reports/generate')
-      .then(({ generateReport }) => generateReport(input))
+      .then(({ generateReport }) => generateReport(input, () => cancelled))
       .then((blob) => {
         if (cancelled) return;
         url = URL.createObjectURL(blob);
@@ -26,7 +26,7 @@ export function ReportDialog({ input, onClose }: { input: ReportInput; onClose: 
       .catch((cause: unknown) => {
         if (!cancelled)
           setError(
-            cause instanceof ReportLayoutError
+            cause instanceof ReportLayoutError || (input.template && cause instanceof Error)
               ? cause.message
               : 'The report could not be generated. Check target photos and available browser memory, then try again.',
           );
@@ -38,7 +38,7 @@ export function ReportDialog({ input, onClose }: { input: ReportInput; onClose: 
   }, [input]);
   return (
     <Modal
-      title="PDF report"
+      title={input.template ? `PDF report · ${input.template.name}` : 'PDF report · Quick report'}
       onClose={() => {
         if (!saving) onClose();
       }}

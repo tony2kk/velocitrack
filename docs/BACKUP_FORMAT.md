@@ -10,7 +10,7 @@ management without changing the live IndexedDB schema.
 | Manifest field | Meaning |
 | --- | --- |
 | `version` | ZIP envelope version; current writer: 2 |
-| `dataVersion` | Workspace contract and migration baseline; current writer: 2 |
+| `dataVersion` | Workspace contract and migration baseline; current writer: 3 |
 | `appVersion` | Package version that created the archive |
 | `appRevision` | Build-time Git revision, including `-dirty` for a modified local build |
 | `createdAt` | ISO timestamp of archive creation |
@@ -25,8 +25,8 @@ Versions are metadata, not authentication or proof of who created a ZIP.
 
 - Archive version 1 (releases 0.4–0.20) is interpreted as data version 1. It did
   **not** record the creating app version. The preview says so rather than guessing.
-- Archive version 2 declares data version 1 or 2 and a valid app release/revision.
-  Data version 1 is migrated in memory; data version 2 is validated directly.
+- Archive version 2 declares data version 1, 2 or 3 and a valid app release/revision.
+  Versions 1 and 2 are migrated in memory; data version 3 is validated directly.
 - A different, even newer, app release is acceptable if the envelope, data version
   and every record are supported. The preview shows both app versions and explains
   that reports and calculated views use the current app's implementation.
@@ -34,7 +34,8 @@ Versions are metadata, not authentication or proof of who created a ZIP.
   broken references stop preparation. Nothing is partially imported or discarded.
   The user sees the version problem and can update the app before retrying.
 - This is backward read compatibility, not a downgrade exporter: apps before
-  0.21 cannot read version-2 archives. Keep the original older ZIP as well.
+  0.21 cannot read version-2 archives, and 0.21 cannot read data-version-3 archives.
+  Keep the original older ZIP as well.
 
 The `1 → 2` step fills absent optional profile choices with the documented defaults
 (system theme, card display preferences, 100% chart height, A4, all report sections
@@ -43,6 +44,13 @@ required fields. Historical Shot sorting becomes String / Shot sorting with the
 same direction. The old local G1/G7 choices map to unified atmosphere-aware G1/G7.
 Every applied change is listed before confirmation. These defaults are frozen in
 the migration rather than inherited from future application defaults.
+
+The `2 → 3` step adds an empty Report Builder profile list if absent. Quick report
+remains the default. Version 3 stores optional `reportProfiles` and
+`selectedReportProfileId`; IDs, unique normalized names, ordered view contracts,
+grouping, forecast limits and selection references are strictly validated. Templates
+and selection round-trip without affecting the independent Quick report preferences.
+Unavailable saved functions/custom fields are retained with a compatibility notice.
 
 Measurements, raw provider records, custom values, notes, target geometry and photo
 bytes are preserved. Missing atmosphere attributes remain absent: reimport can

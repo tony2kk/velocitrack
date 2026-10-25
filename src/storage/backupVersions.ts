@@ -1,6 +1,6 @@
 /** Archive envelope and workspace data evolve independently of app releases and IndexedDB indexes. */
 export const BACKUP_FORMAT_VERSION = 2;
-export const BACKUP_DATA_VERSION = 2;
+export const BACKUP_DATA_VERSION = 3;
 
 /** Information shown before replacement, including migrations already applied to the in-memory copy. */
 export interface BackupCompatibility {
@@ -34,7 +34,9 @@ export function backupCompatibility(manifest: Record<string, unknown>): BackupCo
   const dataVersion = version === 1 ? 1 : manifest.dataVersion;
   if (
     !Number.isSafeInteger(dataVersion) ||
-    (dataVersion !== 1 && dataVersion !== BACKUP_DATA_VERSION)
+    typeof dataVersion !== 'number' ||
+    dataVersion < 1 ||
+    dataVersion > BACKUP_DATA_VERSION
   )
     throw new Error(
       `Backup data version ${String(dataVersion).slice(0, 40)} is not supported by VelociTrack ${__APP_VERSION__} (supports 1–${BACKUP_DATA_VERSION}). Backup app: ${sourceApp}. Update the app before restoring. Your workspace has not been changed.`,

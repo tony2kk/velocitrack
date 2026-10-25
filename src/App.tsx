@@ -95,6 +95,9 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
   const [detailId, setDetailId] = useState<string | null>(null);
   const reportHandle = useRef<ReportHandle>(null);
   const [report, setReport] = useState<ReportInput | null>(null);
+  const selectedReport = profile.reportProfiles?.find(
+    (item) => item.id === profile.selectedReportProfileId,
+  );
   const detailSeries = series.find((item) => item.id === detailId);
   const [dialog, setDialog] = useState<
     'sources' | 'refresh' | 'profile' | 'catalog' | 'backup' | null
@@ -304,14 +307,40 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
             >
               <ArchiveRestore size={20} />
             </button>
+            <select
+              className="report-selector"
+              aria-label="Report profile"
+              title="Quick report uses the current chart and zoom. Saved profiles generate their configured views from the selected strings and shots."
+              value={selectedReport?.id ?? ''}
+              onChange={(event) => {
+                void saveProfile({
+                  selectedReportProfileId: event.target.value || undefined,
+                }).catch(() => showMessage('The report choice could not be saved.'));
+              }}
+            >
+              <option value="">Quick report</option>
+              {(profile.reportProfiles ?? []).map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
             <button
               className="icon-button"
               aria-label="Create PDF report"
-              title="Generate a PDF from the selected strings, shots and current chart zoom. Configure sections in Profile → Report."
+              title={
+                selectedReport
+                  ? `Generate ${selectedReport.name} from the selected strings and shots.`
+                  : 'Generate Quick report from the selected strings, shots and current chart zoom. Configure sections in Profile → Report.'
+              }
               disabled={!selectedSeries.length}
               onClick={() => {
                 try {
-                  if (reportHandle.current) setReport(reportHandle.current.capture());
+                  if (reportHandle.current)
+                    setReport({
+                      ...reportHandle.current.capture(!selectedReport),
+                      ...(selectedReport ? { template: structuredClone(selectedReport) } : {}),
+                    });
                 } catch (error) {
                   showMessage(
                     error instanceof Error ? error.message : 'The report could not be prepared.',

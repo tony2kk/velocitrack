@@ -3,6 +3,7 @@ import { entityId } from '../domain/model';
 import { FIELD_TYPES, validFieldValue, validListOptions } from '../domain/customFields';
 import { MAX_FORECAST_DISTANCE } from '../domain/calculatedVelocity';
 import { validTargetMeasurement } from '../domain/targetMeasurement';
+import { validateReportProfiles } from '../domain/reportProfiles';
 
 /** Reject malformed archives before a write transaction begins. */
 function requireValid(condition: unknown): asserts condition {
@@ -266,7 +267,13 @@ export function validateBackup(value: unknown): asserts value is Workspace {
     'tableSort',
     'infoSeriesId',
     'report',
+    'reportProfiles',
+    'selectedReportProfileId',
   ]);
+  validateReportProfiles(
+    p.reportProfiles === undefined ? [] : p.reportProfiles,
+    p.selectedReportProfileId,
+  );
   requireValid(
     p.id === 'local' &&
       string(p.nickname, true) &&

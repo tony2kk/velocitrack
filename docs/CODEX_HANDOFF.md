@@ -1,5 +1,12 @@
 # Continue in Codex
 
+Version 0.22.0 adds Profile → Report Builder and a remembered Tools dropdown with
+Quick report first. Templates own their section switches and ordered views; units,
+paper and shot columns remain current profile choices. Shared chart presentation
+keeps PDF and workspace behavior aligned. Quick report preserves zoom; template
+views fit independently. Preserve backup data versions 1/2/3 and explicit migrations.
+Read decision 029 before extending template contracts or rendering.
+
 Version 0.21.0 adds versioned backups and a compatibility/conversion preview. Preserve
 legacy format-one support; read BACKUP_FORMAT.md before changing stored contracts.
 New archives record app/revision and independent data version; no IndexedDB reset

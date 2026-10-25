@@ -10,6 +10,8 @@ The ZIP includes measurements and originals, string details, custom fields, tags
 
 Column visibility and the complete order (including hidden columns) are both included.
 Target measurements include their numeric values, calibration, drawing geometry and report crop. Report section preferences are included; older backups without them use the all-enabled default.
+Report Builder profiles include their sections, ordered views and last Tools
+selection. Older backups without templates start with an empty list and Quick report.
 Calculated velocity/drop choices and forecast distance are saved; the curves are
 recomputed from restored measurements. Temporary shot selection, hover and chart
 zoom are session state and are not included.
@@ -42,8 +44,9 @@ A different app version does not necessarily mean incompatible data. A backup fr
 a newer app can be restored when its data format and all records are supported.
 Unknown newer formats or unsupported fields stop recovery without changing your
 workspace; update the app and retry. No records are silently skipped to make it fit.
-New version-two archives require VelociTrack 0.21 or later; keep your original older
-ZIP if you also need to use an older app.
+Archives written by 0.22 use data version 3 and require VelociTrack 0.22 or later;
+the current app also reads earlier archives. Keep your original older ZIP if you
+also need to use an older app.
 
 Measurements, notes and original photo bytes retain their stored precision. Reports
 and calculated curves use the current app, so derived output can differ between

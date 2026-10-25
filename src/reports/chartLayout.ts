@@ -33,9 +33,11 @@ export function reportChartHeight(
   descriptions: string[],
   firstPage: boolean,
   paperSize: Profile['reportPaperSize'] = 'A4',
+  title = 'Analysis chart',
+  reportTitle = 'Range report',
 ): number {
   const page = reportPageArea(paperSize);
-  const headingAndImageMargins = 39 + 14;
+  const headingAndImageMargins = Math.max(39, textLines(title, 18, page.width) * 25 + 14) + 14;
   const legendHeight =
     textLines(legend.map((item) => `■ ${item.label}     `).join(''), 9, page.width) * 12.6 + 12;
   const notesHeight = descriptions.reduce(
@@ -43,7 +45,9 @@ export function reportChartHeight(
     0,
   );
   // A chart-only report shares its first page with the compact report identity block.
-  const introduction = firstPage ? 92 : 0;
+  const introduction = firstPage
+    ? Math.max(92, textLines(reportTitle, 26, page.width) * 34 + 58)
+    : 0;
   // Long notes may continue on another page; never compress the actual plot below readability.
   return Math.max(
     160,

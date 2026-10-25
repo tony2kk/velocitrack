@@ -1,4 +1,5 @@
 import type { TargetMeasurement } from './targetMeasurement';
+import type { ReportProfile } from './reportProfiles';
 
 /** Browser-owned domain records; provider fields are preserved separately as raw data. */
 export type CatalogKind = 'firearm' | 'projectile';
@@ -189,6 +190,9 @@ export interface Filters {
 
 /** Singleton local preferences, independent of any connected provider account. */
 export interface Profile {
+  /** Local report templates and the Tools choice; absence selects Quick report. */
+  reportProfiles?: ReportProfile[];
+  selectedReportProfileId?: string;
   /** Local PDF section choices; missing preferences enable every section. */
   report?: ReportSettings;
   /** Physical PDF sheet size; independent of screen chart height. */
@@ -249,6 +253,7 @@ export const EMPTY_FILTERS: Filters = {
 /** Return fresh defaults so changing one profile cannot mutate the shared filter template. */
 export function defaultProfile(): Profile {
   return {
+    reportProfiles: [],
     id: 'local',
     nickname: '',
     rememberSignIn: false,

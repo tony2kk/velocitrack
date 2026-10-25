@@ -34,6 +34,15 @@ Labels use each string's recorded projectile snapshot. If a Caldwell catalog edi
 
 **String details, Target, String statistics, Chart and Shot records are all enabled by default.** Choose sections and select **Save report preferences**. These local choices are included in backups. See [PDF reports](reports.md) for framing and Save as behavior.
 
+## Report Builder
+
+Create, edit and delete named reusable report profiles. Select sections and add
+ordered Simple, Dual, String compare or String info views. Drag handles or arrows
+change their order. Simple/Dual can generate one chart per string. Save explicitly;
+Cancel discards the draft. Profiles remain local and are included in backups.
+Choose one in Tools beside the PDF button, or use Quick report for the current
+screen chart. See [Report Builder instructions](reports.md#build-a-reusable-report).
+
 ## Custom fields and tags
 
 The other tabs manage reusable fields and colored tags. See [Add context](strings.md).
