@@ -16,7 +16,15 @@ Marking a shot invalid is reversible and preserves its original reading. Removin
 
 ## What works offline?
 
-The cached app and imported measurements work offline after successful initial setup. Online refresh and this GitHub-hosted help need a connection. Offline caching is not a backup.
+The cached app and imported measurements work offline after successful initial setup.
+The visual-guide text is cached with the app; walkthrough images and first-time
+demo downloads need a connection unless already cached by the browser. Online
+refresh needs a connection. Offline caching is not a backup.
+
+The optional public demo is one owner-authorized example session with location and
+private identifiers removed. It contains no credentials or general profile settings.
+Adding it downloads a local copy; edits never go back to the host. Only the sample
+and reviewed help illustrations are public, not ordinary users' imports or settings.
 
 VelociTrack is an unofficial community project, independent of Caldwell and American Outdoor Brands. Provider access depends on service availability and rules.
 

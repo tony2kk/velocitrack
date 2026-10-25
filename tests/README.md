@@ -2,6 +2,14 @@
 
 Committed fixtures are invented from scratch. Tests never read personal exports or provider accounts.
 
+- `demo.test.ts`: atomic addition/rollback, collision-safe identity remapping,
+  preserved preferences, duplicate prevention, backup ownership and safe removal
+  of definitions with reuse protection. The public demonstration is not a fixture.
+- `help.test.tsx`: instruction search, route recovery, opt-in playback/end/reset,
+  keyboard lightbox containment and focus return.
+- Public-content tests also reject private fields/location in the demo package,
+  unreviewed asset paths and photo metadata beyond the orientation-only tag.
+
 - `import.test.ts`: JSON pairs/combined data, BOM, CSV quoting/nested JSON, booleans, identities, timestamps, padding preservation, unequal arrays and malformed/duplicate/orphan records.
 - `measurements.test.ts`: zero padding versus valid zero distance, invalid/unpaired samples, sample SD, exclusions and incompatible groups.
 - `filters.test.ts`: OR/AND, local boundaries, invalid ranges and relative calendar windows.

@@ -1,5 +1,37 @@
 # MVP verification
 
+## Public demo and visual guide — 0.23.0
+
+- Synthetic tests cover atomic demo installation/rollback, identity/name collisions,
+  preference preservation, duplicate refusal, incomplete photos, ownership after
+  backup/restore, all removal choices and protection of definitions reused elsewhere.
+  Refresh performs no network access and preserves the fixed local sample.
+- Historical backups 1–3 remain readable. A dedicated version-3 regression preserves
+  records and profile without inventing demo preferences. Current archives retain the
+  dismissal flag and demo ownership. Private demo connection fields are rejected.
+- Publication guard tests exercise private fields/location, exact asset paths and
+  orientation-only JPEG metadata. Public sample text, photograph and all 36 captures
+  were reviewed. The original archive and preparation files remain ignored.
+- In a fresh browser origin the public sample installed five strings and 50 shots.
+  Photos displayed with correct orientation, calibration, overlays and report crop.
+  Selection, comparisons, table controls, profile fields, target editor, Quick/report
+  profile controls and a generated five-string PDF were exercised while recording.
+  No provider login was performed; the owner's daily 4180 workspace was not altered.
+- A second empty origin verified dismissal across reload, installation, and removal
+  with all three keep options off: no strings, shots or report profile remained and
+  the invitation stayed dismissed. Definition-reuse branches have automated tests.
+- Guide browser checks covered search, topic navigation, manual steps and lightbox
+  Escape. Tests also cover playback/end/reset and keyboard focus containment/return.
+  All 35 referenced media filenames resolve; one additional source-ready frame is
+  retained for authoring. Sixteen topics cover the existing user-facing features.
+- Types, lint, formatting, production/PWA build and public-content checks pass.
+  The suite has 410 passing tests across 56 files; the existing optional canvas/PDF
+  renderer check is skipped without its local runtime setting. No report renderer
+  or numerical model changed. Physical mobile/touch hardware and forced browser
+  storage exhaustion were not exercised; transactional rollback is tested.
+- Verify the final local/Pages build after commit; do not remove the truthful
+  development `-dirty` marker from version-generation code.
+
 ## Report Builder — 0.22.0
 
 - Behavior coverage includes unique normalized names, atomic concurrent profile

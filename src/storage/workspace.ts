@@ -71,7 +71,7 @@ export function createSource(
     enabled: true,
     autoUpdateCatalogs,
     createdAt: new Date().toISOString(),
-    status: kind === 'caldwell' ? 'needs-setup' : 'needs-files',
+    status: kind === 'demo' ? 'ready' : kind === 'caldwell' ? 'needs-setup' : 'needs-files',
   };
 }
 

@@ -1,5 +1,16 @@
 # VelociTrack help
 
+**[Open the visual guide →](https://tony2kk.github.io/velocitrack/help/)**
+
+Short illustrated walkthroughs cover setup, exploring measurements, targets,
+reporting and backups. Use Play or step through at your own pace. The app's **?**
+opens this guide. These Markdown pages remain a plain-text alternative.
+
+To explore without an account, open **Sources → Demo data → Add source**. The
+optional sample includes five strings, 50 shots, target photos, fields, tags and
+a report profile. Your preferences stay unchanged. Remove it in Sources and
+choose whether to keep its reusable fields, tags and reports; reused items remain.
+
 **Your measurements. Your workspace.**
 
 Connect a source, pick a string, and explore your shots. Everything you save stays in this browser.

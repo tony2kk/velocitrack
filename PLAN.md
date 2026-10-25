@@ -1,5 +1,15 @@
 # Plan
 
+## Demo source and visual guide — 0.23.0
+
+- [x] Curated owner-authorized sample with location and private identities removed.
+- [x] Atomic opt-in Demo source, isolated identities and reusable-definition removal choices.
+- [x] Persistent empty-workspace invitation pointing to Sources.
+- [x] Sixteen user-goal guides with actual captured UI walkthroughs and important reference details.
+- [x] Header help link, accessible manual/playback controls and on-demand media.
+- [x] Backup data version 4 preserving demo ownership and older readers.
+- [x] Synthetic behavior/privacy tests and isolated browser walkthrough review.
+
 ## Report Builder — 0.22.0
 
 - [x] Local named report profiles with CRUD and unique names.

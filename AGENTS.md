@@ -54,6 +54,14 @@ files, build configuration or hosted assets. No application backend. Keep
 imports atomic, provider IDs source-scoped and annotations separate. Do not
 automatically merge catalogs across sources.
 
+The owner explicitly authorized one curated public demonstration session on
+2026-10-25, including its target photo, fields, tags and report template. The only
+exception is the reviewed `public/demo/` package and help captures made from it in
+an isolated workspace. Remove location/account/device identifiers and all user
+preferences. Never publish the original backup or preparation files. Read decision
+030 and `docs/DEMO_DATA.md` before updating demo assets. Tests remain independently
+invented synthetic fixtures. New users opt in through the Demo data source.
+
 The owner explicitly requested standard public Caldwell client configuration; see
 decision 005. Only `public/sources/caldwell.json` may contain the shared `projectId`
 and Firebase client `apiKey`. This is service metadata, not a user's profile or credentials. Read

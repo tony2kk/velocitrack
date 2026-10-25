@@ -10,7 +10,7 @@ management without changing the live IndexedDB schema.
 | Manifest field | Meaning |
 | --- | --- |
 | `version` | ZIP envelope version; current writer: 2 |
-| `dataVersion` | Workspace contract and migration baseline; current writer: 3 |
+| `dataVersion` | Workspace contract and migration baseline; current writer: 4 |
 | `appVersion` | Package version that created the archive |
 | `appRevision` | Build-time Git revision, including `-dirty` for a modified local build |
 | `createdAt` | ISO timestamp of archive creation |
@@ -25,8 +25,8 @@ Versions are metadata, not authentication or proof of who created a ZIP.
 
 - Archive version 1 (releases 0.4–0.20) is interpreted as data version 1. It did
   **not** record the creating app version. The preview says so rather than guessing.
-- Archive version 2 declares data version 1, 2 or 3 and a valid app release/revision.
-  Versions 1 and 2 are migrated in memory; data version 3 is validated directly.
+- Archive version 2 declares data version 1–4 and a valid app release/revision.
+  Versions 1 and 2 are migrated in memory; versions 3 and 4 validate directly.
 - A different, even newer, app release is acceptable if the envelope, data version
   and every record are supported. The preview shows both app versions and explains
   that reports and calculated views use the current app's implementation.
@@ -51,6 +51,15 @@ remains the default. Version 3 stores optional `reportProfiles` and
 grouping, forecast limits and selection references are strictly validated. Templates
 and selection round-trip without affecting the independent Quick report preferences.
 Unavailable saved functions/custom fields are retained with a compatibility notice.
+
+Version 4 adds `kind: "demo"` and optional boolean `profile.demoHintDismissed`.
+The `3 → 4` transition is additive: no fields need to be invented or rewritten.
+Absent dismissal means the invitation may appear in an empty workspace. Demo
+sources cannot carry a connection or account ID and restore ready for offline use.
+Their source-scoped records and prefixed field/tag/catalog/report IDs preserve
+removal ownership. Photos, local practice edits and templates round-trip normally.
+Releases before 0.23 reject version-4 archives explicitly; preserve older ZIPs for
+downgrades. This does not change the IndexedDB schema or the ZIP envelope.
 
 Measurements, raw provider records, custom values, notes, target geometry and photo
 bytes are preserved. Missing atmosphere attributes remain absent: reimport can

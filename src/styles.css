@@ -2380,3 +2380,37 @@
     margin-bottom: 16px;
   }
 }
+/* Keep the first-run invitation anchored immediately below the Sources control. */
+.demo-invitation {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 18px 0 24px;
+  padding: 20px 24px;
+  border: 1px solid #a6c8fa;
+  border-radius: 14px;
+  background: linear-gradient(110deg, #e8f0ff, #e1f7ef);
+  color: #183b60;
+}
+.demo-invitation p {
+  margin: 5px 0 0;
+}
+.demo-invitation strong {
+  font-size: 1.08rem;
+}
+.demo-invitation-arrow {
+  position: absolute;
+  top: -28px;
+  left: 72px;
+  color: #2765bb;
+}
+@media (max-width: 700px) {
+  .demo-invitation {
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+  .demo-invitation .grow {
+    flex-basis: 75%;
+  }
+}

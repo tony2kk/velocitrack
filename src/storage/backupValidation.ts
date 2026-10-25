@@ -88,11 +88,13 @@ export function validateBackup(value: unknown): asserts value is Workspace {
     ]);
     requireValid(
       string(source.name) &&
-        ['caldwell', 'velociradar-export'].includes(source.kind) &&
+        ['caldwell', 'velociradar-export', 'demo'].includes(source.kind) &&
         typeof source.enabled === 'boolean' &&
         typeof source.autoUpdateCatalogs === 'boolean' &&
         string(source.createdAt),
     );
+    if (source.kind === 'demo')
+      requireValid(source.connection === undefined && source.accountId === undefined);
     requireValid(
       ['ready', 'needs-files', 'needs-sign-in', 'needs-setup', 'error'].includes(source.status),
     );
@@ -260,6 +262,7 @@ export function validateBackup(value: unknown): asserts value is Workspace {
     'showProjectileWeight',
     'showGroupSize',
     'showCaldwellNotes',
+    'demoHintDismissed',
     'chartHeightPercent',
     'reportPaperSize',
     'tableColumns',
@@ -290,6 +293,7 @@ export function validateBackup(value: unknown): asserts value is Workspace {
   requireValid(p.showProjectileWeight === undefined || typeof p.showProjectileWeight === 'boolean');
   requireValid(p.showGroupSize === undefined || typeof p.showGroupSize === 'boolean');
   requireValid(p.showCaldwellNotes === undefined || typeof p.showCaldwellNotes === 'boolean');
+  requireValid(p.demoHintDismissed === undefined || typeof p.demoHintDismissed === 'boolean');
   requireValid(
     p.reportPaperSize === undefined || p.reportPaperSize === 'A4' || p.reportPaperSize === 'LETTER',
   );

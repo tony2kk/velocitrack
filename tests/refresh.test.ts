@@ -22,6 +22,20 @@ afterEach(async () => {
 });
 
 describe('refresh coordination', () => {
+  it('keeps the demo ready without downloading or resetting practice edits', async () => {
+    const source = createSource('Invented demo', false, 'demo');
+    await db.sources.add(source);
+    await saveProfile({ nickname: 'Practice' });
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    const message = vi.fn();
+    expect(await refreshEnabledSources(message)).toBe(false);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(importOnline).not.toHaveBeenCalled();
+    expect(await db.sources.get(source.id)).toEqual(source);
+    expect((await db.profiles.toArray())[0]?.nickname).toBe('Practice');
+    expect(message).toHaveBeenCalledWith('Invented demo: No new data detected.');
+  });
   it('holds an origin-wide shared lock until the import finishes', async () => {
     let locked = false;
     const request = vi.fn(

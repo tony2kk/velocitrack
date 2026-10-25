@@ -1,5 +1,21 @@
 # Architecture
 
+Release 0.23.0 adds an opt-in static demo package and a separate visual-guide entry.
+`sources/demo.ts` validates and remaps the curated sample before an atomic all-table
+installation. Definition namespaces track ownership through backup/restore and
+support removal choices without deleting reused fields/tags. User preferences are
+preserved. Refresh leaves the fixed sample unchanged. Backup data version 4 adds
+the demo source kind and optional invitation-dismissal flag; versions 1–3 remain
+readable. No IndexedDB schema change is needed.
+
+`help/index.html` and `src/help/` build an independent guide with no storage/auth
+access. The app's help icon opens it. Demo assets and walkthrough PNGs are excluded
+from precaching and requested only as needed. The public sample and reviewed
+captures are the sole owner-authorized exception to private measurement assets;
+all normal imports, preferences and demo edits remain local. See
+[decision 030](docs/decisions/030-public-demo-and-visual-guide.md),
+[demo review](docs/DEMO_DATA.md) and [help authoring](docs/HELP_AUTHORING.md).
+
 Release 0.22.0 adds local Report Builder templates and a remembered Tools selection.
 The shared `charts/options.ts` and `charts/engine.ts` render screen and PDF charts.
 `reports/builder.ts` plans ordered combined/per-string views; `renderBuilder.ts`
@@ -26,7 +42,7 @@ The owner approved a local-first MVP on 2026-10-18; see [decision 001](docs/deci
 
 React/TypeScript compile through Vite to static assets. Dexie manages IndexedDB and ECharts renders recorded measurements. The PWA precaches build assets only. GitHub Pages is a static host, with no backend or user-data storage.
 
-Every measurement and user setting belongs to the local browser, never the source tree, build or host. Storage is origin/profile-specific. No telemetry, external font requests or runtime CDN exists. Optional Caldwell sources authenticate directly with Firebase; the service receives credentials for its own account, with no VelociTrack intermediary.
+Every user's imported measurement and setting belongs to the local browser. The explicitly curated demo is a public downloadable example, separate from user workspaces. Storage is origin/profile-specific. No telemetry, external font requests or runtime CDN exists. Optional Caldwell sources authenticate directly with Firebase; the service receives credentials for its own account, with no VelociTrack intermediary.
 
 ```mermaid
 flowchart LR

@@ -79,5 +79,6 @@ export function migrateBackup(
       'This backup has no Report Builder profiles. Start with an empty template list and Quick report.',
     );
   }
+  // Version 4 only adds a source kind and optional invitation flag. Version-3 values need no rewrite.
   // Future data versions append explicit migration steps. Never drop unrecognized fields to pass validation.
 }

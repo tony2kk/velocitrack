@@ -1,6 +1,6 @@
 /** Archive envelope and workspace data evolve independently of app releases and IndexedDB indexes. */
 export const BACKUP_FORMAT_VERSION = 2;
-export const BACKUP_DATA_VERSION = 3;
+export const BACKUP_DATA_VERSION = 4;
 
 /** Information shown before replacement, including migrations already applied to the in-memory copy. */
 export interface BackupCompatibility {

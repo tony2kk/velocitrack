@@ -1,5 +1,15 @@
 # Continue in Codex
 
+Version 0.23.0 adds a public opt-in Demo source and `/velocitrack/help/`, linked from
+the header. Read decision 030, DEMO_DATA.md and HELP_AUTHORING.md before extending.
+The owner explicitly approved the curated 2026-10-25 sample and reviewed captures;
+the original ZIP and preparation work remain ignored/private. Demo addition is
+atomic, preserves preferences and namespaces definitions. Removal offers three
+keep choices and protects reused definitions. Backup data version 4 preserves this
+ownership and invitation dismissal; keep readers for versions 1–3. Guide content
+is user-goal grouped and recorded in a separate demo workspace. Do not use private
+owner data for future screenshots. Build after committing for a clean footer.
+
 Version 0.22.0 adds Profile → Report Builder and a remembered Tools dropdown with
 Quick report first. Templates own their section switches and ordered views; units,
 paper and shot columns remain current profile choices. Shared chart presentation
@@ -38,7 +48,8 @@ Read `AGENTS.md`, `PLAN.md`, `ARCHITECTURE.md`, `docs/decisions/001-local-first-
 
 The study is not production code. Never copy private exports, APKs or account configuration into the project. The owner explicitly requested the shared two-field Caldwell client configuration in `public/sources/caldwell.json`; this is the only allowed public provider metadata (decision 005). Synthetic tests are invented from scratch. Owner-provided branding lives in `public/brand/`; the ZIP is excluded.
 
-User help is `help/README.md`; the header opens it on GitHub in a new tab. The published app is https://tony2kk.github.io/velocitrack/. Caldwell setup reuses browser settings, otherwise loads the standard `sources/caldwell.json` on both local and hosted installations. Each source retains its connection/account binding. Only the shared service project ID/client key is public; no user credential, token or setting is shipped. Users enter only email/password. Auth defaults to memory, with SDK persistence only after profile opt-in. Read decision 005 before changing source configuration.
+User help is `/velocitrack/help/`; the header opens this visual guide in a new tab.
+`help/README.md` is the plain-text alternative. The published app is https://tony2kk.github.io/velocitrack/. Caldwell setup reuses browser settings, otherwise loads the standard `sources/caldwell.json` on both local and hosted installations. Each source retains its connection/account binding. Only the shared service project ID/client key is public; no user credential, token or setting is shipped. Users enter only email/password. Auth defaults to memory, with SDK persistence only after profile opt-in. Read decision 005 before changing source configuration.
 
 ## Working practices
 

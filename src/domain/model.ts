@@ -3,7 +3,7 @@ import type { ReportProfile } from './reportProfiles';
 
 /** Browser-owned domain records; provider fields are preserved separately as raw data. */
 export type CatalogKind = 'firearm' | 'projectile';
-export type SourceKind = 'velociradar-export' | 'caldwell';
+export type SourceKind = 'velociradar-export' | 'caldwell' | 'demo';
 export type SourceStatus = 'ready' | 'needs-files' | 'needs-sign-in' | 'needs-setup' | 'error';
 export type RawRecord = Record<string, unknown>;
 export type UnitSystem = 'imperial' | 'metric';
@@ -190,6 +190,8 @@ export interface Filters {
 
 /** Singleton local preferences, independent of any connected provider account. */
 export interface Profile {
+  /** Dismiss the first-workspace demo invitation permanently on this browser. */
+  demoHintDismissed?: boolean;
   /** Local report templates and the Tools choice; absence selects Quick report. */
   reportProfiles?: ReportProfile[];
   selectedReportProfileId?: string;

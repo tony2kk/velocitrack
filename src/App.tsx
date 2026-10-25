@@ -23,6 +23,8 @@ import {
   ShieldCheck,
   UserRound,
   X,
+  ArrowUpLeft,
+  Sparkles,
 } from 'lucide-react';
 import { SeriesDetails } from './components/SeriesDetails';
 import { BackupDialog } from './components/BackupDialog';
@@ -209,11 +211,11 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           </button>
           <a
             className="icon-button"
-            href="https://github.com/tony2kk/velocitrack/blob/main/help/README.md"
+            href={`${import.meta.env.BASE_URL}help/`}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Help on GitHub (opens in a new tab)"
-            title="Open VelociTrack help on GitHub in a new tab."
+            aria-label="VelociTrack guide (opens in a new tab)"
+            title="Explore the visual VelociTrack guide in a new tab."
           >
             <CircleHelp size={20} />
           </a>
@@ -353,6 +355,32 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
           </div>
         </div>
       </nav>
+      {!sources.length && !series.length && !profile.demoHintDismissed && (
+        <aside className="demo-invitation" aria-label="Welcome to VelociTrack">
+          <ArrowUpLeft className="demo-invitation-arrow" size={38} aria-hidden="true" />
+          <Sparkles size={24} aria-hidden="true" />
+          <div className="grow">
+            <strong>Try VelociTrack with demo data</strong>
+            <p>
+              Open Sources → Demo data → Add source. Explore measurements, targets and reports. No
+              account needed.
+            </p>
+          </div>
+          <button onClick={() => setDialog('sources')}>Open Sources</button>
+          <button
+            className="icon-button"
+            aria-label="Dismiss demo invitation"
+            title="Hide this invitation permanently on this browser."
+            onClick={() =>
+              void saveProfile({ demoHintDismissed: true }).catch(() =>
+                showMessage('The invitation could not be dismissed. Check local storage.'),
+              )
+            }
+          >
+            <X size={19} />
+          </button>
+        </aside>
+      )}
       {filterDateError(filters) && (
         <p className="error" role="alert">
           {filterDateError(filters)}
@@ -406,7 +434,7 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
               <p>
                 {hasFilters(filters)
                   ? 'Adjust your filters to find more measurements.'
-                  : 'Connect your Caldwell account or import local export files.'}
+                  : 'Try Demo data, connect Caldwell or import local export files.'}
               </p>
               {!hasFilters(filters) && (
                 <button className="primary" onClick={() => setDialog('sources')}>

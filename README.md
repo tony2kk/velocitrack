@@ -10,6 +10,15 @@ VelociTrack is not affiliated with, endorsed by or supported by Caldwell or Amer
 
 ## Using VelociTrack
 
+**New here?** Open **Sources → Demo data → Add source** to explore five example
+strings with target photos, custom fields, tags and a reusable report. No account
+or file is needed. The opt-in sample is copied locally; your settings remain yours.
+Remove it when finished and choose which reusable definitions to keep.
+
+The **[visual user guide](https://tony2kk.github.io/velocitrack/help/)** offers short,
+captioned walkthroughs from first setup through targets and reporting. Open it
+from **?** at the top right. The [Markdown guide](help/README.md) remains available.
+
 Choose **Quick report** or a saved profile in Tools, then use the PDF icon to
 [save or print a local report](help/reports.md). Quick report captures current chart
 zoom. **Profile → Report Builder** creates reusable reports with ordered charts,
@@ -22,7 +31,7 @@ Open the published app at **[tony2kk.github.io/velocitrack](https://tony2kk.gith
 
 ## Your data stays on your device
 
-Measurements, source settings, catalogs, annotations, profile and filters live only in this browser's **IndexedDB**. File imports stay local. Caldwell sign-in and read requests go directly to the provider; no measurements or settings are uploaded to a VelociTrack server. Git, the build and GitHub Pages contain application assets only. There is no telemetry, external font service, credential proxy or server database.
+Measurements, source settings, catalogs, annotations, profile and filters live in this browser's **IndexedDB**. File imports stay local. Caldwell sign-in and read requests go directly to the provider; no measurements or settings are uploaded to a VelociTrack server. GitHub Pages contains application/help assets and one explicitly owner-approved, curated demo session. That sample has location and private identifiers removed; it contains no account or general preferences. Subsequent edits stay local. See the [demo data review](docs/DEMO_DATA.md). There is no telemetry, external font service, credential proxy or server database.
 
 Storage belongs to a specific origin and browser profile. Development, preview and GitHub Pages have separate workspaces. Clearing site data, private browsing or browser eviction can remove local content. **Keep original exports and regular ZIP backups.** Use Backup / Restore for the entire workspace, including photos. Restore replaces local data after validation and confirmation; archives are private and not encrypted. Local storage is not separately encrypted by the application; use an appropriate device/browser profile on shared devices.
 
@@ -80,7 +89,10 @@ src/storage/         IndexedDB schema and atomic operations
 public/brand/        Owner-supplied logo, favicons and PWA icons
 public/sources/      Shared public source-type metadata, never account settings
 tests/               Synthetic behavioral tests
-help/                User documentation
+help/                Visual guide entry and plain-text documentation
+src/help/            User-goal guide content and walkthrough player
+public/demo/         Explicitly authorized opt-in example session
+public/help/media/   Reviewed captures from an isolated demo workspace
 docs/decisions/      Accepted decisions
 .github/workflows/   CI and verified Pages deployment
 ```

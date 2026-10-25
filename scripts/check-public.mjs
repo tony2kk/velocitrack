@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { inspectDemoJpeg, inspectDemoPackage } from './demo-public.mjs';
 
 // Scan Git's actual candidate files, including forcibly tracked ignored paths.
 const files = [
@@ -42,6 +43,15 @@ function isPublicCaldwellConfiguration(content) {
 
 const failures = [];
 for (const file of files) {
+  if (file.startsWith('public/demo/')) {
+    if (file === 'public/demo/sample.json')
+      failures.push(
+        ...inspectDemoPackage(readFileSync(file, 'utf8')).map((reason) => `${file}: ${reason}`),
+      );
+    else if (file === 'public/demo/target-session.jpg')
+      failures.push(...inspectDemoJpeg(readFileSync(file)).map((reason) => `${file}: ${reason}`));
+    else failures.push(`${file}: unreviewed public demo asset`);
+  }
   if (
     deniedPaths.test(file) ||
     (/(?:^|\/)\.env(?:\.|$)/.test(file) && !file.endsWith('.env.example'))

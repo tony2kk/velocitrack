@@ -6,7 +6,8 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { CheckCircle2, Cloud, FileUp, Folder, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, Cloud, FileUp, Folder, Plus, Trash2, Sparkles } from 'lucide-react';
+import { addDemoSource, removeDemoSource } from '../sources/demo';
 import type { DataSource, SourceKind } from '../domain/model';
 import { db } from '../storage/database';
 import { createSource, recordImportFailure, removeSource } from '../storage/workspace';
@@ -38,6 +39,7 @@ function SourceCard({
   const refreshing = useSyncExternalStore(subscribeToRefresh, getRefreshingSources);
   const busy = working || refreshing.includes(source.id);
   const [confirmRemoval, setConfirmRemoval] = useState(false);
+  const [keep, setKeep] = useState({ fields: true, tags: true, reports: true });
   const [error, setError] = useState('');
   const [settings, setOptimisticSettings] = useOptimistic(
     source,
@@ -59,12 +61,22 @@ function SourceCard({
     <section className="source-card" aria-label={source.name}>
       <div className="source-heading">
         <span className="source-icon">
-          {source.kind === 'caldwell' ? <Cloud size={20} /> : <Folder size={20} />}
+          {source.kind === 'demo' ? (
+            <Sparkles size={20} />
+          ) : source.kind === 'caldwell' ? (
+            <Cloud size={20} />
+          ) : (
+            <Folder size={20} />
+          )}
         </span>
         <div className="grow">
           <strong>{source.name}</strong>
           <small>
-            {source.kind === 'caldwell' ? 'Caldwell · online account' : 'JSON / text · local files'}
+            {source.kind === 'demo'
+              ? 'Demo data · practice workspace'
+              : source.kind === 'caldwell'
+                ? 'Caldwell · online account'
+                : 'JSON / text · local files'}
           </small>
         </div>
         <span className={`status-pill ${source.status === 'ready' ? 'success' : ''}`}>
@@ -89,28 +101,38 @@ function SourceCard({
         </label>
         <button disabled={busy || name.trim() === source.name}>Save name</button>
       </form>
-      <label className="check-field compact">
-        <input
-          type="checkbox"
-          checked={settings.enabled}
-          disabled={busy}
-          onChange={(event) => void update({ enabled: event.target.checked })}
-        />
-        <span>Include in Refresh</span>
-      </label>
-      <label className="check-field compact">
-        <input
-          type="checkbox"
-          checked={settings.autoUpdateCatalogs}
-          disabled={busy}
-          onChange={(event) => void update({ autoUpdateCatalogs: event.target.checked })}
-        />
-        <span>
-          Automatically update catalogs
-          <small>When off, missing firearm or projectile names stop the entire import.</small>
-        </span>
-      </label>
-      {source.kind === 'caldwell' ? (
+      {source.kind !== 'demo' && (
+        <label className="check-field compact">
+          <input
+            type="checkbox"
+            checked={settings.enabled}
+            disabled={busy}
+            onChange={(event) => void update({ enabled: event.target.checked })}
+          />
+          <span>Include in Refresh</span>
+        </label>
+      )}
+      {source.kind !== 'demo' && (
+        <label className="check-field compact">
+          <input
+            type="checkbox"
+            checked={settings.autoUpdateCatalogs}
+            disabled={busy}
+            onChange={(event) => void update({ autoUpdateCatalogs: event.target.checked })}
+          />
+          <span>
+            Automatically update catalogs
+            <small>When off, missing firearm or projectile names stop the entire import.</small>
+          </span>
+        </label>
+      )}
+      {source.kind === 'demo' ? (
+        <p className="notice">
+          Explore real example measurements, target photos, custom fields, tags and a ready-made
+          report. Edit freely: changes stay on this device. Refresh leaves your practice edits
+          intact. Remove and add the source to start again.
+        </p>
+      ) : source.kind === 'caldwell' ? (
         <Suspense fallback={<p className="muted">Opening connection…</p>}>
           <CaldwellSource source={source} remember={remember} busy={busy} onMessage={onMessage} />
         </Suspense>
@@ -178,9 +200,33 @@ function SourceCard({
       {confirmRemoval && (
         <div className="notice removal">
           <p>
-            Remove this source and all its imported measurements and annotations? Catalog names are
-            kept. This cannot be undone.
+            Remove this source and all its measurements, annotations and photos? This cannot be
+            undone.
+            {source.kind !== 'demo' && ' Catalog names are kept.'}
           </p>
+          {source.kind === 'demo' && (
+            <>
+              <p>
+                Choose what to keep for your own measurements. Items already used outside the demo
+                are always retained.
+              </p>
+              {(['fields', 'tags', 'reports'] as const).map((key) => (
+                <label className="check-field compact" key={key}>
+                  <input
+                    type="checkbox"
+                    checked={keep[key]}
+                    onChange={(e) => setKeep({ ...keep, [key]: e.target.checked })}
+                  />
+                  Keep{' '}
+                  {key === 'fields'
+                    ? 'custom fields and list options'
+                    : key === 'reports'
+                      ? 'report profiles'
+                      : 'tags'}
+                </label>
+              ))}
+            </>
+          )}
           <button onClick={() => setConfirmRemoval(false)}>Keep source</button>
           <button
             className="danger-button"
@@ -193,8 +239,13 @@ function SourceCard({
                   const { forgetSession } = await import('../sources/caldwell/session');
                   await forgetSession(source, remember);
                 }
-                await removeSource(source.id);
-                onMessage('Source and its measurements removed from this device.');
+                const retained =
+                  source.kind === 'demo'
+                    ? await removeDemoSource(source.id, keep)
+                    : (await removeSource(source.id), 0);
+                onMessage(
+                  `Source and its measurements removed from this device.${retained ? ` ${retained} shared definitions were kept because they are still in use.` : ''}`,
+                );
               } catch {
                 setError('The source could not be removed.');
                 setBusy(false);
@@ -234,7 +285,7 @@ export function SourcesDialog({
       <p className="muted">
         {mode === 'refresh'
           ? 'Refresh includes every enabled source, regardless of filters. Connected accounts refresh online; file sources need their latest exports.'
-          : 'Import local files or connect your Caldwell account. Measurements and source settings stay in this browser.'}
+          : 'Try the demo, import local files or connect your Caldwell account. Your workspace stays in this browser.'}
       </p>
       {mode === 'manage' && (
         <form
@@ -244,10 +295,13 @@ export function SourcesDialog({
             setBusy(true);
             setError('');
             try {
-              await db.sources.add(createSource(name, automatic, kind));
+              if (kind === 'demo') {
+                await addDemoSource(name);
+                onMessage('Demo ready. Close Sources and select a string to start exploring.');
+              } else await db.sources.add(createSource(name, automatic, kind));
               setName('');
-            } catch {
-              setError('The source could not be created.');
+            } catch (error) {
+              setError(error instanceof Error ? error.message : 'The source could not be created.');
             } finally {
               setBusy(false);
             }
@@ -259,10 +313,17 @@ export function SourcesDialog({
               <select
                 value={kind}
                 disabled={busy}
-                onChange={(event) => setKind(event.target.value as SourceKind)}
+                onChange={(event) => {
+                  const next = event.target.value as SourceKind;
+                  setKind(next);
+                  if (next === 'demo') setName('Demo data');
+                }}
               >
                 <option value="caldwell">Caldwell</option>
                 <option value="velociradar-export">JSON / text</option>
+                <option value="demo" disabled={sources.some((s) => s.kind === 'demo')}>
+                  Demo data
+                </option>
               </select>
             </label>
             <label className="field grow">
@@ -276,19 +337,31 @@ export function SourcesDialog({
                 placeholder="e.g. My VelociRadar"
               />
             </label>
-            <button className="primary" disabled={busy || !name.trim()}>
+            <button
+              className="primary"
+              disabled={
+                busy || !name.trim() || (kind === 'demo' && sources.some((s) => s.kind === 'demo'))
+              }
+            >
               <Plus size={17} />
-              Add source
+              {busy ? 'Adding source…' : 'Add source'}
             </button>
           </div>
-          <label className="check-field compact">
-            <input
-              type="checkbox"
-              checked={automatic}
-              onChange={(event) => setAutomatic(event.target.checked)}
-            />
-            <span>Automatically update catalogs</span>
-          </label>
+          {kind === 'demo' ? (
+            <p className="notice">
+              Five strings, 50 shots, target photos and a report profile. About 3.5 MB, downloaded
+              only when you add this source. No account needed. Your preferences stay unchanged.
+            </p>
+          ) : (
+            <label className="check-field compact">
+              <input
+                type="checkbox"
+                checked={automatic}
+                onChange={(event) => setAutomatic(event.target.checked)}
+              />
+              <span>Automatically update catalogs</span>
+            </label>
+          )}
         </form>
       )}
       {error && (
@@ -315,7 +388,7 @@ export function SourcesDialog({
         Up to 20 MB per import. A refresh updates matching records and retains measurements missing
         from a later import.{' '}
         <a
-          href="https://github.com/tony2kk/velocitrack/blob/main/help/README.md#sources"
+          href={`${import.meta.env.BASE_URL}help/#sources`}
           target="_blank"
           rel="noopener noreferrer"
         >

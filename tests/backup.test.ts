@@ -92,6 +92,23 @@ async function seed() {
 }
 
 describe('structured ZIP backup and atomic restore', () => {
+  it('restores version three without rewriting records or adding demo settings', async () => {
+    await seed();
+    const original = await loadWorkspace(database);
+    const archive = await rewriteBackup(await createBackup(database), (manifest) => {
+      manifest.dataVersion = 3;
+      manifest.appVersion = '0.22.0';
+    });
+    const prepared = await prepareBackup(archive);
+    expect(prepared.compatibility).toMatchObject({ dataVersion: 3, targetDataVersion: 4 });
+    expect(prepared.compatibility.changes).toEqual([]);
+    expect(prepared.workspace.profile.demoHintDismissed).toBeUndefined();
+    await restoreBackup(prepared, database);
+    const restored = await loadWorkspace(database);
+    expect(restored.series).toEqual(original.series);
+    expect(restored.shots).toEqual(original.shots);
+    expect(restored.profile).toEqual(original.profile);
+  });
   it('records release and data versions and preserves them in the inspection preview', async () => {
     const prepared = await prepareBackup(await createBackup(database));
     expect(prepared.compatibility).toMatchObject({
@@ -203,7 +220,7 @@ describe('structured ZIP backup and atomic restore', () => {
     const archive = await createBackup(database);
     for (const patch of [
       { version: 3 },
-      { dataVersion: 4 },
+      { dataVersion: BACKUP_DATA_VERSION + 1 },
       { dataVersion: 0 },
       { dataVersion: '2' },
       { appVersion: null },

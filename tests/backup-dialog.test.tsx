@@ -59,7 +59,7 @@ it('shows legacy conversion impact before enabling replacement and clears stale 
   chooseFile();
   await screen.findByRole('heading', { name: 'Compatibility' });
   expect(screen.getByText(/Not recorded \(legacy backup\)/).textContent).toContain(__APP_VERSION__);
-  expect(screen.getByText(/converted for this app/).textContent).toContain('1 → 3');
+  expect(screen.getByText(/converted for this app/).textContent).toContain('1 → 4');
   expect(screen.getByText(/Report paper: A4/)).toBeTruthy();
   const button = screen.getByRole('button', {
     name: 'Replace workspace from backup',

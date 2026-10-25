@@ -69,6 +69,9 @@ export async function refreshEnabledSources(onMessage?: (message: string) => voi
   await requestRefresh();
   const sources = await db.sources.toArray();
   const completed: { name: string; counts: ImportCounts }[] = [];
+  // A demo is a fixed local sample. Refresh must never overwrite the user's practice edits.
+  for (const source of sources.filter((item) => item.enabled && item.kind === 'demo'))
+    completed.push({ name: source.name, counts: { series: 0, shots: 0 } });
   // Sources are independent; a denied account must not prevent another source refreshing.
   for (const source of sources.filter((item) => item.enabled && item.kind === 'caldwell')) {
     try {

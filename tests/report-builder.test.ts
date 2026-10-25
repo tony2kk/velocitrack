@@ -124,7 +124,7 @@ it('round-trips ordered templates and the Tools selection and migrates data vers
     delete profile.selectedReportProfileId;
   });
   const prepared = await prepareBackup(older);
-  expect(prepared.compatibility).toMatchObject({ dataVersion: 2, targetDataVersion: 3 });
+  expect(prepared.compatibility).toMatchObject({ dataVersion: 2, targetDataVersion: 4 });
   expect(prepared.compatibility.changes.join(' ')).toContain('no Report Builder profiles');
   await restoreBackup(prepared, database);
   expect((await loadWorkspace(database)).profile.reportProfiles).toEqual([]);

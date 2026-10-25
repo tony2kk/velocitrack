@@ -232,7 +232,12 @@ export async function restoreBackup(prepared: PreparedBackup, database = db) {
     await database.sources.bulkPut(
       w.sources.map((source) => ({
         ...source,
-        status: source.kind === 'caldwell' ? 'needs-sign-in' : 'needs-files',
+        status:
+          source.kind === 'demo'
+            ? 'ready'
+            : source.kind === 'caldwell'
+              ? 'needs-sign-in'
+              : 'needs-files',
         error: undefined,
       })),
     );

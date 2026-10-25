@@ -68,6 +68,8 @@ export default defineConfig({
       workbox: {
         // Precache the app shell only; account requests and user data are never runtime-cached.
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Large opt-in demo/photos and walkthrough images are downloaded only when requested.
+        globIgnores: ['demo/**', 'help/media/**'],
         runtimeCaching: [],
         cleanupOutdatedCaches: true,
         navigateFallback: 'index.html',
@@ -94,5 +96,14 @@ export default defineConfig({
     },
   },
   preview: { host: '127.0.0.1', port: 4180, strictPort: true },
-  build: { sourcemap: false, chunkSizeWarningLimit: 700 },
+  build: {
+    sourcemap: false,
+    chunkSizeWarningLimit: 700,
+    rolldownOptions: {
+      input: {
+        app: fileURLToPath(new URL('./index.html', import.meta.url)),
+        help: fileURLToPath(new URL('./help/index.html', import.meta.url)),
+      },
+    },
+  },
 });
