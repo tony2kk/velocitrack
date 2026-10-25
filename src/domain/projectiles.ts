@@ -26,7 +26,7 @@ export function projectileName(
   const name = catalogNames.get(series.projectileId) ?? 'Unknown projectile';
   const weight = showWeight ? projectileWeight(series) : null;
   return weight
-    ? `${name} ${formatQuantity(weight.value, 'projectileWeight', weight.unit)}${weight.unit === 'grs' || weight.unit === 'g' ? weight.unit : ` (${weight.unit})`}`
+    ? `${name} ${formatQuantity(weight.value, 'projectileWeight', weight.unit)}${weight.unit === 'grs' || weight.unit === 'g' ? ` ${weight.unit}` : ` (${weight.unit})`}`
     : name;
 }
 

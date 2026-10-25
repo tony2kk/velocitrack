@@ -207,6 +207,7 @@ export function sortShots(
     hiddenShots?: ReadonlySet<string>;
     invalidShots?: ReadonlySet<string>;
     showProjectileWeight?: boolean;
+    fields?: FieldDefinition[];
   },
 ): Shot[] {
   const sessions = new Map(series.map((item) => [item.id, item]));
@@ -219,7 +220,13 @@ export function sortShots(
   function value(shot: Shot): string | number | null {
     const session = sessions.get(shot.seriesId);
     const annotation = annotations.get(shot.seriesId);
-    if (key.startsWith('field:')) return annotation?.values?.[key.slice(6)] ?? null;
+    if (key.startsWith('field:')) {
+      const value = annotation?.values?.[key.slice(6)] ?? null;
+      const field = context.fields?.find((item) => item.id === key.slice(6));
+      return field?.type === 'list'
+        ? (field.options?.find((item) => item.id === value)?.name ?? null)
+        : value;
+    }
     switch (key) {
       case 'series':
         return session?.name ?? null;

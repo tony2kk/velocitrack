@@ -28,6 +28,19 @@ const target: TargetMeasurement = {
 };
 
 describe('print readability', () => {
+  it('places an accurate cm/in ruler beneath the image, capped at 30% of its width', () => {
+    for (const units of ['metric', 'imperial'] as const) {
+      const figure = targetFigureLayout(1000, 800, target, units);
+      expect(figure.ruler!.y).toBeGreaterThan(figure.photo.y + figure.photo.height);
+      expect(figure.ruler!.pixels).toBeLessThanOrEqual(figure.photo.width * 0.3);
+      expect(figure.ruler!.y + 17).toBeLessThan(figure.height);
+      const length = parseFloat(figure.ruler!.label) * (units === 'metric' ? 10 : 25.4);
+      expect(
+        (figure.ruler!.pixels / (figure.photo.width / figure.source.width)) * target.mmPerPixel!,
+      ).toBeCloseTo(length);
+    }
+    expect(targetFigureLayout(1000, 800, undefined, 'metric').ruler).toBeUndefined();
+  });
   it('keeps target callouts outside the photo and each other, including small/edge crops', () => {
     const before = structuredClone(target);
     for (const crop of [target.reportCrop, { x: 0, y: 0, size: 20, width: 1000, height: 800 }]) {

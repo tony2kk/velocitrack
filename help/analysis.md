@@ -18,9 +18,9 @@ Choose a view in **Analysis**, between Filters and Tools.
 and local annotation in its stored units and precision. The PDF's **Chart / String
 info** section includes these complete records for all selected strings as well.
 
-**By shot** shows one reading per shot: velocity, Caldwell G1/G7, recorded conditions, known projectile mass, or a numeric custom field. Only supported choices are offered.
+**By shot** shows one reading per shot: velocity, Caldwell G1/G7, recorded conditions, known projectile mass, or a numeric custom field. Only supported choices are offered. In **String compare**, By shot offers only shot-owned velocity and G1/G7. **By string** offers numeric string-owned attributes (for example Group size, offsets, weather and custom numeric fields), with one point per string. It works even without selected shots. Text and List fields remain available in details and tables rather than numeric charts.
 
-**Over distance** shows recorded velocity samples or a calculated G1/G7 velocity curve when inputs exist. A custom application build can also register additional curves. Each selected function has its own description below the chart; Dual shows both. Simple/Dual recorded views show the first 100 selected shot traces. String compare averages traces within their non-null returned ranges.
+**Over distance** shows recorded velocity samples or a calculated G1/G7 velocity curve when inputs exist. A custom application build can also register additional curves. Each selected function has its own description below the chart; Dual shows both. Simple/Dual recorded views show the first 100 selected shot traces. String compare **Velocity** averages traces within their non-null returned ranges. **Velocity detail** instead shows up to 100 individual shot traces, colored by string, with no averaging.
 
 Each view remembers its axis and quantities. Changing to an incompatible axis selects a suitable quantity. A saved quantity temporarily missing from selected data stays saved with a no-readings label.
 
@@ -34,7 +34,7 @@ Each view remembers its axis and quantities. Changing to an incompatible axis se
 The model starts at the recorded muzzle velocity at distance zero. It uses that shot's matching Caldwell coefficient: G1 uses G1, G7 uses G7. Two downrange samples are not required. You can also compare G1 and G7 predictions directly.
 
 > [!NOTE]
-> Dashed calculated curves are estimates, including beyond measured distances. They assume 15 °C, 1013.25 hPa, dry still air, constant BC, and a straight path. They do not correct for gravity, wind, or recorded weather. Predicted zero is the muzzle; the origin of recorded distance samples has not yet been independently confirmed.
+> Dashed calculated curves are estimates, including beyond measured distances. They use local atmosphere when complete source conditions are available, otherwise 15 °C, 1013.25 hPa and dry air. The descriptions state which conditions were used. They assume constant BC and a straight path without wind or gravity corrections. Supported VelociRadar measurements use zero distanceToChronograph; no axial correction is applied.
 
 Shots without supported muzzle velocity or matching BC are omitted. Each calculated quantity uses at most the first 100 eligible shots in table order, including comparison means. Forecast distance is limited to 1 km; this is a display limit, not an accuracy guarantee. Supported BC values are 0.01–5 and muzzle speeds must be within Mach 0–5.
 
@@ -46,9 +46,9 @@ Hover or tap a point for its value and identity. Recorded traces identify the or
 
 Use the bottom slider to zoom distance/shot order and the right slider for the vertical axis. The chart updates continuously while dragging either slider. Zoom changes the view, not selection. Compatible quantities share a scale; unrelated quantities use separate labeled vertical axes in Dual, including Over distance. Recorded and calculated velocities still share one velocity scale.
 
-Chart ranges stay in place when changing quantities, selection, table order or theme. Recorded and calculated velocities share a remembered numerical scale. Unrelated quantities have their own ranges; switching back restores the earlier view. Changing display units converts the retained bounds. These viewports last for the current page session; the existing forecast-distance preference is saved locally.
+Changing the selected strings automatically fits chart scales to their data. With the same string selection, chart ranges stay in place when changing quantities, table order or theme. Recorded and calculated velocities share a remembered numerical scale. Unrelated quantities have their own ranges; switching back restores the earlier view. Changing display units converts the retained bounds. These viewports last for the current page session; the existing forecast-distance preference is saved locally.
 
-The **Reset chart scales** icon in the chart's bottom-right corner fits both axes to the currently available plotted data. Use it to bring newly selected data outside a previous zoom into view. It does not change filters or selected shots.
+The **Reset chart scales** icon in the chart's bottom-right corner fits both axes to the currently available plotted data. Use it to return to the complete plotted range after zooming. It does not change filters or selected shots.
 
 **Forecast distance** and the visible right edge are linked while a calculated distance quantity is selected. Changing the field preserves the left edge and vertical zoom; if the new right edge would cross the left edge, the left edge returns to zero. The slider retains its larger navigable domain when zooming in, so you can expand the view again. The existing forecast limit still applies.
 

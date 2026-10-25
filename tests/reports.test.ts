@@ -115,12 +115,14 @@ describe('local PDF composition', () => {
     expect(Object.values(defaultReportSettings())).toEqual([true, true, true, true, true]);
     const input = reportFixture();
     const all = JSON.stringify(reportDocument(input));
-    for (const section of ['Target', 'Mean velocity', 'Analysis chart', 'Shot records'])
+    for (const section of ['Mean velocity', 'Analysis chart', 'Shot records'])
       expect(all).toContain(section);
+    expect(all).not.toContain('Targets');
+    expect(all).not.toContain('No target photo');
     expect(all).not.toContain('NEVER_SERIALIZE_THIS');
     input.profile.report = {
       details: false,
-      target: false,
+      target: true,
       statistics: false,
       chart: true,
       records: false,

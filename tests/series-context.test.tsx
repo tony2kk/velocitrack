@@ -10,6 +10,11 @@ import { ShotTable } from '../src/components/ShotTable';
 import { CustomizationManager } from '../src/components/CustomizationManager';
 import { SeriesNavigator } from '../src/components/SeriesNavigator';
 import { series, shot } from './fixtures/synthetic';
+import { emptyTarget } from '../src/domain/targetMeasurement';
+
+vi.mock('../src/reports/renderTarget', () => ({
+  renderTargetPhoto: vi.fn(async () => 'data:image/png;base64,c3ludGhldGlj'),
+}));
 
 beforeEach(async () => {
   await db.open();
@@ -17,6 +22,7 @@ beforeEach(async () => {
     this.setAttribute('open', '');
   });
   HTMLDialogElement.prototype.close = vi.fn();
+  HTMLElement.prototype.scrollIntoView = vi.fn();
   await db.series.put(series());
 });
 afterEach(async () => {
@@ -26,6 +32,80 @@ afterEach(async () => {
 });
 
 describe('series context UI', () => {
+  it('shows firearm/projectile and the source note above a List editor, with usage-aware removal', async () => {
+    const field = {
+      id: 'list',
+      name: 'Category',
+      type: 'list' as const,
+      order: 0,
+      options: [{ id: 'a', name: 'Alpha' }],
+    };
+    await saveField(field);
+    await saveSeriesDetails('series', { list: 'a' }, undefined);
+    render(
+      <SeriesDetails
+        series={series({ raw: { notes: 'Original plain note' } })}
+        firearmName="Example firearm"
+        projectileName="Example projectile"
+        annotation={(await loadWorkspace()).annotations[0]}
+        fields={[field]}
+        tags={[]}
+        photos={[]}
+        units="metric"
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('Example firearm / Example projectile')).toBeTruthy();
+    expect(screen.getByText('Original plain note').tagName).toBe('P');
+    expect((screen.getByRole('combobox', { name: 'Category' }) as HTMLSelectElement).value).toBe(
+      'a',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Manage Category options' }));
+    const panel = screen.getByRole('region', { name: 'Options for Category' });
+    expect(
+      panel.compareDocumentPosition(screen.getByRole('combobox', { name: 'Category' })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    fireEvent.click(within(panel).getByRole('button', { name: 'Remove' }));
+    await waitFor(() => expect(screen.getByText(/used in 1 saved record/)).toBeTruthy());
+    expect((await loadWorkspace()).annotations[0]?.values?.list).toBe('a');
+    fireEvent.click(screen.getByRole('button', { name: 'Keep option' }));
+    expect((await loadWorkspace()).annotations[0]?.values?.list).toBe('a');
+  });
+
+  it('opens a read-only measured target without selecting its string, including Ctrl-click', async () => {
+    const target = {
+      ...emptyTarget(),
+      photoId: 'photo',
+      mmPerPixel: 1,
+      values: { horizontalOffset: null, verticalOffset: null, groupSize: 20 },
+      geometry: { width: 100, height: 100, center: { x: 50, y: 50 }, radius: 10, poa: null },
+    };
+    await db.attachmentContents.put({ id: 'photo', blob: new Blob(['synthetic']) });
+    const onToggleSeries = vi.fn(),
+      onSelectOnly = vi.fn();
+    render(
+      <SeriesNavigator
+        series={[series()]}
+        shots={[]}
+        selected={[]}
+        annotations={[{ entityId: 'series', notes: '', fields: {}, target }]}
+        catalogNames={new Map()}
+        sourceNames={new Map()}
+        onToggleSeries={onToggleSeries}
+        onSelectOnly={onSelectOnly}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'View target for Synthetic series' }), {
+      ctrlKey: true,
+    });
+    await waitFor(() => expect(screen.getByRole('img', { name: /Measured target/ })).toBeTruthy());
+    expect(onToggleSeries).not.toHaveBeenCalled();
+    expect(onSelectOnly).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: /Save measurement/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Close dialog' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
   it('saves string-panel visibility and displays assigned values including zero in fixed weight units', async () => {
     const manager = render(<CustomizationManager kind="fields" fields={[]} tags={[]} />);
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Sample mass' } });

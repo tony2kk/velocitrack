@@ -1,4 +1,5 @@
 import type { UnitSystem } from '../domain/model';
+import { physicalScaleBar, type TargetScaleBar } from '../domain/targetCalibration';
 import {
   targetDisplay,
   targetUnit,
@@ -13,6 +14,7 @@ export interface TargetFigure {
   photo: { x: number; y: number; width: number; height: number };
   source: { x: number; y: number; width: number; height: number };
   labelSide: 'left' | 'right';
+  ruler?: TargetScaleBar & { x: number; y: number };
   circle?: { center: ImagePoint; radius: number };
   poa?: ImagePoint;
   dimensions: {
@@ -62,6 +64,21 @@ export function targetFigureLayout(
     labelSide,
     dimensions: [],
   };
+  const ruler = physicalScaleBar(
+    target?.mmPerPixel,
+    source.width,
+    units,
+    target?.calibration?.lengthMm ?? undefined,
+  );
+  if (ruler) {
+    result.ruler = {
+      ...ruler,
+      pixels: ruler.pixels * factor,
+      x: photo.x + photo.width - ruler.pixels * factor,
+      y: photo.y + photo.height + 12,
+    };
+    result.height = Math.max(result.height, result.ruler.y + 24);
+  }
   if (!geometry || !target) return result;
   const point = (p: ImagePoint): ImagePoint => ({
     x: photo.x + (p.x - source.x) * factor,
@@ -220,6 +237,25 @@ export function drawTargetFigure(
       context.lineTo(p.x, p.y + 5);
     });
   context.restore();
+  if (figure.ruler) {
+    const ruler = figure.ruler;
+    context.strokeStyle = '#142722';
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.moveTo(ruler.x, ruler.y);
+    context.lineTo(ruler.x + ruler.pixels, ruler.y);
+    for (let index = 0; index <= ruler.divisions; index++) {
+      const x = ruler.x + (ruler.pixels * index) / ruler.divisions;
+      context.moveTo(x, ruler.y - (index === 0 || index === ruler.divisions ? 4 : 2));
+      context.lineTo(x, ruler.y + 3);
+    }
+    context.stroke();
+    context.fillStyle = '#142722';
+    context.font = '10px Arial, sans-serif';
+    context.textAlign = 'center';
+    context.fillText(ruler.label, ruler.x + ruler.pixels / 2, ruler.y + 17);
+    context.textAlign = 'start';
+  }
   for (const dimension of figure.dimensions) {
     const { label, leader } = dimension;
     context.setLineDash([3, 3]);

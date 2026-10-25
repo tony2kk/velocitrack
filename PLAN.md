@@ -276,6 +276,16 @@ Maintenance release 0.18.1 implements decision 025 independently of deferred fea
 
 ## Next batch — requested 2026-10-25
 
-- [ ] Add a space between projectile weight and its unit in display labels. Explicitly deferred by the owner; do not include in 0.18.0.
-- [ ] Omit the Targets report page/section when no targets are provided. Explicitly deferred by the owner; do not include in 0.18.0.
-- [ ] Add String compare → Over distance → Velocity detail: individual recorded shot curves as in Simple/Dual, colored by string. Explicitly deferred by the owner; do not include in 0.18.0.
+- [x] Add a space between projectile weight and its unit in display labels. Explicitly deferred by the owner; do not include in 0.18.0.
+- [x] Omit the Targets report page/section when no targets are provided. Explicitly deferred by the owner; do not include in 0.18.0.
+- [x] Add String compare → Over distance → Velocity detail: individual recorded shot curves as in Simple/Dual, colored by string. Explicitly deferred by the owner; do not include in 0.18.0.
+
+## String workspace improvements — 0.19.0
+
+- [x] Fit chart scales when the selected string set changes.
+- [x] List custom fields, inline management, usage warnings and backup round trips.
+- [x] Firearm/projectile and plain source note in string details.
+- [x] Shared read-only target preview and report ruler below the image.
+- [x] Compare By string for numeric string attributes; By shot for shot attributes.
+
+Decision 026 records scope. Publish after verification under decision 023.

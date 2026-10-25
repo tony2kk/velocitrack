@@ -13,7 +13,7 @@ export type ChartQuantity = string;
 export interface ChartSettings {
   /** Maximum predicted distance in canonical feet; absent means the shared bounded default. */
   forecastDistance?: number;
-  axis: 'distance' | 'shot';
+  axis: 'distance' | 'shot' | 'string';
   quantity: ChartQuantity;
   secondary: ChartQuantity;
 }
@@ -128,6 +128,7 @@ export interface Annotation {
 
 /** Typed series fields; dimensional numbers are stored in gr, ft/s and ft, independently of display. */
 export type FieldType =
+  | 'list'
   | 'short-text'
   | 'note'
   | 'number'
@@ -138,11 +139,19 @@ export type FieldType =
   | 'distance';
 /** Workspace-wide definition with stable identity and user-controlled ordering. */
 export interface FieldDefinition {
+  /** Stable identities keep existing assignments intact when an option is renamed. */
+  options?: ListOption[];
   id: string;
   name: string;
   type: FieldType;
   order: number;
   showInNavigator?: boolean;
+}
+
+/** A local list entry; annotations store its ID, never its editable label. */
+export interface ListOption {
+  id: string;
+  name: string;
 }
 /** Reusable named label; color is a validated six-digit hex value. */
 export interface Tag {

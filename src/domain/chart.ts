@@ -14,7 +14,7 @@ import {
 import type { DistanceCurveData, DistanceSample } from './distanceCurves/types';
 import type { DisplayScale } from './chartViewport';
 
-export type ChartMode = 'distance' | 'shot';
+export type ChartMode = 'distance' | 'shot' | 'string';
 // Alternating hue families separate neighboring traces; shape and dash also encode identity.
 export const chartColors = [
   '#2563eb',
@@ -47,6 +47,8 @@ export function chartStyle(index: number, dark = false) {
 
 /** A rendered point retains its shot identity and original sample position after padding removal. */
 export interface ChartPoint {
+  /** String-owned scalars have no individual shot identity. */
+  stringPoint?: boolean;
   value: [number, number | null];
   shotId: string;
   shotNumber: number;
@@ -144,9 +146,11 @@ export function formatPointTooltip(point: ChartPoint): string {
   const distance = point.distance || point.sampleIndex !== undefined;
   return [
     point.seriesName,
-    point.contributors
-      ? `${point.model ? 'Mean prediction' : point.derived ? 'Mean derived curve' : 'Mean'} of ${point.contributors} shots`
-      : `Shot ${point.shotNumber}${point.sampleIndex !== undefined ? ` · Sample ${point.sampleIndex + 1}` : ''}`,
+    point.stringPoint
+      ? 'String measurement'
+      : point.contributors
+        ? `${point.model ? 'Mean prediction' : point.derived ? 'Mean derived curve' : 'Mean'} of ${point.contributors} shots`
+        : `Shot ${point.shotNumber}${point.sampleIndex !== undefined ? ` · Sample ${point.sampleIndex + 1}` : ''}`,
     ...(distance
       ? [
           `Distance: ${formatQuantity(point.value[0], 'distance', unitLabels[point.unitSystem].distance)} ${unitLabels[point.unitSystem].distance}`,
@@ -189,6 +193,30 @@ export function buildAnalysisTraces(
     kind === 'dual' && settings.secondary !== settings.quantity
       ? [settings.quantity, settings.secondary]
       : [settings.quantity];
+  if (kind === 'compare' && settings.axis === 'string') {
+    const definition = definitions?.find(
+      (item) => item.id === settings.quantity && item.scope === 'string',
+    );
+    return groups.map((item, index) => ({
+      id: item.id,
+      name: item.name,
+      ...style(item.id, index),
+      data: [
+        {
+          value: [index + 1, definition?.read({ seriesId: item.id }) ?? null],
+          shotId: '',
+          shotNumber: 0,
+          seriesName: item.name,
+          rawUnit: '',
+          unitSystem: units,
+          stringPoint: true,
+          quantity: settings.quantity,
+          quantityTitle: definition?.label,
+          quantityUnit: definition?.unit,
+        },
+      ],
+    }));
+  }
   if (settings.axis === 'distance') {
     return quantities.flatMap<ChartTrace>((quantity, quantityIndex) => {
       const curve = registry.get(quantity);
@@ -200,7 +228,7 @@ export function buildAnalysisTraces(
       // Apply the same limit before calling every derived implementation, including comparison means.
       const candidates = curve.derived
         ? []
-        : kind === 'compare'
+        : kind === 'compare' && quantity !== 'velocity-detail'
           ? included
           : included.slice(0, 100);
       if (curve.derived) {
@@ -253,7 +281,7 @@ export function buildAnalysisTraces(
             .join('\n'),
         };
       }
-      if (kind === 'compare')
+      if (kind === 'compare' && quantity !== 'velocity-detail')
         return groups.map((item, index) => {
           const members = rows.filter(({ shot }) => shot.seriesId === item.id);
           const meanConditions = members[0] ? conditions.get(members[0].shot.id) : undefined;
@@ -294,7 +322,12 @@ export function buildAnalysisTraces(
         id: `${quantity}:${shot.id}`,
         shotId: shot.id,
         name: `${names.get(shot.seriesId)} · shot ${shot.number}`,
-        ...chartStyle(quantityIndex, dark),
+        ...(kind === 'compare'
+          ? style(
+              shot.seriesId,
+              groups.findIndex((item) => item.id === shot.seriesId),
+            )
+          : chartStyle(quantityIndex, dark)),
         ...(curve.derived ? { dash: 'dashed' as const } : {}),
         yAxisIndex,
         issue,

@@ -33,7 +33,7 @@ describe('automatic velocity atmosphere', () => {
       distanceCurveRegistry.definitions
         .filter((curve) => curve.axisKey === 'velocity')
         .map((curve) => curve.id),
-    ).toEqual(['velocity', 'calculated:g1', 'calculated:g7']);
+    ).toEqual(['velocity', 'velocity-detail', 'calculated:g1', 'calculated:g7']);
   });
 
   it('describes estimated station pressure and humidity in notices and tooltips', () => {

@@ -8,6 +8,8 @@ import type {
   UnitSystem,
 } from '../domain/model';
 import { fieldDisplay, fieldUnit, parseFieldInput } from '../domain/customFields';
+import { Plus } from 'lucide-react';
+import { ListOptionsPanel } from './ListOptionsPanel';
 import { saveSeriesDetails } from '../storage/customization';
 import { addPhoto, removePhoto } from '../storage/attachments';
 import { db } from '../storage/database';
@@ -111,6 +113,8 @@ export function SeriesDetails({
   tags,
   photos,
   units,
+  firearmName,
+  projectileName,
   onClose,
 }: {
   series: Series;
@@ -119,6 +123,8 @@ export function SeriesDetails({
   tags: Tag[];
   photos: Attachment[];
   units: UnitSystem;
+  firearmName?: string;
+  projectileName?: string;
   onClose: () => void;
 }) {
   // Freeze entry units until this editor closes so another tab cannot reinterpret unsaved numbers.
@@ -127,8 +133,18 @@ export function SeriesDetails({
   const [tagIds, setTagIds] = useState<string[] | undefined>();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [listId, setListId] = useState<string | null>(null);
+  const activeList = fields.find((field) => field.id === listId && field.type === 'list');
+  const note = typeof series.raw.notes === 'string' ? series.raw.notes.trim() : '';
   return (
     <Modal title={series.name} onClose={onClose} wide>
+      {(firearmName || projectileName) && (
+        <p>{[firearmName, projectileName].filter(Boolean).join(' / ')}</p>
+      )}
+      {note && <p>{note}</p>}
+      {activeList && (
+        <ListOptionsPanel key={activeList.id} field={activeList} onClose={() => setListId(null)} />
+      )}
       <p className="muted">
         Series fields and tags apply to every shot. Refresh preserves these local details.
       </p>
@@ -161,11 +177,51 @@ export function SeriesDetails({
       >
         <div className="custom-field-grid">
           {fields.map((field) => (
-            <label className={`field ${field.type === 'note' ? 'wide-field' : ''}`} key={field.id}>
-              {field.name}
-              {fieldUnit(field.type, editorUnits) ? ` (${fieldUnit(field.type, editorUnits)})` : ''}
-              {field.type === 'note' ? (
+            <div className={`field ${field.type === 'note' ? 'wide-field' : ''}`} key={field.id}>
+              <label htmlFor={`field-${field.id}`}>
+                {field.name}
+                {fieldUnit(field.type, editorUnits)
+                  ? ` (${fieldUnit(field.type, editorUnits)})`
+                  : ''}
+              </label>
+              {field.type === 'list' ? (
+                <span className="list-field-control">
+                  <select
+                    id={`field-${field.id}`}
+                    aria-label={field.name}
+                    value={edits[field.id] ?? String(annotation?.values?.[field.id] ?? '')}
+                    onChange={(event) =>
+                      setEdits((current) => ({ ...current, [field.id]: event.target.value }))
+                    }
+                  >
+                    <option value="">Not set</option>
+                    {(field.options ?? []).map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="icon-button"
+                    title={`Add or edit ${field.name} options`}
+                    aria-label={`Manage ${field.name} options`}
+                    onClick={() => {
+                      setListId(field.id);
+                      // Move the new panel into view without navigating away from unsaved string details.
+                      requestAnimationFrame(() =>
+                        document
+                          .querySelector('.list-options-panel')
+                          ?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }),
+                      );
+                    }}
+                  >
+                    <Plus size={18} />
+                  </button>
+                </span>
+              ) : field.type === 'note' ? (
                 <textarea
+                  id={`field-${field.id}`}
                   rows={4}
                   value={
                     edits[field.id] ??
@@ -177,6 +233,7 @@ export function SeriesDetails({
                 />
               ) : (
                 <input
+                  id={`field-${field.id}`}
                   type={field.type === 'short-text' ? 'text' : 'number'}
                   step="any"
                   min={['weight', 'speed', 'distance'].includes(field.type) ? 0 : undefined}
@@ -190,7 +247,7 @@ export function SeriesDetails({
                   }
                 />
               )}
-            </label>
+            </div>
           ))}
         </div>
         {!fields.length && <p className="muted">Define fields in Profile → Custom fields.</p>}

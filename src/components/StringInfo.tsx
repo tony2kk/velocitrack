@@ -111,7 +111,12 @@ export function StringInfo({
                 : ''}
             </dt>
             <dd className="preserve-lines">
-              {fieldText(annotation?.values?.[field.id], field.type, profile.unitSystem) || '—'}
+              {fieldText(
+                annotation?.values?.[field.id],
+                field.type,
+                profile.unitSystem,
+                field.options,
+              ) || '—'}
             </dd>
           </div>
         ))}

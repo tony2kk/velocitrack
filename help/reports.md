@@ -34,3 +34,9 @@ Framing does not change group size, offsets, calibration or the original image. 
 Reports include selected notes and photos; String info also includes source record IDs and original metadata. Choose where to save or share them. Source connection settings and sign-in sessions are excluded. A PDF archives the selected view; it is not a recoverable workspace backup. The bundled report engine and fonts are cached with the PWA for offline generation after the updated application finishes installing.
 
 **Related:** [Target measurements](targets.md) · [Chart controls](analysis.md) · [Profile](profile.md)
+
+A calibrated target has a physical ruler immediately below its image, in cm/in.
+The ruler adapts to the report crop and never exceeds 30% of its width. Manual
+image calibration and the independent reference tool both provide scale. Strings
+without a photo are omitted from Targets; if no photos exist, the entire section
+is omitted. Use the target icon on a measured string card to preview this same figure.

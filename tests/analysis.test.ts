@@ -159,10 +159,10 @@ describe('analysis quantities and grouping', () => {
     const names = new Map([['projectile', 'Example projectile']]);
     expect(
       projectileName(series({ raw: { projectile: { weight: 150, weightUnit: 0 } } }), names, true),
-    ).toBe('Example projectile 150.0grs');
+    ).toBe('Example projectile 150.0 grs');
     expect(
       projectileName(series({ raw: { projectile: { weight: 2, weightUnit: 1 } } }), names, true),
-    ).toBe('Example projectile 2.00g');
+    ).toBe('Example projectile 2.00 g');
     expect(
       projectileWeight(series({ raw: { projectile: { weight: 2, weightUnit: 99 } } }))?.grains,
     ).toBeNull();

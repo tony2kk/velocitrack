@@ -41,6 +41,32 @@ afterEach(async () => {
 });
 
 describe('persistent analysis controls', () => {
+  it('separates string and shot quantities in comparison and persists the new axis', async () => {
+    const profile = defaultProfile();
+    profile.analysis!.mode = 'compare';
+    await saveProfile(profile);
+    const props = {
+      series: [series({ airDensity: 1.2 })],
+      shots: [shot()],
+      view: 'chart' as const,
+      activeShotId: null,
+      onHoverShot: vi.fn(),
+      profile,
+    };
+    const { rerender } = render(<AnalysisPanel {...props} />);
+    expect(screen.queryByRole('option', { name: /Air density/ })).toBeNull();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Chart type' }), {
+      target: { value: 'string' },
+    });
+    await waitFor(async () =>
+      expect((await loadWorkspace()).profile.analysis?.compare.axis).toBe('string'),
+    );
+    const saved = (await loadWorkspace()).profile;
+    rerender(<AnalysisPanel {...props} shots={[]} profile={saved} />);
+    expect(screen.getByRole('option', { name: /Air density/ })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: /^Velocity / })).toBeNull();
+    expect(screen.queryByText(/No shots selected/)).toBeNull();
+  });
   it('shows every selected string and complete original data in String info, including zero-shot strings', () => {
     const profile = defaultProfile();
     profile.analysis!.mode = 'info';

@@ -7,6 +7,7 @@ import { defaultAnalysis } from '../src/domain/model';
 import { centeredSamplesCurve } from '../src/domain/distanceCurves/template';
 import { createRef } from 'react';
 import type { MeasurementChartHandle } from '../src/components/MeasurementChart';
+import { AnalysisPanel } from '../src/components/AnalysisPanel';
 
 vi.mock('../src/domain/distanceCurves/customDistanceCurves', async () => ({
   customDistanceCurves: [
@@ -76,6 +77,52 @@ function zoomChart(horizontal: [number, number], vertical: [number, number]) {
 }
 
 describe('chart viewport', () => {
+  it('fits a new selection beyond the previous forecast edge and synchronizes the field', () => {
+    const change = vi.fn();
+    render(
+      <MeasurementChart
+        series={[series()]}
+        shots={[shot({ distances: [0, 100], velocities: [1000, 900] })]}
+        mode="distance"
+        settings={{ axis: 'distance', quantity: 'velocity', secondary: 'g1' }}
+        activeShotId={null}
+        onHoverShot={vi.fn()}
+        forecastDistance={20}
+        onForecastDistanceChange={change}
+        fitOnMount
+      />,
+    );
+    const option = chart.setOption.mock.calls.at(-1)![0];
+    expect(visibleRange(option.xAxis, option.dataZoom[0])).toEqual([0, 100]);
+    expect(change).toHaveBeenCalledWith(100);
+  });
+  it('fits scales after a selected string changes, but retains zoom across updates to the same selection', async () => {
+    const props = {
+      series: [series()],
+      shots: [shot({ distances: [0, 100], velocities: [1000, 900] })],
+      view: 'chart' as const,
+      activeShotId: null,
+      onHoverShot: vi.fn(),
+    };
+    const view = render(<AnalysisPanel {...props} />);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    zoomChart([25, 75], [25, 75]);
+    view.rerender(<AnalysisPanel {...props} series={[{ ...props.series[0]!, name: 'Renamed' }]} />);
+    const retained = chart.setOption.mock.calls.at(-1)![0];
+    expect(visibleRange(retained.xAxis, retained.dataZoom[0])).toEqual([25, 75]);
+    view.rerender(
+      <AnalysisPanel
+        {...props}
+        series={[series({ id: 'new' })]}
+        shots={[shot({ seriesId: 'new', distances: [0, 20], velocities: [100, 90] })]}
+      />,
+    );
+    const fitted = chart.setOption.mock.calls.at(-1)![0];
+    expect(visibleRange(fitted.xAxis, fitted.dataZoom[0])).toEqual([0, 20]);
+    expect(fitted.yAxis[0].max).toBeLessThan(200);
+  });
   it('exports the live zoom on a separate light canvas without changing the workspace chart', () => {
     const ref = createRef<MeasurementChartHandle>();
     render(

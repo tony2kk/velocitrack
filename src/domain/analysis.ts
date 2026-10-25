@@ -21,6 +21,8 @@ export const QUANTITIES: ChartQuantity[] = ['velocity', 'g1', 'g7'];
 
 /** A plotted scalar declares its display unit and reads a value without mutating provider records. */
 export interface Quantity {
+  /** Ownership determines the available comparison axes, not the record used by the adapter. */
+  scope?: 'shot' | 'string';
   id: string;
   label: string;
   /** Display unit as structured metadata; table headings must not parse names or guess conversions. */
@@ -217,7 +219,9 @@ export function availableQuantities(
           : null;
       },
     });
-  for (const field of fields.filter((field) => !['short-text', 'note'].includes(field.type)))
+  for (const field of fields.filter(
+    (field) => !['short-text', 'note', 'list'].includes(field.type),
+  ))
     definitions.push({
       id: `field:${field.id}`,
       displayScale: { factor: fieldFactor(field.type, units), offset: 0 },
@@ -229,6 +233,8 @@ export function availableQuantities(
         return finiteNumber(value) ? value * fieldFactor(field.type, units) : null;
       },
     });
+  for (const definition of definitions)
+    definition.scope = QUANTITIES.includes(definition.id) ? 'shot' : 'string';
   return includeUnavailable
     ? definitions
     : definitions.filter((definition) =>
@@ -261,28 +267,45 @@ export function distanceQuantities(
   shots: Shot[],
   units: UnitSystem,
   data?: DistanceCurveData,
+  compare = false,
 ): { id: string; label: string }[] {
   return distanceCurveRegistry.definitions
-    .filter((curve) => shots.some((shot) => supportsDistanceCurve(curve, shot, data)))
+    .filter(
+      (curve) =>
+        (compare || curve.id !== 'velocity-detail') &&
+        shots.some((shot) => supportsDistanceCurve(curve, shot, data)),
+    )
     .map((curve) => ({ id: curve.id, label: curve.label(units) }));
 }
 
 /** Changing axes fixes structurally invalid choices, independently of temporary missing data. */
-export function normalizeChart(settings: ChartSettings): ChartSettings {
+export function normalizeChart(settings: ChartSettings, compare = false): ChartSettings {
   // Version 0.15's separate local variants now share the automatic model's stable ID.
   settings = {
     ...settings,
     quantity: automaticVelocityId(settings.quantity),
     secondary: automaticVelocityId(settings.secondary),
   };
+  if (settings.axis === 'string') {
+    if (!compare) settings = { ...settings, axis: 'shot' };
+    else
+      return {
+        ...settings,
+        quantity: isStringQuantity(settings.quantity) ? settings.quantity : 'target:groupSize',
+      };
+  }
+  if (compare && settings.axis === 'shot' && !QUANTITIES.includes(settings.quantity))
+    settings = { ...settings, quantity: 'velocity' };
+  if (!compare && settings.quantity === 'velocity-detail')
+    settings = { ...settings, quantity: 'velocity' };
   const available = axisQuantities(settings.axis);
   const quantity =
-    (settings.axis === 'shot' && !isDistanceOnly(settings.quantity)) ||
+    (settings.axis !== 'distance' && !isDistanceOnly(settings.quantity)) ||
     available.includes(settings.quantity)
       ? settings.quantity
       : available[0]!;
   const secondary =
-    ((settings.axis === 'shot' && !isDistanceOnly(settings.secondary)) ||
+    ((settings.axis !== 'distance' && !isDistanceOnly(settings.secondary)) ||
       available.includes(settings.secondary)) &&
     settings.secondary !== quantity
       ? settings.secondary
@@ -290,6 +313,14 @@ export function normalizeChart(settings: ChartSettings): ChartSettings {
         ? quantity
         : (available.find((item) => item !== quantity) ?? quantity);
   return { ...settings, quantity, secondary };
+}
+
+/** These scalar namespaces belong to the string; list/text fields remain excluded from numeric menus. */
+function isStringQuantity(id: string): boolean {
+  return (
+    ['airDensity', 'soundSpeed', 'projectileWeight'].includes(id) ||
+    ['target:', 'field:', 'source:'].some((prefix) => id.startsWith(prefix))
+  );
 }
 
 /** Accept historical profile/backup choices without keeping duplicate menu entries or traces. */

@@ -453,6 +453,8 @@ function WorkspaceApp({ workspace }: { workspace: Workspace }) {
         <SeriesDetails
           key={detailSeries.id}
           series={detailSeries}
+          firearmName={catalogNames.get(detailSeries.firearmId)}
+          projectileName={projectileNames.get(detailSeries.id)}
           annotation={annotations.find((a) => a.entityId === detailSeries.id)}
           fields={fieldDefinitions}
           tags={tags}

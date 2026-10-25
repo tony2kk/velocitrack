@@ -102,3 +102,9 @@ The private loopback Firebase Auth/Firestore test and full application import pa
 Use English throughout. Write small, readable modules and behavior-focused tests. Never publish credentials, real account identifiers, private exports, HAR files, APKs or vendor code. See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 
 Original project code and documentation use the [MIT License](LICENSE). This grants no rights to Caldwell/AOB services, software, data or trademarks.
+
+String compare supports **By shot**, **By string** (for example Group size), and
+**Over distance**, including individual **Velocity detail** traces colored by string.
+Changing selected strings fits the chart scales. Local custom fields also support
+reusable **List** options. Measured-target card icons open read-only previews with
+the same dimensions, crop and ruler used in PDF reports.

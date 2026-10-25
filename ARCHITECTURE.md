@@ -132,3 +132,22 @@ listeners/timers. `UpdateNotice` now owns the footer version/check control as we
 as the fixed Reload prompt. Only an explicit Reload action activates the waiting
 worker or navigates. Background discovery and manual checks never touch workspace
 data. See decision 025 and troubleshooting help for older tabs and stopped previews.
+
+## String comparison and local lists (0.19)
+
+Decision 026 adds ownership metadata to scalar quantities. Compare By shot filters
+shot scalars; By string adapts one parent record without requiring shot data.
+Recorded Velocity detail shares the velocity registry adapter but bypasses mean
+aggregation and uses string colors. Selection identity keys reset viewport memory
+and remount the chart, cancelling pending zoom writes; other updates retain it.
+
+FieldDefinition.options stores stable option IDs/names for List fields. Annotation
+values reference IDs. Dedicated list transactions rename without rewriting values,
+and delete only after confirming an unchanged usage count. Metadata saves preserve
+the latest options. Display and sort adapters resolve labels; numeric menus exclude
+lists. Backup validation checks definitions and memberships; no schema upgrade.
+
+reports/renderTarget.ts owns local image decoding and invokes targetFigure.ts for
+both PDF and TargetPreview. Calibrated figures reserve space below the photograph
+for a physical ruler. The preview has no write actions. Empty Targets sections do
+not create report page breaks.

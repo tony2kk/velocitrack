@@ -104,8 +104,12 @@ export function AnalysisPanel({
 }) {
   const [columnError, setColumnError] = useState('');
   const chartRef = useRef<MeasurementChartHandle>(null);
-  // Keep viewports through temporary empty selections and String info without persisting user gestures.
-  const [viewportMemory] = useState<ViewportMemory>(() => new Map());
+  // A different set of strings starts fresh; unrelated live-query updates retain physical zoom.
+  const selectionKey = JSON.stringify(series.map((item) => item.id).sort());
+  const viewportMemory = useMemo<ViewportMemory>(() => {
+    void selectionKey;
+    return new Map();
+  }, [selectionKey]);
   // Availability, omission notices and calculation must observe the same current local records.
   const curveData = useMemo(
     () => ({ series, annotations, fields, tags }),
@@ -136,13 +140,24 @@ export function AnalysisPanel({
     [chartKind],
   );
   const settings = useMemo(
-    () => normalizeChart(profile?.analysis?.[chartKind] ?? defaultAnalysis()[chartKind]),
+    () =>
+      normalizeChart(
+        profile?.analysis?.[chartKind] ?? defaultAnalysis()[chartKind],
+        chartKind === 'compare',
+      ),
     [profile?.analysis, chartKind],
   );
   const mode = settings.axis;
   const quantities = useMemo(
-    () => availableQuantities(shots, series, fields, annotations, unitSystem),
-    [shots, series, fields, annotations, unitSystem],
+    () =>
+      availableQuantities(
+        mode === 'string' ? series.map((item) => ({ seriesId: item.id })) : shots,
+        series,
+        fields,
+        annotations,
+        unitSystem,
+      ),
+    [shots, series, fields, annotations, unitSystem, mode],
   );
   const tableQuantities = useMemo(
     () =>
@@ -161,6 +176,7 @@ export function AnalysisPanel({
     () =>
       sortShots(allShots, series, profile?.tableSort, {
         quantities: tableQuantities,
+        fields,
         annotations,
         tags,
         catalog,
@@ -179,6 +195,7 @@ export function AnalysisPanel({
       hiddenShots,
       invalidShots,
       profile?.showProjectileWeight,
+      fields,
     ],
   );
   const sortedShots = useMemo(() => {
@@ -190,9 +207,17 @@ export function AnalysisPanel({
     try {
       // Rapid edits can precede a live-query render. Resolve dependent choices inside the transaction.
       await saveAnalysis(chartKind, (current) => {
-        const next = normalizeChart({ ...current, ...patch });
+        const next = normalizeChart({ ...current, ...patch }, chartKind === 'compare');
         const available =
-          next.axis === 'shot' ? quantities : distanceQuantities(shots, unitSystem, curveData);
+          next.axis === 'distance'
+            ? distanceQuantities(shots, unitSystem, curveData, chartKind === 'compare')
+            : availableQuantities(
+                next.axis === 'string' ? series.map((item) => ({ seriesId: item.id })) : shots,
+                series,
+                fields,
+                annotations,
+                unitSystem,
+              ).filter((q) => chartKind !== 'compare' || q.scope === next.axis);
         if (patch.axis && available.length && !available.some((q) => q.id === next.quantity))
           next.quantity = available[0]!.id;
         if (!available.some((q) => q.id === next.secondary && q.id !== next.quantity))
@@ -224,7 +249,9 @@ export function AnalysisPanel({
   const compatible = chartGroupsCompatible(shots);
   // Distance velocity is usable even when the provider supplied no separate muzzle scalar.
   const choices =
-    mode === 'distance' ? distanceQuantities(shots, unitSystem, curveData) : quantities;
+    mode === 'distance'
+      ? distanceQuantities(shots, unitSystem, curveData, chartKind === 'compare')
+      : quantities.filter((q) => chartKind !== 'compare' || q.scope === mode);
   const activeCurves =
     mode === 'distance'
       ? [...new Set([settings.quantity, ...(kind === 'dual' ? [settings.secondary] : [])])].flatMap(
@@ -239,7 +266,10 @@ export function AnalysisPanel({
   useImperativeHandle(ref, () => ({
     capture: () => {
       const reportProfile = profile ?? defaultProfile();
-      const chartVisible = kind !== 'info' && view === 'chart' && compatible && shots.length > 0;
+      const chartVisible =
+        kind !== 'info' &&
+        view === 'chart' &&
+        (mode === 'string' ? series.length > 0 : compatible && shots.length > 0);
       const labels =
         kind === 'compare'
           ? [...series].sort((a, b) => a.id.localeCompare(b.id)).map((item) => item.name)
@@ -411,7 +441,9 @@ export function AnalysisPanel({
               <p className="muted">
                 {derived
                   ? 'Derived curves · see descriptions below'
-                  : mode === 'distance' && kind === 'compare'
+                  : mode === 'distance' &&
+                      kind === 'compare' &&
+                      settings.quantity !== 'velocity-detail'
                     ? 'Mean of measured traces · linear interpolation within measured ranges'
                     : mode === 'shot' && kind !== 'compare'
                       ? 'One sequence across selected strings'
@@ -424,7 +456,7 @@ export function AnalysisPanel({
                   Horizontal axis
                   <select
                     aria-label="Chart type"
-                    title="Plot readings over measured distance or in the current shot-table order. Each axis keeps its own zoom."
+                    title="Choose measured distance, shot order, or one value per string. Changing the selected strings fits the chart scales."
                     value={mode}
                     onChange={(event) =>
                       void changeChart({ axis: event.target.value as typeof mode })
@@ -432,6 +464,7 @@ export function AnalysisPanel({
                   >
                     <option value="distance">Over distance</option>
                     <option value="shot">By shot</option>
+                    {kind === 'compare' && <option value="string">By string</option>}
                   </select>
                 </label>
                 <label>
@@ -513,7 +546,7 @@ export function AnalysisPanel({
               </div>
             )}
           </header>
-          {!shots.length ? (
+          {!shots.length && mode !== 'string' ? (
             <p className="empty-note">
               No shots selected. Select shots in the table below to display measurements.
             </p>
@@ -525,10 +558,11 @@ export function AnalysisPanel({
               onHoverShot={onHoverShot}
               unitSystem={unitSystem}
             />
-          ) : compatible ? (
+          ) : compatible || mode === 'string' ? (
             <>
               <Suspense fallback={<p className="empty-note">Loading chart…</p>}>
                 <MeasurementChart
+                  key={selectionKey}
                   ref={chartRef}
                   shots={sortedShots}
                   series={series}
@@ -544,6 +578,7 @@ export function AnalysisPanel({
                   onHoverShot={onHoverShot}
                   unitSystem={unitSystem}
                   viewportMemory={viewportMemory}
+                  fitOnMount
                   curveData={curveData}
                   forecastDistance={
                     forecast ? (settings.forecastDistance ?? DEFAULT_FORECAST_DISTANCE) : undefined
@@ -615,7 +650,7 @@ export function AnalysisPanel({
                   ) : null;
                 })}
               {mode === 'distance' &&
-                kind !== 'compare' &&
+                (kind !== 'compare' || settings.quantity === 'velocity-detail') &&
                 shots.filter((shot) => !shot.excluded).length > 100 && (
                   <p className="notice">
                     Showing the first 100 included shot traces. Narrow the selection to see the

@@ -220,3 +220,11 @@ and per-tab Reload remain separate; no automatic navigation or storage clearing.
 Older running tabs need one refresh to load this fix. Port 4180 must serve the current
 production build; offline startup alone does not prove that its server is running.
 The three deferred requests above remain out of scope for this maintenance release.
+
+Release 0.19.0 completes the three deferred requests above and decision 026:
+selection-based chart fitting; reusable List fields with stable IDs, usage-aware
+atomic removal and backup validation; string editor context; shared read-only
+target/PDF rendering with an external ruler; measured-target card icon. Compare
+now separates shot and string quantities and adds individual Velocity detail.
+By string works without selected shots. See help/strings.md and help/analysis.md.
+The historical zoom-preservation rule no longer applies to changing string sets.

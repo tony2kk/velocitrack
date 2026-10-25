@@ -305,6 +305,7 @@ export function ShotTable({
                             details.get(shot.seriesId)?.values?.[field.id],
                             field.type,
                             unitSystem,
+                            field.options,
                           ) || '—'
                         : formatQuantity(
                             quantities.find((q) => q.id === column.id)?.read(shot) ?? null,

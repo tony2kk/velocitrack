@@ -46,3 +46,22 @@ Photos and captions save immediately. Field/tag edits save with **Save details**
 Use **Target measurement** to enter optional H/V offsets and group size, or choose an attached photo and select **Measure photo**. Values use cm/in from your profile. See the [target measurement guide](targets.md) for drawing, calibration, multi-target sheets and the optional group-size display on string cards.
 
 **Related:** [Table columns](shots.md) · [Display preferences](profile.md)
+
+## Reusable List fields
+
+Choose **List** in Profile → Custom fields and enter initial options, one per line.
+Select an option in string details, then Save details. The **+** beside the field
+opens a list-management panel above the form; it preserves your unsaved details.
+Add or rename options there, or edit the list in Profile. These option changes save
+immediately. Names must be unique (ignoring case), with 1–100 characters, and each
+list supports up to 1,000 options. Renaming updates labels without losing assignments.
+
+Removing an option shows how many saved records use it. **Confirm removal** also
+clears those assignments; **Keep option** cancels. If usage changes in another tab,
+check removal again. A removed option cannot be saved from an older open form.
+Lists, labels and assignments are included in workspace backups.
+
+The string editor shows its firearm/projectile and original Caldwell note directly
+below the heading. A small **target icon** before the shot count marks a photo with
+saved group geometry and scale. Click it to view the report crop, dimensions and
+ruler in a read-only popup. This does not change string selection or edit the photo.

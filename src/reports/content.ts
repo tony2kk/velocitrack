@@ -132,7 +132,7 @@ export function reportDetails(input: ReportInput, series: Series): [string, stri
       .join(', '),
   ]);
   for (const field of input.fields) {
-    const value = fieldText(annotation?.values?.[field.id], field.type, units);
+    const value = fieldText(annotation?.values?.[field.id], field.type, units, field.options);
     if (value)
       fields.push([
         field.name + (fieldUnit(field.type, units) ? ` (${fieldUnit(field.type, units)})` : ''),
@@ -163,7 +163,8 @@ export function reportRecords(input: ReportInput) {
     const parent = input.series.find((item) => item.id === shot.seriesId);
     const annotation = input.annotations.find((item) => item.entityId === shot.seriesId);
     const field = input.fields.find((item) => `field:${item.id}` === id);
-    if (field) return fieldText(annotation?.values?.[field.id], field.type, units) || '—';
+    if (field)
+      return fieldText(annotation?.values?.[field.id], field.type, units, field.options) || '—';
     switch (id) {
       case 'series':
         return parent?.name ?? '—';
@@ -259,6 +260,7 @@ export function reportDocument(
 ): TDocumentDefinitions {
   const options = { ...defaultReportSettings(), ...input.profile.report };
   const detailsEnabled = options.details || options.statistics;
+  const hasTargets = options.target && input.series.some((series) => photos.has(series.id));
   const infoMode = input.profile.analysis?.mode === 'info';
   const records = options.records ? reportRecords(input) : undefined;
   const content: Content[] = [
@@ -298,13 +300,13 @@ export function reportDocument(
         ),
       );
   }
-  if (options.target) {
+  if (hasTargets) {
     content.push({
       text: 'Targets',
       style: 'heading',
       ...(detailsEnabled ? { pageBreak: 'before' as const } : {}),
     });
-    for (const series of input.series) {
+    for (const series of input.series.filter((item) => photos.has(item.id))) {
       const target = input.annotations.find((item) => item.entityId === series.id)?.target;
       const photo =
         input.attachments.find(
@@ -349,7 +351,7 @@ export function reportDocument(
       text: infoMode ? 'String info' : 'Analysis chart',
       style: 'heading',
       pageOrientation: infoMode ? 'portrait' : 'landscape',
-      ...(detailsEnabled || options.target ? { pageBreak: 'before' as const } : {}),
+      ...(detailsEnabled || hasTargets ? { pageBreak: 'before' as const } : {}),
     });
     if (infoMode) content.push(...reportStringInfo(input));
     else if (input.chart) {
@@ -380,9 +382,7 @@ export function reportDocument(
       text: 'Shot records',
       style: 'heading',
       pageOrientation: 'landscape',
-      ...(detailsEnabled || options.target || options.chart
-        ? { pageBreak: 'before' as const }
-        : {}),
+      ...(detailsEnabled || hasTargets || options.chart ? { pageBreak: 'before' as const } : {}),
     });
     content.push({
       text: 'Selected valid shots in workspace table order. All visible columns stay together; complete rows continue onto further pages.',
@@ -402,7 +402,7 @@ export function reportDocument(
     pageSize: 'A4',
     pageOrientation:
       !detailsEnabled &&
-      !options.target &&
+      !hasTargets &&
       ((options.chart && !infoMode) || (!options.chart && options.records))
         ? 'landscape'
         : 'portrait',

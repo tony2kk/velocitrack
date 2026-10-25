@@ -59,7 +59,7 @@ function velocityScale(units: UnitSystem): DisplayScale {
 
 /** Recorded measurements are the only built-in; every calculated quantity comes from the catalog. */
 function builtInCurves(): DistanceCurve[] {
-  return [
+  const curves: DistanceCurve[] = [
     {
       id: 'velocity',
       label: (units) => `Velocity (${units === 'metric' ? 'm/s' : 'ft/s'})`,
@@ -78,6 +78,14 @@ function builtInCurves(): DistanceCurve[] {
         })),
     },
   ];
+  // The same measured samples can be compared individually rather than averaged per string.
+  curves.push({
+    ...curves[0]!,
+    id: 'velocity-detail',
+    label: (units) => `Velocity detail (${units === 'metric' ? 'm/s' : 'ft/s'})`,
+    description: 'Individual recorded shot traces, colored by string. No averaging.',
+  });
+  return curves;
 }
 
 /** Build-time registration rejects conflicting identities and inconsistent canonical axis scales. */

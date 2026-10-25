@@ -3,7 +3,7 @@ import fonts from 'pdfmake/build/vfs_fonts';
 import { db } from '../storage/database';
 import { reportDocument } from './content';
 import type { ReportInput } from './types';
-import { targetFigureLayout, drawTargetFigure } from './targetFigure';
+import { renderTargetPhoto } from './renderTarget';
 
 pdfMake.addVirtualFileSystem(fonts);
 // Report content is local data only. No URL embedded in a field may trigger a network request.
@@ -25,41 +25,14 @@ export async function reportPhotos(input: ReportInput): Promise<Map<string, stri
       throw new Error(
         `The target photo for "${series.name}" is missing. Restore it or disable Target in Profile → Report.`,
       );
-    const url = URL.createObjectURL(record.blob);
-    try {
-      const image = new Image();
-      image.src = url;
-      await image.decode();
-      if (
-        !image.naturalWidth ||
-        !image.naturalHeight ||
-        image.naturalWidth * image.naturalHeight > 60_000_000
-      )
-        throw new Error('A target photo exceeds the supported image dimensions.');
-      const measurement = target?.photoId === photo.id ? target : undefined;
-      const crop = measurement?.reportCrop;
-      if (crop && (crop.width !== image.naturalWidth || crop.height !== image.naturalHeight))
-        throw new Error(
-          `Reopen the report crop for "${series.name}"; the photo dimensions have changed.`,
-        );
-      const figure = targetFigureLayout(
-        image.naturalWidth,
-        image.naturalHeight,
-        measurement,
+    result.set(
+      series.id,
+      await renderTargetPhoto(
+        record.blob,
+        target?.photoId === photo.id ? target : undefined,
         input.profile.unitSystem,
-      );
-      const scale = 1600 / Math.max(figure.width, figure.height);
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.ceil(figure.width * scale);
-      canvas.height = Math.ceil(figure.height * scale);
-      const context = canvas.getContext('2d');
-      if (!context) throw new Error('Target rendering is unavailable in this browser.');
-      context.scale(scale, scale);
-      drawTargetFigure(context, image, figure);
-      result.set(series.id, canvas.toDataURL('image/jpeg', 0.92));
-    } finally {
-      URL.revokeObjectURL(url);
-    }
+      ),
+    );
   }
   return result;
 }

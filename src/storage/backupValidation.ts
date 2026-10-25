@@ -1,6 +1,6 @@
 import type { Workspace } from './workspace';
 import { entityId } from '../domain/model';
-import { FIELD_TYPES, validFieldValue } from '../domain/customFields';
+import { FIELD_TYPES, validFieldValue, validListOptions } from '../domain/customFields';
 import { MAX_FORECAST_DISTANCE } from '../domain/calculatedVelocity';
 import { validTargetMeasurement } from '../domain/targetMeasurement';
 
@@ -173,6 +173,7 @@ export function validateBackup(value: unknown): asserts value is Workspace {
         field.name.trim().length > 0 &&
         field.name.length <= 100 &&
         Object.hasOwn(FIELD_TYPES, field.type) &&
+        (field.type === 'list' ? validListOptions(field.options) : field.options === undefined) &&
         (field.showInNavigator === undefined || typeof field.showInNavigator === 'boolean') &&
         Number.isSafeInteger(field.order) &&
         field.order >= 0,
@@ -220,7 +221,7 @@ export function validateBackup(value: unknown): asserts value is Workspace {
       requireValid(object(item.values));
       for (const [id, entry] of Object.entries(item.values)) {
         const field = definitions.get(id);
-        requireValid(field && validFieldValue(field.type, entry));
+        requireValid(field && validFieldValue(field.type, entry, field.options));
       }
     }
     requireValid(
@@ -330,7 +331,11 @@ export function validateBackup(value: unknown): asserts value is Workspace {
             settings.forecastDistance > 0 &&
             settings.forecastDistance <= MAX_FORECAST_DISTANCE),
       );
-      requireValid(['distance', 'shot'].includes(settings.axis));
+      requireValid(
+        (mode === 'compare' ? ['distance', 'shot', 'string'] : ['distance', 'shot']).includes(
+          settings.axis,
+        ),
+      );
       for (const id of [settings.quantity, settings.secondary])
         requireValid(
           string(id) &&

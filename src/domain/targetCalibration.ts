@@ -70,9 +70,19 @@ export function targetScaleBar(
   units: UnitSystem,
 ): TargetScaleBar | null {
   const scale = calibrationScale(reference);
+  return physicalScaleBar(scale, visibleWidth, units, reference.lengthMm ?? undefined);
+}
+
+/** Shared ruler for independent calibration or a manually measured group, in original image pixels. */
+export function physicalScaleBar(
+  scale: number | null | undefined,
+  visibleWidth: number,
+  units: UnitSystem,
+  maximumLengthMm = Infinity,
+): TargetScaleBar | null {
   if (!scale || !Number.isFinite(visibleWidth) || visibleWidth <= 0) return null;
   const unitMm = units === 'metric' ? 10 : 25.4;
-  const limit = Math.min(reference.lengthMm!, visibleWidth * 0.3 * scale) / unitMm;
+  const limit = Math.min(maximumLengthMm, visibleWidth * 0.3 * scale) / unitMm;
   if (!Number.isFinite(limit) || limit <= 0) return null;
   const power = 10 ** Math.floor(Math.log10(limit));
   const mantissa = limit / power;

@@ -19,7 +19,7 @@ export async function saveAnalysis(
     if (!patch) analysis.mode = mode;
     if (mode !== 'info' && patch) {
       const changes = typeof patch === 'function' ? patch(analysis[mode]) : patch;
-      analysis[mode] = normalizeChart({ ...analysis[mode], ...changes });
+      analysis[mode] = normalizeChart({ ...analysis[mode], ...changes }, mode === 'compare');
     }
     await db.profiles.put({ ...profile, analysis });
   });

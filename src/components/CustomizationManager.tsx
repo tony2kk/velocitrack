@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { FieldDefinition, FieldType, Tag } from '../domain/model';
 import { FIELD_TYPES } from '../domain/customFields';
 import { moveField, removeField, removeTag, saveField, saveTag } from '../storage/customization';
+import { ListOptionsPanel } from './ListOptionsPanel';
 
 /** Display labels with a color swatch and readable text, independent of the chosen color contrast. */
 export function TagLabels({ tags }: { tags: Tag[] }) {
@@ -30,6 +31,7 @@ export function CustomizationManager({
   const [id, setId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [type, setType] = useState<FieldType>('short-text');
+  const [optionNames, setOptionNames] = useState('');
   const [showInNavigator, setShowInNavigator] = useState(false);
   const [color, setColor] = useState('#08796e');
   const [confirm, setConfirm] = useState<string | null>(null);
@@ -66,6 +68,14 @@ export function CustomizationManager({
                 name,
                 type,
                 showInNavigator,
+                options:
+                  type === 'list' && !id
+                    ? optionNames
+                        .split('\n')
+                        .map((value) => value.trim())
+                        .filter(Boolean)
+                        .map((name) => ({ id: crypto.randomUUID(), name }))
+                    : undefined,
                 order:
                   fields.find((field) => field.id === id)?.order ??
                   Math.max(-1, ...fields.map((field) => field.order)) + 1,
@@ -73,6 +83,7 @@ export function CustomizationManager({
             else await saveTag({ id: id ?? crypto.randomUUID(), name, color });
             setId(null);
             setName('');
+            setOptionNames('');
             setShowInNavigator(false);
           });
         }}
@@ -103,6 +114,16 @@ export function CustomizationManager({
             <input type="color" value={color} onChange={(event) => setColor(event.target.value)} />
           </label>
         )}
+        {kind === 'fields' && type === 'list' && !id && (
+          <label className="field">
+            List options (one per line)
+            <textarea
+              rows={4}
+              value={optionNames}
+              onChange={(event) => setOptionNames(event.target.value)}
+            />
+          </label>
+        )}
         {kind === 'fields' && (
           <label className="check-field">
             <input
@@ -131,6 +152,11 @@ export function CustomizationManager({
           )}
         </div>
       </form>
+      {kind === 'fields' &&
+        type === 'list' &&
+        fields.find((field) => field.id === id)?.type === 'list' && (
+          <ListOptionsPanel key={id} field={fields.find((field) => field.id === id)!} />
+        )}
       {error && (
         <p role="alert" className="error">
           {error}

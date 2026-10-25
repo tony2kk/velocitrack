@@ -1,5 +1,5 @@
 import type { FieldDefinition, Tag } from '../domain/model';
-import { FIELD_TYPES, validFieldValue } from '../domain/customFields';
+import { FIELD_TYPES, validFieldValue, validListOptions } from '../domain/customFields';
 import { db } from './database';
 
 /** Reject blank or duplicate names while allowing any number of definitions. */
@@ -35,7 +35,14 @@ export async function saveField(field: FieldDefinition, database = db) {
       (await database.annotations.filter((a) => Object.hasOwn(a.values ?? {}, field.id)).count())
     )
       throw new Error('A field with saved values cannot change type. Create a new field instead.');
-    await database.fieldDefinitions.put({ ...field, name });
+    // Existing lists use dedicated atomic option operations; metadata edits cannot overwrite them.
+    const options =
+      field.type === 'list'
+        ? ((old?.type === 'list' ? old.options : field.options) ?? [])
+        : undefined;
+    if (field.type === 'list' && !validListOptions(options))
+      throw new Error('Use unique list names of 1–100 characters.');
+    await database.fieldDefinitions.put({ ...field, name, options });
   });
 }
 
@@ -125,7 +132,7 @@ export async function saveSeriesDetails(
         if (!definition) throw new Error('A field was removed. Reopen this series to continue.');
         if (value === undefined) delete values[id];
         else {
-          if (!validFieldValue(definition.type, value))
+          if (!validFieldValue(definition.type, value, definition.options))
             throw new Error(`Invalid value for ${definition.name}.`);
           values[id] = value;
         }
@@ -139,4 +146,54 @@ export async function saveSeriesDetails(
       });
     },
   );
+}
+
+/** Add or rename one option against current storage, preserving concurrent changes and assignments. */
+export async function saveListOption(
+  fieldId: string,
+  option: { id: string; name: string },
+  database = db,
+) {
+  await database.transaction('rw', database.fieldDefinitions, async () => {
+    const field = await database.fieldDefinitions.get(fieldId);
+    if (!field || field.type !== 'list') throw new Error('This list no longer exists.');
+    const options = [...(field.options ?? [])];
+    const index = options.findIndex((item) => item.id === option.id);
+    const next = { ...option, name: option.name.trim() };
+    if (index < 0) options.push(next);
+    else options[index] = next;
+    if (!validListOptions(options))
+      throw new Error('Use unique list names of 1–100 characters (maximum 1,000 options).');
+    await database.fieldDefinitions.put({ ...field, options });
+  });
+}
+
+/** Count persisted assignments before showing the destructive confirmation. */
+export async function listOptionUsage(fieldId: string, optionId: string, database = db) {
+  return database.annotations.filter((item) => item.values?.[fieldId] === optionId).count();
+}
+
+/** Remove exactly the confirmed assignments; a concurrent new assignment requires a fresh confirmation. */
+export async function removeListOption(
+  fieldId: string,
+  optionId: string,
+  confirmedUses: number,
+  database = db,
+) {
+  await database.transaction('rw', [database.fieldDefinitions, database.annotations], async () => {
+    const field = await database.fieldDefinitions.get(fieldId);
+    if (!field || field.type !== 'list') throw new Error('This list no longer exists.');
+    const uses = await listOptionUsage(fieldId, optionId, database);
+    if (uses !== confirmedUses)
+      throw new Error('Usage changed. Check the removal again before confirming.');
+    await database.annotations
+      .filter((item) => item.values?.[fieldId] === optionId)
+      .modify((item) => {
+        delete item.values![fieldId];
+      });
+    await database.fieldDefinitions.put({
+      ...field,
+      options: field.options?.filter((item) => item.id !== optionId) ?? [],
+    });
+  });
 }

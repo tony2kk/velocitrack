@@ -65,6 +65,7 @@ export default function MeasurementChart({
   colorOrder,
   curveData,
   viewportMemory,
+  fitOnMount = false,
   forecastDistance,
   onForecastDistanceChange,
 }: {
@@ -84,6 +85,8 @@ export default function MeasurementChart({
   colorOrder?: string[];
   curveData?: Omit<DistanceCurveData, 'series'>;
   viewportMemory?: ViewportMemory;
+  /** A new selection fits all plotted samples rather than restoring an unrelated forecast window. */
+  fitOnMount?: boolean;
   /** Existing forecast field, in canonical feet; this component only coordinates the viewport. */
   forecastDistance?: number;
   onForecastDistanceChange?: (distance: number) => void;
@@ -213,7 +216,8 @@ export default function MeasurementChart({
   useEffect(() => {
     const chart = instance.current;
     if (!chart) return;
-    const requestedReset = lastReset.current !== resetCount;
+    const requestedReset =
+      lastReset.current !== resetCount || (fitOnMount && !axes.current && memory.size === 0);
     const completedReset =
       resetDistance.current !== undefined && forecastDistance === resetDistance.current;
     const reset = requestedReset || completedReset;
@@ -221,7 +225,13 @@ export default function MeasurementChart({
     if (completedReset || lastForecast.current?.distance !== forecastDistance)
       resetDistance.current = undefined;
     const xKey =
-      mode === 'distance' ? 'distance' : kind === 'compare' ? 'string-order' : 'shot-order';
+      mode === 'distance'
+        ? 'distance'
+        : mode === 'string'
+          ? 'strings'
+          : kind === 'compare'
+            ? 'string-order'
+            : 'shot-order';
     const xScale = {
       factor: mode === 'distance' && unitSystem === 'metric' ? 0.3048 : 1,
       offset: 0,
@@ -230,10 +240,12 @@ export default function MeasurementChart({
     const x = retainViewport(
       memory,
       xKey,
-      fitRange(
-        traces.flatMap((trace) => trace.data.map((point) => point.value[0] / xScale.factor)),
-        true,
-      ),
+      mode === 'string'
+        ? [0.5, series.length + 0.5]
+        : fitRange(
+            traces.flatMap((trace) => trace.data.map((point) => point.value[0] / xScale.factor)),
+            true,
+          ),
       reset,
     );
     const previousForecast = lastForecast.current;
@@ -315,24 +327,29 @@ export default function MeasurementChart({
           name:
             mode === 'distance'
               ? `Distance (${unitLabels[unitSystem].distance})`
-              : settings && kind !== 'compare'
-                ? 'Shot sequence'
-                : settings
-                  ? 'Shot order within string'
-                  : 'Shot number',
+              : mode === 'string'
+                ? 'String'
+                : settings && kind !== 'compare'
+                  ? 'Shot sequence'
+                  : settings
+                    ? 'Shot order within string'
+                    : 'Shot number',
           nameLocation: 'middle',
           nameGap: 32,
-          minInterval: mode === 'shot' ? 1 : undefined,
+          minInterval: mode !== 'distance' ? 1 : undefined,
           axisLine: { lineStyle: { color: dark ? '#6b8078' : '#dae3df' } },
           splitLine: { show: false },
           axisLabel: {
             hideOverlap: true,
+            ...(mode === 'string' ? { width: 120, overflow: 'truncate' as const } : {}),
             formatter: (value: number) =>
-              formatQuantity(
-                value,
-                mode === 'shot' ? 'count' : 'distance',
-                mode === 'distance' ? unitLabels[unitSystem].distance : '',
-              ),
+              mode === 'string'
+                ? ([...series].sort((a, b) => a.id.localeCompare(b.id))[value - 1]?.name ?? '')
+                : formatQuantity(
+                    value,
+                    mode !== 'distance' ? 'count' : 'distance',
+                    mode === 'distance' ? unitLabels[unitSystem].distance : '',
+                  ),
           },
         },
         yAxis: yQuantities.map((quantity, index) => ({
@@ -432,6 +449,7 @@ export default function MeasurementChart({
     commitDistance();
   }, [
     traces,
+    series,
     mode,
     unitSystem,
     settings,
@@ -441,6 +459,7 @@ export default function MeasurementChart({
     memory,
     resetCount,
     forecastDistance,
+    fitOnMount,
   ]);
 
   /** Resolve measured points even when the line's hit area sits above a small symbol. */

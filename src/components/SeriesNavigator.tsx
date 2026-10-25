@@ -1,7 +1,8 @@
-import { useMemo } from 'react';
-import { SquarePen } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { SquarePen, Target } from 'lucide-react';
 import type { Annotation, Tag, FieldDefinition, UnitSystem } from '../domain/model';
 import { fieldText, fieldUnit } from '../domain/customFields';
+import { TargetPreview } from './TargetPreview';
 import { TagLabels } from './CustomizationManager';
 import type { Series, Shot } from '../domain/model';
 import { targetDisplay, targetUnit } from '../domain/targetMeasurement';
@@ -40,6 +41,9 @@ export function SeriesNavigator({
   onToggleSeries: (id: string, checked: boolean) => void;
   onSelectOnly?: (id: string) => void;
 }) {
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const previewSeries = series.find((item) => item.id === previewId);
+  const previewTarget = annotations.find((item) => item.entityId === previewId)?.target;
   const grouped = useMemo(() => {
     const groups = new Map<string, Shot[]>();
     for (const shot of shots) {
@@ -53,10 +57,26 @@ export function SeriesNavigator({
   }, [shots]);
   return (
     <div className="series-list">
+      {previewSeries && previewTarget && (
+        <TargetPreview
+          name={previewSeries.name}
+          target={previewTarget}
+          units={unitSystem}
+          onClose={() => setPreviewId(null)}
+        />
+      )}
       {series.map((item) => {
         const expanded = selected.includes(item.id);
         const records = grouped.get(item.id) ?? [];
-        const groupSize = annotations.find((a) => a.entityId === item.id)?.target?.values.groupSize;
+        const target = annotations.find((a) => a.entityId === item.id)?.target;
+        const groupSize = target?.values.groupSize;
+        const measured = !!(
+          target?.photoId &&
+          target.geometry &&
+          target.mmPerPixel &&
+          groupSize !== null &&
+          groupSize !== undefined
+        );
         const note = typeof item.raw.notes === 'string' ? item.raw.notes.trim() : '';
         return (
           <section
@@ -72,8 +92,16 @@ export function SeriesNavigator({
               onSelectOnly(item.id);
             }}
           >
-            <label className={`series-card ${expanded ? 'selected' : ''}`}>
+            <div
+              className={`series-card ${expanded ? 'selected' : ''}`}
+              onClick={(event) => {
+                // Labels and inputs retain native selection; other card space behaves as a click target.
+                if (!event.ctrlKey && !(event.target as Element).closest('input, label, button, a'))
+                  onToggleSeries(item.id, !expanded);
+              }}
+            >
               <input
+                id={`select-${item.id}`}
                 type="checkbox"
                 checked={expanded}
                 aria-label={`Select series ${item.name}`}
@@ -100,19 +128,37 @@ export function SeriesNavigator({
                         })
                       : 'Date unavailable'}
                   </span>
-                  <span>{records.length} shots</span>
+                  <span className="series-shot-count">
+                    {measured && (
+                      <button
+                        type="button"
+                        className="icon-button target-preview-button"
+                        aria-label={`View target for ${item.name}`}
+                        title="View measured target"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setPreviewId(item.id);
+                        }}
+                      >
+                        <Target size={15} aria-hidden="true" />
+                      </button>
+                    )}
+                    {records.length} shots
+                  </span>
                 </div>
-                <strong>{item.name}</strong>
-                <span>{catalogNames.get(item.firearmId)}</span>
-                <span className="projectile-name">
-                  {projectileNames?.get(item.id) ?? catalogNames.get(item.projectileId)}
-                </span>
-                <small>
-                  <span className="dot" />
-                  {sourceNames.get(item.sourceId)}
-                </small>
+                <label className="series-card-text" htmlFor={`select-${item.id}`}>
+                  <strong>{item.name}</strong>
+                  <span>{catalogNames.get(item.firearmId)}</span>
+                  <span className="projectile-name">
+                    {projectileNames?.get(item.id) ?? catalogNames.get(item.projectileId)}
+                  </span>
+                  <small>
+                    <span className="dot" />
+                    {sourceNames.get(item.sourceId)}
+                  </small>
+                </label>
               </div>
-            </label>
+            </div>
             {onDetails && (
               <button
                 type="button"
@@ -156,7 +202,7 @@ export function SeriesNavigator({
                     <div key={field.id}>
                       <dt>{field.name}</dt>
                       <dd>
-                        {fieldText(value, field.type, unitSystem)}{' '}
+                        {fieldText(value, field.type, unitSystem, field.options)}{' '}
                         {fieldUnit(field.type, unitSystem)}
                       </dd>
                     </div>
